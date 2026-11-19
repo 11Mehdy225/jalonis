@@ -62,15 +62,22 @@ async function listProjects() {
     supabase.from('tasks').select('project_id,progress,status').in('project_id', ids).then(unwrap),
     supabase.from('risks').select('project_id,status').in('project_id', ids).then(unwrap),
   ])
-  return projects.map(project => {
+  const hydrated = await Promise.all(projects.map(async project => {
     const projectTasks = tasks.filter(task => task.project_id === project.id)
+    let logo_url = null
+    if (project.logo_path) {
+      const signed = unwrap(await supabase.storage.from('workspace-files').createSignedUrl(project.logo_path, 3600))
+      logo_url = signed.signedUrl
+    }
     return {
       ...project,
+      logo_url,
       task_count: projectTasks.length,
       progress: projectTasks.length ? Math.round(projectTasks.reduce((sum, task) => sum + Number(task.progress || 0), 0) / projectTasks.length) : 0,
       open_risks: risks.filter(risk => risk.project_id === project.id && risk.status !== 'Fermé').length,
     }
-  })
+  }))
+  return hydrated
 }
 
 async function selectFile() {
@@ -78,6 +85,17 @@ async function selectFile() {
     const input = document.createElement('input')
     input.type = 'file'
     input.onchange = () => resolve(input.files?.[0] || null)
+    input.click()
+  })
+}
+
+async function selectImages(multiple=true) {
+  return new Promise(resolve => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/png,image/jpeg,image/webp,image/gif'
+    input.multiple = multiple
+    input.onchange = () => resolve([...input.files || []])
     input.click()
   })
 }
@@ -119,12 +137,41 @@ export const cloudApi = {
       return unwrap(await supabase.from('projects').insert({ ...data, workspace_id: id, status: 'Initialisation', health: 'good' }).select().single())
     },
     update: async (id, data) => unwrap(await supabase.from('projects').update(data).eq('id', id).select().single()),
+    uploadLogo: async projectId => {
+      const [file] = await selectImages(false)
+      if (!file) return null
+      const id = await workspaceId()
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'png'
+      const path = `${id}/${projectId}/branding/logo-${crypto.randomUUID()}.${extension}`
+      unwrap(await supabase.storage.from('workspace-files').upload(path, file, { contentType: file.type, upsert: false }))
+      return unwrap(await supabase.from('projects').update({ logo_path: path }).eq('id', projectId).select().single())
+    },
   },
   entities: {
-    list: async (type, projectId) => unwrap(await supabase.from(type).select('*').eq('project_id', projectId).order('created_at', { ascending: false })),
+    list: async (type, projectId) => {
+      const rows = unwrap(await supabase.from(type).select('*').eq('project_id', projectId).order('created_at', { ascending: false }))
+      if (type !== 'attachments') return rows
+      return Promise.all(rows.map(async attachment => {
+        const signed = unwrap(await supabase.storage.from('workspace-files').createSignedUrl(attachment.stored_path, 3600))
+        return { ...attachment, url: signed.signedUrl }
+      }))
+    },
     create: async (type, data) => unwrap(await supabase.from(type).insert(data).select().single()),
     update: async (type, id, data) => unwrap(await supabase.from(type).update(data).eq('id', id).select().single()),
     remove: async (type, id) => { unwrap(await supabase.from(type).delete().eq('id', id)); return { ok: true } },
+  },
+  media: {
+    attach: async metadata => {
+      const files = await selectImages(true)
+      if (!files.length) return []
+      const id = await workspaceId()
+      return Promise.all(files.map(async file => {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+        const path = `${id}/${metadata.project_id}/visuals/${metadata.entity_type}/${metadata.entity_id}/${crypto.randomUUID()}-${safeName}`
+        unwrap(await supabase.storage.from('workspace-files').upload(path, file, { contentType: file.type, upsert: false }))
+        return unwrap(await supabase.from('attachments').insert({ ...metadata, file_name: file.name, mime_type: file.type, stored_path: path, size_bytes: file.size }).select().single())
+      }))
+    },
   },
   supplierDocuments: {
     attach: async metadata => {

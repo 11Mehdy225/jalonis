@@ -5,6 +5,10 @@ contextBridge.exposeInMainWorld('jalonis', {
     list: () => ipcRenderer.invoke('projects:list'),
     create: (data) => ipcRenderer.invoke('projects:create', data),
     update: (id, data) => ipcRenderer.invoke('projects:update', id, data),
+    uploadLogo: (id) => ipcRenderer.invoke('project-logo:attach', id),
+  },
+  media: {
+    attach: (metadata) => ipcRenderer.invoke('media:attach', metadata),
   },
   workspace: {
     get: () => ipcRenderer.invoke('workspace:get'),

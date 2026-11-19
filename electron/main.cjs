@@ -6,6 +6,9 @@ const { JalonisDatabase } = require('./database.cjs')
 
 let database
 
+const imageMime = filePath => ({'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif'}[path.extname(filePath).toLowerCase()] || 'application/octet-stream')
+const dataUrl = filePath => fs.existsSync(filePath) ? `data:${imageMime(filePath)};base64,${fs.readFileSync(filePath).toString('base64')}` : null
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1440,
@@ -29,17 +32,37 @@ function createWindow() {
 
 app.whenReady().then(() => {
   database = new JalonisDatabase(path.join(app.getPath('userData'), 'jalonis.sqlite'))
-  ipcMain.handle('projects:list', () => database.listProjects())
+  ipcMain.handle('projects:list', () => database.listProjects().map(project => ({ ...project, logo_url: project.logo_path ? dataUrl(project.logo_path) : null })))
   ipcMain.handle('projects:create', (_, data) => database.createProject(data))
   ipcMain.handle('projects:update', (_, id, data) => database.updateProject(id, data))
   ipcMain.handle('workspace:get', () => database.getWorkspace())
   ipcMain.handle('workspace:update', (_, data) => database.updateWorkspace(data))
   ipcMain.handle('workspace-members:create', (_, data) => database.createWorkspaceMember(data))
   ipcMain.handle('workspace-members:remove', (_, membershipId) => database.removeWorkspaceMember(membershipId))
-  ipcMain.handle('entities:list', (_, type, projectId) => database.listEntities(type, projectId))
+  ipcMain.handle('entities:list', (_, type, projectId) => database.listEntities(type, projectId).map(item => type === 'attachments' ? { ...item, url: dataUrl(item.stored_path) } : item))
   ipcMain.handle('entities:create', (_, type, data) => database.createEntity(type, data))
   ipcMain.handle('entities:update', (_, type, id, data) => database.updateEntity(type, id, data))
   ipcMain.handle('entities:delete', (_, type, id) => database.deleteEntity(type, id))
+  ipcMain.handle('project-logo:attach', async (event, projectId) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const selection = await dialog.showOpenDialog(win, { title: 'Choisir le logo du projet', properties: ['openFile'], filters: [{ name: 'Images', extensions: ['png','jpg','jpeg','webp'] }] })
+    if (selection.canceled || !selection.filePaths[0]) return null
+    const source = selection.filePaths[0]
+    const folder = path.join(app.getPath('userData'), 'project-branding', String(projectId)); fs.mkdirSync(folder, { recursive: true })
+    const storedPath = path.join(folder, `logo-${crypto.randomUUID()}${path.extname(source).toLowerCase()}`); fs.copyFileSync(source, storedPath)
+    return database.updateProject(projectId, { logo_path: storedPath })
+  })
+  ipcMain.handle('media:attach', async (event, metadata) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const selection = await dialog.showOpenDialog(win, { title: 'Ajouter des rendus visuels', properties: ['openFile','multiSelections'], filters: [{ name: 'Images', extensions: ['png','jpg','jpeg','webp','gif'] }] })
+    if (selection.canceled) return []
+    const folder = path.join(app.getPath('userData'), 'project-media', String(metadata.project_id), String(metadata.entity_type), String(metadata.entity_id)); fs.mkdirSync(folder, { recursive: true })
+    return selection.filePaths.map(source => {
+      const storedPath = path.join(folder, `${crypto.randomUUID()}${path.extname(source).toLowerCase()}`); fs.copyFileSync(source, storedPath)
+      const stats = fs.statSync(storedPath)
+      return database.createEntity('attachments', { ...metadata, file_name: path.basename(source), mime_type: imageMime(source), stored_path: storedPath, size_bytes: stats.size })
+    })
+  })
   ipcMain.handle('supplier-documents:attach', async (event, metadata) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     const selection = await dialog.showOpenDialog(win, { title: 'Joindre un document fournisseur', properties: ['openFile'] })

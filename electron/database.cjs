@@ -12,6 +12,7 @@ const ENTITY_TABLES = {
   backlog_items: ['title', 'item_type', 'description', 'acceptance_criteria', 'definition_done', 'priority',
     'story_points', 'status', 'sprint_id', 'assignee', 'assignee_id', 'linked_task_id', 'epic', 'parent_epic_id',
     'estimate_hours', 'start_date', 'due_date', 'rank'],
+  attachments: ['entity_type', 'entity_id', 'file_name', 'mime_type', 'stored_path', 'size_bytes', 'caption'],
   suppliers: ['name', 'supplier_code', 'category', 'supplier_type', 'status', 'tax_id', 'registration_number',
     'contact_name', 'email', 'phone', 'address', 'country', 'website', 'qualification_score', 'risk_level',
     'payment_terms', 'notes'],
@@ -153,6 +154,12 @@ class JalonisDatabase {
         title TEXT NOT NULL, file_name TEXT, stored_path TEXT, issue_date TEXT, expiry_date TEXT,
         status TEXT DEFAULT 'Valide', notes TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS attachments (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, file_name TEXT NOT NULL,
+        mime_type TEXT NOT NULL, stored_path TEXT NOT NULL, size_bytes INTEGER DEFAULT 0, caption TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
     `)
     const taskColumns = this.db.prepare('PRAGMA table_info(tasks)').all().map(column => column.name)
     const taskMigrations = {
@@ -173,6 +180,8 @@ class JalonisDatabase {
     ensureColumn('projects', 'product_goal', 'TEXT')
     ensureColumn('projects', 'definition_done', 'TEXT')
     ensureColumn('projects', 'workspace_id', 'TEXT')
+    ensureColumn('projects', 'theme_color', "TEXT DEFAULT '#4f46e5'")
+    ensureColumn('projects', 'logo_path', 'TEXT')
     ensureColumn('tasks', 'assignee_id', 'TEXT')
     ensureColumn('backlog_items', 'assignee_id', 'TEXT')
     ensureColumn('backlog_items', 'parent_epic_id', 'TEXT')
@@ -268,13 +277,13 @@ class JalonisDatabase {
   createProject(data) {
     const id = crypto.randomUUID(); const now = new Date().toISOString()
     const workspace = this.ensureLocalWorkspace()
-    this.db.prepare(`INSERT INTO projects (id,name,code,description,manager,start_date,end_date,budget,status,health,methodology,workspace_id,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, data.name, data.code || '', data.description || '', data.manager || '', data.start_date || '', data.end_date || '', Number(data.budget)||0, 'Initialisation', 'good', data.methodology || 'Hybride', workspace.id, now, now)
+    this.db.prepare(`INSERT INTO projects (id,name,code,description,manager,start_date,end_date,budget,status,health,methodology,theme_color,workspace_id,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, data.name, data.code || '', data.description || '', data.manager || '', data.start_date || '', data.end_date || '', Number(data.budget)||0, 'Initialisation', 'good', data.methodology || 'Hybride', data.theme_color || '#4f46e5', workspace.id, now, now)
     return this.db.prepare('SELECT * FROM projects WHERE id=?').get(id)
   }
 
   updateProject(id, data) {
-    const allowed = ['name','code','description','sponsor','manager','objective','success_criteria','start_date','end_date','budget','status','health','methodology','product_goal','definition_done']
+    const allowed = ['name','code','description','sponsor','manager','objective','success_criteria','start_date','end_date','budget','status','health','methodology','product_goal','definition_done','theme_color','logo_path']
     const entries = Object.entries(data).filter(([key]) => allowed.includes(key))
     if (!entries.length) return this.db.prepare('SELECT * FROM projects WHERE id=?').get(id)
     const sql = `UPDATE projects SET ${entries.map(([key]) => `${key}=?`).join(',')}, updated_at=? WHERE id=?`

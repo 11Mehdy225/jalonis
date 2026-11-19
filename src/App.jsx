@@ -9,7 +9,7 @@ import SupplierManagement from './features/procurement/SupplierManagement'
 import WorkspaceView, { InviteMemberForm } from './features/workspace/WorkspaceView'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
-import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList } from 'lucide-react'
+import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette } from 'lucide-react'
 
 const money = n => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Number(n)||0)
 const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)) : '—'
@@ -19,7 +19,7 @@ const NAV = [
   ['team','Équipe',Users],['suppliers','Fournisseurs & Achats',Truck],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
 ]
 
-const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents']
+const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents']
 
 export default function App() {
   const [projects,setProjects]=useState([]), [activeId,setActiveId]=useState(null), [view,setView]=useState('dashboard')
@@ -41,10 +41,12 @@ export default function App() {
   },[entities])
 
   async function createProject(data){ const item=await api.projects.create(data); setModal(null); await loadProjects(false); setActiveId(item.id); setView('dashboard') }
-  async function addEntity(type,data){ await api.entities.create(type,{...data,project_id:activeId}); setModal(null); await loadEntities(activeId); await loadProjects(false) }
+  async function addEntity(type,data){ const item=await api.entities.create(type,{...data,project_id:activeId}); setModal(null); await loadEntities(activeId); await loadProjects(false); return item }
   async function removeEntity(type,id){ await api.entities.remove(type,id); await loadEntities(activeId); await loadProjects(false) }
   async function updateEntity(type,id,data){ await api.entities.update(type,id,data); await loadEntities(activeId); await loadProjects(false) }
   async function updateCharter(data){ await api.projects.update(activeId,data); await loadProjects(false) }
+  async function attachMedia(entityType,entityId){await api.media.attach({project_id:activeId,entity_type:entityType,entity_id:entityId});await loadEntities(activeId)}
+  async function updateBranding(data){await api.projects.update(activeId,{theme_color:data.theme_color});if(data.upload_logo)await api.projects.uploadLogo(activeId);setModal(null);await loadProjects(false)}
   async function renameWorkspace(data){ setWorkspace(await api.workspace.update(data)) }
   async function inviteMember(data){
     try { setError(''); setWorkspace(await api.workspace.invite(data)); setModal(null) }
@@ -62,24 +64,24 @@ export default function App() {
     <aside className="sidebar">
       <div className="brand"><img src="./assets/jalonis-logo.png"/><div><strong>Jalonis</strong><span>Pilotage de projets</span></div></div>
       <div className="workspace-label">ESPACE DE TRAVAIL</div>
-      <button className="project-switcher" onClick={()=>setView('workspace')}><span className="project-avatar">{workspace?.workspace?.name?.[0]||'J'}</span><span><b>{workspace?.workspace?.name||'Mon espace Jalonis'}</b><small>{active?.name||'Aucun projet sélectionné'}</small></span><ChevronRight size={16}/></button>
+      <button className="project-switcher" onClick={()=>setModal('projects')} style={{'--project-color':active?.theme_color||'#4f46e5'}}>{active?.logo_url?<img className="project-avatar project-logo" src={active.logo_url} alt=""/>:<span className="project-avatar">{active?.name?.[0]||workspace?.workspace?.name?.[0]||'J'}</span>}<span><b>{workspace?.workspace?.name||'Mon espace Jalonis'}</b><small>{active?.name||'Aucun projet sélectionné'}</small></span><ChevronRight size={16}/></button>
       <nav>{NAV.map(([id,label,Icon])=><button key={id} className={view===id?'active':''} onClick={()=>setView(id)}><Icon size={18}/><span>{label}</span>{id==='risks'&&stats.critical>0?<em>{stats.critical}</em>:null}</button>)}</nav>
       <div className="sidebar-bottom"><button className={view==='workspace'?'active':''} onClick={()=>setView('workspace')}><Building2 size={18}/>Espace & accès</button><button onClick={()=>setModal('projects')}><FolderKanban size={18}/>Tous les projets</button><button onClick={()=>setView('settings')}><Settings size={18}/>Paramètres</button></div>
       <div className="user-chip"><div className="avatar">{(currentUser?.full_name||'CP').split(' ').map(part=>part[0]).slice(0,2).join('')}</div><div><b>{currentUser?.full_name||'Chef de projet'}</b><small>{currentUser?.role||'Administrateur local'}</small></div><MoreHorizontal size={17}/></div>
     </aside>
     <main>
       <header><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn"><Bell size={18}/></button><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Créer</button></header>
-      <section className={`content${active&&view!=='workspace'&&view!=='settings'?' project-content':''}`}>
+      <section className={`content${active&&view!=='workspace'&&view!=='settings'?' project-content':''}`} style={active?{'--project-color':active.theme_color||'#4f46e5'}:undefined}>
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
         {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les futurs canaux de notification.</p></div></div><WorkspaceView data={workspace} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Configuration de cette installation de Jalonis.</p></div></div><SettingsView/></>
         : !active ? <Empty onCreate={()=>setModal('project')}/> : <>
-          <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} onNavigate={openProjectView} onShare={()=>setModal('invite-member')}/>
+          <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} onNavigate={openProjectView} onShare={()=>setModal('invite-member')} onBranding={()=>setModal('branding')}/>
           {view!=='scrum'&&<div className="page-title compact-title"><div><span className="eyebrow">{active.code||'PROJET'}</span><h1>{view==='dashboard'?'Vue d’ensemble':NAV.find(n=>n[0]===view)?.[1]||'Paramètres'}</h1><p>{view==='dashboard'?'Les signaux essentiels pour prendre les bonnes décisions.':active.name}</p></div>{['tasks','risks','team','meetings'].includes(view)&&<button className="btn primary" onClick={()=>setModal(view)}><Plus size={17}/>Ajouter</button>}</div>}
           {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView}/>} 
           {view==='charter'&&<Charter project={active} onSave={updateCharter}/>} 
-          {view==='tasks'&&<Tasks rows={entities.tasks} team={entities.team} query={query} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>} 
-          {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} team={entities.team} members={workspace?.members||[]} activeTab={agileTab} onTabChange={setAgileTab} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>}
+          {view==='tasks'&&<Tasks rows={entities.tasks} team={entities.team} attachments={entities.attachments} query={query} onAttach={id=>attachMedia('tasks',id)} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
+          {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} attachments={entities.attachments} team={entities.team} members={workspace?.members||[]} activeTab={agileTab} onTabChange={setAgileTab} onAttach={id=>attachMedia('backlog_items',id)} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>}
           {view==='suppliers'&&<SupplierManagement projectId={activeId} data={entities} tasks={entities.tasks} risks={entities.risks} onCreate={addEntity} onDelete={removeEntity} onReload={()=>loadEntities(activeId)}/>} 
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>} 
           {view==='team'&&<Team rows={entities.team} query={query} onDelete={id=>removeEntity('team',id)}/>} 
@@ -88,9 +90,10 @@ export default function App() {
       </section>
     </main>
     {modal==='project'&&<Modal title="Créer un projet" onClose={()=>setModal(null)}><ProjectForm onSubmit={createProject} onCancel={()=>setModal(null)}/></Modal>}
-    {modal==='projects'&&<Modal title="Portefeuille de projets" onClose={()=>setModal(null)}><div className="project-list">{projects.map(p=><button key={p.id} onClick={()=>{setActiveId(p.id);setModal(null);setView('dashboard')}}><span className={`health ${p.health}`}></span><span><b>{p.name}</b><small>{p.code||'Sans code'} · {p.status}</small></span><strong>{p.progress||0}%</strong><ChevronRight size={17}/></button>)}</div><div className="form-actions"><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Nouveau projet</button></div></Modal>}
+    {modal==='projects'&&<Modal title="Portefeuille de projets" onClose={()=>setModal(null)}><div className="project-list">{projects.map(p=><button key={p.id} style={{'--project-color':p.theme_color||'#4f46e5'}} onClick={()=>{setActiveId(p.id);setModal(null);setView('dashboard')}}>{p.logo_url?<img className="portfolio-logo" src={p.logo_url} alt=""/>:<span className="portfolio-color">{p.name?.[0]||'P'}</span>}<span><b>{p.name}</b><small>{p.code||'Sans code'} · {p.status}</small></span><strong>{p.progress||0}%</strong><ChevronRight size={17}/></button>)}</div><div className="form-actions"><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Nouveau projet</button></div></Modal>}
     {['tasks','risks','team','meetings'].includes(modal)&&<Modal title={configs[modal].title} onClose={()=>setModal(null)}><EntityForm type={modal} tasks={entities.tasks} members={workspace?.members||[]} onSubmit={d=>addEntity(modal,d)} onCancel={()=>setModal(null)}/></Modal>}
     {modal==='invite-member'&&<Modal title="Inviter un membre" onClose={()=>setModal(null)}><InviteMemberForm onSubmit={inviteMember} onCancel={()=>setModal(null)}/></Modal>}
+    {modal==='branding'&&<Modal title="Identité du projet" onClose={()=>setModal(null)}><ProjectBrandingForm project={active} onSubmit={updateBranding} onCancel={()=>setModal(null)}/></Modal>}
   </div>
 }
 
@@ -99,15 +102,17 @@ const PROJECT_TABS=[
   ['suppliers',null,'Fournisseurs',Truck],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],
 ]
 
-function ProjectHeader({active,view,agileTab,members,onNavigate,onShare}){
+function ProjectHeader({active,view,agileTab,members,onNavigate,onShare,onBranding}){
   return <div className="project-context">
     <div className="project-context-main">
-      <div><span className="project-breadcrumb">Projets <ChevronRight size={13}/> {active.code||'Projet actif'}</span><div className="project-heading"><span className="project-mark">{active.name?.[0]||'J'}</span><div><h1>{active.name}</h1><p>{active.methodology||'Hybride'} · {active.status||'En cours'}</p></div></div></div>
-      <div className="project-actions"><div className="member-stack">{members.slice(0,4).map((member,index)=><span key={member.id||index} title={member.full_name}>{(member.full_name||'M').split(' ').map(part=>part[0]).slice(0,2).join('')}</span>)}{members.length>4&&<em>+{members.length-4}</em>}</div><button className="btn ghost" onClick={onShare}><Share2 size={15}/>Partager</button><button className="icon-btn"><MoreHorizontal size={18}/></button></div>
+      <div><span className="project-breadcrumb">Projets <ChevronRight size={13}/> {active.code||'Projet actif'}</span><div className="project-heading">{active.logo_url?<img className="project-mark project-logo" src={active.logo_url} alt={`Logo ${active.name}`}/>:<span className="project-mark">{active.name?.[0]||'J'}</span>}<div><h1>{active.name}</h1><p>{active.methodology||'Hybride'} · {active.status||'En cours'}</p></div></div></div>
+      <div className="project-actions"><div className="member-stack">{members.slice(0,4).map((member,index)=><span key={member.id||index} title={member.full_name}>{(member.full_name||'M').split(' ').map(part=>part[0]).slice(0,2).join('')}</span>)}{members.length>4&&<em>+{members.length-4}</em>}</div><button className="btn ghost" onClick={onBranding}><Palette size={15}/>Personnaliser</button><button className="btn ghost" onClick={onShare}><Share2 size={15}/>Partager</button></div>
     </div>
     <nav className="project-tabs">{PROJECT_TABS.map(([target,subtab,label,Icon])=>{const selected=view===target&&(!subtab||agileTab===subtab);return <button key={`${target}-${subtab||''}`} className={selected?'active':''} onClick={()=>onNavigate(target,subtab)}><Icon size={15}/>{label}</button>})}<button className="project-tab-more"><MoreHorizontal size={16}/></button></nav>
   </div>
 }
+
+function ProjectBrandingForm({project,onSubmit,onCancel}){const [color,setColor]=useState(project.theme_color||'#4f46e5'),[uploadLogo,setUploadLogo]=useState(false);return <form onSubmit={event=>{event.preventDefault();onSubmit({theme_color:color,upload_logo:uploadLogo})}}><div className="branding-preview" style={{'--project-color':color}}>{project.logo_url?<img src={project.logo_url} alt=""/>:<span>{project.name?.[0]||'P'}</span>}<div><h3>{project.name}</h3><p>Aperçu de l’identité du projet</p></div></div><div className="form-grid"><label>Couleur principale<span className="color-field"><input type="color" value={color} onChange={event=>setColor(event.target.value)}/><b>{color}</b></span></label><label className="logo-choice"><input type="checkbox" checked={uploadLogo} onChange={event=>setUploadLogo(event.target.checked)}/><span><b>Choisir un nouveau logo</b><small>PNG, JPG ou WebP au moment d’enregistrer</small></span></label></div><div className="form-actions"><button type="button" className="btn ghost" onClick={onCancel}>Annuler</button><button className="btn primary">Enregistrer l’identité</button></div></form>}
 
 function Empty({onCreate}){return <div className="empty"><img src="./assets/jalonis-logo.png"/><h1>Bienvenue dans Jalonis</h1><p>Créez votre premier projet et pilotez son cycle de vie au même endroit.</p><button className="btn primary" onClick={onCreate}><Plus size={17}/>Créer un projet</button></div>}
 
@@ -144,14 +149,21 @@ function Charter({project,onSave}){
 const match=(row,q)=>!q||Object.values(row).some(v=>String(v||'').toLowerCase().includes(q.toLowerCase()))
 function Table({columns,rows,query,onDelete,empty}){return <div className="card table-card"><table><thead><tr>{columns.map(c=><th key={c.key}>{c.label}</th>)}<th></th></tr></thead><tbody>{rows.filter(r=>match(r,query)).map(row=><tr key={row.id}>{columns.map(c=><td key={c.key}>{c.render?c.render(row[c.key],row):row[c.key]||'—'}</td>)}<td><button className="row-delete" title="Supprimer" onClick={()=>onDelete(row.id)}><Trash2 size={16}/></button></td></tr>)}</tbody></table>{!rows.length&&<EmptyRow text={empty}/>}</div>}
 const status=v=><span className={`status ${String(v).toLowerCase().replaceAll(' ','-')}`}>{v||'—'}</span>
-function Tasks({rows,team,query,onDelete,onUpdate}){
+function Tasks({rows,team,attachments=[],query,onAttach,onDelete,onUpdate}){
   const [mode,setMode]=useState('calendar')
   const setBaseline=async()=>{await Promise.all(rows.filter(t=>t.start_date&&t.due_date).map(t=>onUpdate(t.id,{baseline_start:t.start_date,baseline_end:t.due_date}))) }
   return <>
     <div className="planning-toolbar"><div className="view-toggle"><button className={mode==='calendar'?'active':''} onClick={()=>setMode('calendar')}><CalendarDays size={15}/>Calendrier</button><button className={mode==='gantt'?'active':''} onClick={()=>setMode('gantt')}><CalendarRange size={15}/>Gantt</button><button className={mode==='list'?'active':''} onClick={()=>setMode('list')}><List size={15}/>Liste</button></div><span>Calendrier, dépendances et trajectoire critique synchronisés.</span></div>
-    {mode==='calendar'?<MonthCalendar rows={rows.filter(r=>match(r,query))}/>:mode==='gantt'?<GanttView rows={rows.filter(r=>match(r,query))} team={team} onSetBaseline={setBaseline}/>:<Table rows={rows} query={query} onDelete={onDelete} empty="Ajoutez la première activité du planning." columns={[{key:'wbs_code',label:'WBS'},{key:'title',label:'Activité',render:(v,r)=><b>{r.is_milestone?'◆ ':''}{v}</b>},{key:'status',label:'Statut',render:status},{key:'priority',label:'Priorité'},{key:'assignee',label:'Responsable'},{key:'due_date',label:'Échéance',render:date},{key:'progress',label:'Avancement',render:v=><div className="progress-cell"><i><span style={{width:`${v||0}%`}}/></i><b>{v||0}%</b></div>}]}/>} 
+    {mode === 'calendar'
+      ? <MonthCalendar rows={rows.filter(r=>match(r,query))}/>
+      : mode === 'gantt'
+        ? <GanttView rows={rows.filter(r=>match(r,query))} team={team} onSetBaseline={setBaseline}/>
+        : <Table rows={rows} query={query} onDelete={onDelete} empty="Ajoutez la première activité du planning." columns={[{key:'wbs_code',label:'WBS'},{key:'title',label:'Activité',render:(v,r)=><b>{r.is_milestone?'◆ ':''}{v}</b>},{key:'visuals',label:'Rendus',render:(_,r)=><VisualCell files={attachments.filter(file=>file.entity_type==='tasks'&&file.entity_id===r.id)} onAttach={()=>onAttach(r.id)}/>},{key:'status',label:'Statut',render:status},{key:'priority',label:'Priorité'},{key:'assignee',label:'Responsable'},{key:'due_date',label:'Échéance',render:date},{key:'progress',label:'Avancement',render:v=><div className="progress-cell"><i><span style={{width:`${v||0}%`}}/></i><b>{v||0}%</b></div>}]}/>
+    }
   </>
 }
+
+function VisualCell({files,onAttach}){return <div className="visual-cell">{files.slice(0,2).map(file=><img key={file.id} src={file.url} alt={file.file_name}/>)}<button title="Ajouter des images" onClick={event=>{event.stopPropagation();onAttach()}}><ImagePlus size={14}/>{files.length>2?`+${files.length-2}`:''}</button></div>}
 
 const DAY_MS=86400000
 const isoDay=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
