@@ -1,0 +1,89 @@
+{
+  "name": "jalonis",
+  "version": "0.5.0",
+  "private": true,
+  "description": "Jalonis — pilotage de projet SaaS et local pour le web, macOS et Windows",
+  "author": "Jalonis",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build:web": "vite build",
+    "build": "npm run build:mac",
+    "build:mac": "npm run build:web && electron-builder --mac --arm64",
+    "build:win": "npm run build:web && electron-builder --win --x64",
+    "build:all": "npm run build:web && electron-builder --mac --arm64 --win --x64",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.1",
+    "@vitejs/plugin-react": "latest",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "vite": "^8.3.8"
+  },
+  "devDependencies": {
+    "concurrently": "latest",
+    "electron": "^44.0.0",
+    "electron-builder": "latest",
+    "wait-on": "latest"
+  },
+  "build": {
+    "appId": "com.jalonis.desktop",
+    "productName": "Jalonis",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icon.icns",
+      "artifactName": "Jalonis-${version}-macOS-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "Jalonis ${version}",
+      "icon": "build/icon.icns",
+      "iconSize": 96,
+      "contents": [
+        {
+          "x": 145,
+          "y": 210,
+          "type": "file"
+        },
+        {
+          "x": 395,
+          "y": 210,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "Jalonis-${version}-Windows-${arch}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Jalonis"
+    }
+  }
+}

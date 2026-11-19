@@ -1,0 +1,7 @@
+Jalonis Proprietary License
+
+Copyright © 2026 Jalonis. Tous droits réservés.
+
+Le code source, les ressources graphiques, la documentation et les exécutables de Jalonis ne peuvent être copiés, modifiés, redistribués ou commercialisés sans l’autorisation écrite du titulaire des droits.
+
+Une copie de l’application peut être transmise à des fins de test privé. Cette autorisation de test ne transfère aucun droit de propriété intellectuelle.

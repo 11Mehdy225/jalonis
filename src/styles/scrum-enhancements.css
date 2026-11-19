@@ -1,0 +1,21 @@
+.backlog-sections { display: flex; flex-direction: column; gap: 12px; }
+.backlog-section-title { min-height: 45px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid #e6e9ef; background: #fbfcfd; }
+.backlog-section-title > div { display: flex; align-items: center; gap: 7px; color: #5650d4; }
+.backlog-section-title b { color: #293147; font-size: 11px; }
+.backlog-section-title em { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 8px; display: grid; place-items: center; background: #eeedff; color: #5750d2; font-size: 8px; font-style: normal; }
+.backlog-section-title > span { color: #858c9d; font-size: 8px; text-transform: uppercase; }
+.backlog-head, .backlog-row { grid-template-columns: 28px 75px minmax(210px, 1fr) 70px 48px 60px 65px 30px; }
+.backlog-row { cursor: grab; }
+.backlog-row:active { cursor: grabbing; }
+.backlog-row:hover { background: #fafaff; }
+.drag-handle { color: #b0b5c2; display: grid; place-items: center; }
+.backlog-title { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.backlog-title small { color: #736dd9; font-size: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.backlog-drop-empty { padding: 18px; text-align: center; color: #9aa1b0; font-size: 9px; border: 1px dashed #dfe2e9; margin: 9px; border-radius: 8px; }
+.epic-link { display: block; width: max-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #675fd9; background: #f0efff; border-radius: 5px; padding: 3px 5px; margin-bottom: 5px; font-size: 7px; }
+.story-link { display: flex; align-items: center; gap: 5px; }
+.story-link span { display: inline-flex; align-items: center; gap: 3px; }
+
+@media (max-width: 1250px) {
+  .backlog-head, .backlog-row { grid-template-columns: 25px 65px minmax(170px, 1fr) 60px 45px 55px 55px 28px; }
+}
