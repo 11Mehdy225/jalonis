@@ -7,7 +7,7 @@ export default function AuthGate({ children }) {
   const desktop = Boolean(window.jalonis)
   const [session, setSession] = useState(desktop ? { desktop: true } : null)
   const [checking, setChecking] = useState(!desktop && isCloudConfigured)
-  const [preview, setPreview] = useState(false)
+  const [preview, setPreview] = useState(() => new URLSearchParams(window.location.search).get('preview') === '1')
   useEffect(() => {
     if (desktop || !isCloudConfigured) return undefined
     cloudAuth.session().then(value => { setSession(value); setChecking(false) })
