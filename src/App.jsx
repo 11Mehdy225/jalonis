@@ -9,7 +9,7 @@ import SupplierManagement from './features/procurement/SupplierManagement'
 import WorkspaceView, { InviteMemberForm } from './features/workspace/WorkspaceView'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
-import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2 } from 'lucide-react'
+import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList } from 'lucide-react'
 
 const money = n => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Number(n)||0)
 const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)) : '—'
@@ -25,6 +25,7 @@ export default function App() {
   const [projects,setProjects]=useState([]), [activeId,setActiveId]=useState(null), [view,setView]=useState('dashboard')
   const [entities,setEntities]=useState(Object.fromEntries(ENTITY_TYPES.map(type=>[type,[]]))), [modal,setModal]=useState(null), [query,setQuery]=useState('')
   const [workspace,setWorkspace]=useState(null), [error,setError]=useState('')
+  const [agileTab,setAgileTab]=useState('board'), [dark,setDark]=useState(()=>localStorage.getItem('jalonis-theme')==='dark')
   const active=projects.find(p=>p.id===activeId)
 
   async function loadProjects(selectFirst=true){ const rows=await api.projects.list(); setProjects(rows); if(selectFirst&&!activeId&&rows[0]) setActiveId(rows[0].id) }
@@ -54,8 +55,10 @@ export default function App() {
     catch (reason) { setError(reason.message || "Impossible de retirer ce membre") }
   }
   const currentUser=workspace?.current_user
+  function toggleTheme(){setDark(value=>{const next=!value;localStorage.setItem('jalonis-theme',next?'dark':'light');return next})}
+  function openProjectView(nextView,nextAgileTab){if(nextAgileTab)setAgileTab(nextAgileTab);setView(nextView)}
 
-  return <div className="app-shell">
+  return <div className={`app-shell${dark?' dark':''}`}>
     <aside className="sidebar">
       <div className="brand"><img src="./assets/jalonis-logo.png"/><div><strong>Jalonis</strong><span>Pilotage de projets</span></div></div>
       <div className="workspace-label">ESPACE DE TRAVAIL</div>
@@ -65,17 +68,18 @@ export default function App() {
       <div className="user-chip"><div className="avatar">{(currentUser?.full_name||'CP').split(' ').map(part=>part[0]).slice(0,2).join('')}</div><div><b>{currentUser?.full_name||'Chef de projet'}</b><small>{currentUser?.role||'Administrateur local'}</small></div><MoreHorizontal size={17}/></div>
     </aside>
     <main>
-      <header><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn"><Bell size={18}/></button><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Nouveau projet</button></header>
-      <section className="content">
+      <header><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn"><Bell size={18}/></button><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Créer</button></header>
+      <section className={`content${active&&view!=='workspace'&&view!=='settings'?' project-content':''}`}>
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
         {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les futurs canaux de notification.</p></div></div><WorkspaceView data={workspace} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Configuration de cette installation de Jalonis.</p></div></div><SettingsView/></>
         : !active ? <Empty onCreate={()=>setModal('project')}/> : <>
-          <div className="page-title"><div><span className="eyebrow">{active.code||'PROJET'}</span><h1>{view==='dashboard'?`Bonjour, voici ${active.name}`:NAV.find(n=>n[0]===view)?.[1]||'Paramètres'}</h1><p>{view==='dashboard'?'Les signaux essentiels pour prendre les bonnes décisions.':active.name}</p></div>{['tasks','risks','team','meetings'].includes(view)&&<button className="btn primary" onClick={()=>setModal(view)}><Plus size={17}/>Ajouter</button>}</div>
+          <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} onNavigate={openProjectView} onShare={()=>setModal('invite-member')}/>
+          {view!=='scrum'&&<div className="page-title compact-title"><div><span className="eyebrow">{active.code||'PROJET'}</span><h1>{view==='dashboard'?'Vue d’ensemble':NAV.find(n=>n[0]===view)?.[1]||'Paramètres'}</h1><p>{view==='dashboard'?'Les signaux essentiels pour prendre les bonnes décisions.':active.name}</p></div>{['tasks','risks','team','meetings'].includes(view)&&<button className="btn primary" onClick={()=>setModal(view)}><Plus size={17}/>Ajouter</button>}</div>}
           {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView}/>} 
           {view==='charter'&&<Charter project={active} onSave={updateCharter}/>} 
           {view==='tasks'&&<Tasks rows={entities.tasks} team={entities.team} query={query} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>} 
-          {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} team={entities.team} members={workspace?.members||[]} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>} 
+          {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} team={entities.team} members={workspace?.members||[]} activeTab={agileTab} onTabChange={setAgileTab} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>}
           {view==='suppliers'&&<SupplierManagement projectId={activeId} data={entities} tasks={entities.tasks} risks={entities.risks} onCreate={addEntity} onDelete={removeEntity} onReload={()=>loadEntities(activeId)}/>} 
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>} 
           {view==='team'&&<Team rows={entities.team} query={query} onDelete={id=>removeEntity('team',id)}/>} 
@@ -87,6 +91,21 @@ export default function App() {
     {modal==='projects'&&<Modal title="Portefeuille de projets" onClose={()=>setModal(null)}><div className="project-list">{projects.map(p=><button key={p.id} onClick={()=>{setActiveId(p.id);setModal(null);setView('dashboard')}}><span className={`health ${p.health}`}></span><span><b>{p.name}</b><small>{p.code||'Sans code'} · {p.status}</small></span><strong>{p.progress||0}%</strong><ChevronRight size={17}/></button>)}</div><div className="form-actions"><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Nouveau projet</button></div></Modal>}
     {['tasks','risks','team','meetings'].includes(modal)&&<Modal title={configs[modal].title} onClose={()=>setModal(null)}><EntityForm type={modal} tasks={entities.tasks} members={workspace?.members||[]} onSubmit={d=>addEntity(modal,d)} onCancel={()=>setModal(null)}/></Modal>}
     {modal==='invite-member'&&<Modal title="Inviter un membre" onClose={()=>setModal(null)}><InviteMemberForm onSubmit={inviteMember} onCancel={()=>setModal(null)}/></Modal>}
+  </div>
+}
+
+const PROJECT_TABS=[
+  ['dashboard',null,'Résumé',LayoutDashboard],['tasks',null,'Planning',ChartNoAxesGantt],['scrum','board','Tableau',Columns3],['scrum','backlog','Backlog',ClipboardList],
+  ['suppliers',null,'Fournisseurs',Truck],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],
+]
+
+function ProjectHeader({active,view,agileTab,members,onNavigate,onShare}){
+  return <div className="project-context">
+    <div className="project-context-main">
+      <div><span className="project-breadcrumb">Projets <ChevronRight size={13}/> {active.code||'Projet actif'}</span><div className="project-heading"><span className="project-mark">{active.name?.[0]||'J'}</span><div><h1>{active.name}</h1><p>{active.methodology||'Hybride'} · {active.status||'En cours'}</p></div></div></div>
+      <div className="project-actions"><div className="member-stack">{members.slice(0,4).map((member,index)=><span key={member.id||index} title={member.full_name}>{(member.full_name||'M').split(' ').map(part=>part[0]).slice(0,2).join('')}</span>)}{members.length>4&&<em>+{members.length-4}</em>}</div><button className="btn ghost" onClick={onShare}><Share2 size={15}/>Partager</button><button className="icon-btn"><MoreHorizontal size={18}/></button></div>
+    </div>
+    <nav className="project-tabs">{PROJECT_TABS.map(([target,subtab,label,Icon])=>{const selected=view===target&&(!subtab||agileTab===subtab);return <button key={`${target}-${subtab||''}`} className={selected?'active':''} onClick={()=>onNavigate(target,subtab)}><Icon size={15}/>{label}</button>})}<button className="project-tab-more"><MoreHorizontal size={16}/></button></nav>
   </div>
 }
 

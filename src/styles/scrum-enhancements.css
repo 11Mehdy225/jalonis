@@ -16,6 +16,57 @@
 .story-link { display: flex; align-items: center; gap: 5px; }
 .story-link span { display: inline-flex; align-items: center; gap: 3px; }
 
+.scrum-intro { display: flex; align-items: stretch; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.scrum-intro .product-goal { flex: 1; margin: 0; }
+.scrum-primary-actions { display: flex; align-items: center; gap: 7px; }
+.scrum-view > .scrum-toolbar { border-bottom: 1px solid #e4e7ed; margin: 0 0 12px; }
+.scrum-view > .scrum-toolbar .scrum-tabs { background: transparent; padding: 0; border-radius: 0; }
+.scrum-view > .scrum-toolbar .scrum-tabs button { border-radius: 0; border-bottom: 2px solid transparent; padding: 10px 12px; }
+.scrum-view > .scrum-toolbar .scrum-tabs button.active { background: transparent; box-shadow: none; border-bottom-color: #4f46e5; }
+.board-filters { min-height: 50px; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.board-filters > label { width: min(300px, 30%); height: 36px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border: 1px solid #dde1e9; border-radius: 8px; background: #fff; color: #858da0; }
+.board-filters input { width: 100%; border: 0; outline: 0; background: transparent; color: #293147; font-size: 10px; }
+.board-filter-group { height: 36px; display: flex; align-items: center; gap: 6px; padding: 0 9px; border: 1px solid #dde1e9; border-radius: 8px; background: #fff; color: #687185; font-size: 9px; }
+.board-filter-group select { border: 0; outline: 0; background: transparent; color: inherit; font-size: 9px; }
+.group-button { cursor: pointer; }
+.board-result-count { color: #9299a8; font-size: 9px; margin-left: auto; }
+.scrum-board { grid-template-columns: repeat(4, minmax(205px, 1fr)); overflow-x: auto; padding-bottom: 8px; }
+.scrum-column { background: #f0f1f4; border-color: transparent; min-height: 410px; padding: 10px; }
+.scrum-column > header { height: auto; min-height: 35px; background: transparent; border: 0; padding: 3px 3px 10px; }
+.scrum-column > header b { font-size: 10px; }
+.column-more { width: 24px; height: 24px; border: 0; background: transparent; color: #959cab; display: grid; place-items: center; border-radius: 5px; }
+.column-more:hover { background: #e2e4ea; color: #596175; }
+.cards { min-height: 300px; }
+.story-card { padding: 12px; border-color: #e0e3e8; border-radius: 8px; box-shadow: 0 1px 2px #17213c0d; }
+.story-card:hover { border-color: #bfc4d0; box-shadow: 0 3px 10px #17213c12; }
+.story-card > b { font-size: 11px; margin: 9px 0 7px; }
+.story-card footer { gap: 5px; }
+.story-reference { color: #727a8e; font-size: 8px; font-weight: 700; }
+.story-priority { margin-left: auto; }
+.points { margin-left: 0; }
+.quick-create { width: 100%; min-height: 34px; margin-top: 8px; border: 1px dashed #cfd3dc; border-radius: 7px; background: transparent; color: #757d90; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 9px; }
+.quick-create:hover { background: #fff; color: #4f46e5; border-color: #9e99ed; }
+
+.app-shell.dark .product-goal { background: #29283c; border-color: #3e3a66; color: #9b96ff; }
+.app-shell.dark .product-goal b { color: #d7d9e0; }
+.app-shell.dark .scrum-view > .scrum-toolbar { border-color: #343842; }
+.app-shell.dark .scrum-view > .scrum-toolbar .scrum-tabs button { color: #a8aeba; }
+.app-shell.dark .scrum-view > .scrum-toolbar .scrum-tabs button.active { color: #9994ff; border-bottom-color: #7770ef; }
+.app-shell.dark .sprint-selector button, .app-shell.dark .board-filters > label, .app-shell.dark .board-filter-group { background: #24272d; border-color: #3a3e48; color: #b7bdc8; }
+.app-shell.dark .board-filters input, .app-shell.dark .board-filter-group select { color: #e5e7ec; }
+.app-shell.dark .sprint-head { background: #22252b; }
+.app-shell.dark .sprint-head h3 { color: #eef0f4; }
+.app-shell.dark .scrum-column { background: #15171b; border: 1px solid #292c33; }
+.app-shell.dark .story-card { background: #24272d; border-color: #343842; }
+.app-shell.dark .story-card > b { color: #e8eaf0; }
+.app-shell.dark .story-card footer { border-color: #393d46; }
+.app-shell.dark .quick-create { border-color: #383c45; color: #969daa; }
+.app-shell.dark .quick-create:hover { background: #24272d; border-color: #6560b7; color: #aaa6ff; }
+.app-shell.dark .backlog-section-title { background: #25282e; border-color: #373b44; }
+.app-shell.dark .backlog-section-title b, .app-shell.dark .backlog-row b { color: #e2e4e9; }
+.app-shell.dark .backlog-row { border-color: #343842; color: #b5bbc6; }
+.app-shell.dark .backlog-row:hover { background: #282b32; }
+
 @media (max-width: 1250px) {
   .backlog-head, .backlog-row { grid-template-columns: 25px 65px minmax(170px, 1fr) 60px 45px 55px 55px 28px; }
 }
