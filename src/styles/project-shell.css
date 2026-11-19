@@ -1,9 +1,21 @@
-.app-shell, .app-shell button, .app-shell input, .app-shell select, .app-shell textarea {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+.app-shell {
+  --apple-text: 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --apple-display: 'SF Pro Display', 'SF Pro Icons', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: var(--apple-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+  letter-spacing: -0.01em;
 }
-.app-shell h1, .app-shell h2, .app-shell h3, .app-shell h4, .app-shell strong, .app-shell b {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
-}
+.app-shell button, .app-shell input, .app-shell select, .app-shell textarea { font-family: var(--apple-text); letter-spacing: -0.01em; }
+.app-shell h1, .app-shell h2, .app-shell h3, .app-shell h4, .app-shell strong, .app-shell b { font-family: var(--apple-display); }
+.app-shell h1, .app-shell h2 { font-weight: 600 !important; letter-spacing: -.025em !important; }
+.app-shell h3, .app-shell h4 { font-weight: 600 !important; letter-spacing: -.015em; }
+.app-shell button { font-weight: 500; }
+.app-shell .eyebrow, .app-shell .workspace-label { letter-spacing: .08em; }
+.app-shell .brand strong { font-weight: 600; letter-spacing: -.025em; }
+.app-shell .project-heading h1 { font-weight: 600; letter-spacing: -.025em; }
 
 .content.project-content { max-width: none; padding: 0 0 48px; }
 .project-content > .page-title,
