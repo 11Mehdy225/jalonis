@@ -1,4 +1,4 @@
-const memory = { projects: [], tasks: [], risks: [], team: [], meetings: [], sprints: [], backlog_items: [], attachments: [], suppliers: [], procurements: [], supplier_quotes: [], supplier_contracts: [], supplier_evaluations: [], supplier_documents: [] }
+const memory = { projects: [], tasks: [], risks: [], team: [], meetings: [], sprints: [], backlog_items: [], attachments: [], suppliers: [], procurements: [], supplier_quotes: [], supplier_contracts: [], supplier_evaluations: [], supplier_documents: [], comments: [], activities: [], notifications: [] }
 const browserWorkspace = { workspace: { id: 'browser', name: 'Mon espace Jalonis', mode: 'local' }, members: [], current_user: null }
 
 const chooseImages = multiple => new Promise(resolve => {
@@ -16,8 +16,8 @@ const previewApi = {
   },
   projects: {
     list: async () => memory.projects,
-    create: async (data) => { const item = { ...data, id: crypto.randomUUID(), status: 'Initialisation', health: 'good', progress: 0, task_count: 0, open_risks: 0 }; memory.projects.push(item); return item },
-    update: async (id, data) => Object.assign(memory.projects.find(x => x.id === id), data),
+    create: async (data) => { const now = new Date().toISOString(); const item = { ...data, id: crypto.randomUUID(), status: 'Initialisation', health: 'good', progress: 0, task_count: 0, open_risks: 0, created_at: now, updated_at: now }; memory.projects.push(item); return item },
+    update: async (id, data) => Object.assign(memory.projects.find(x => x.id === id), data, { updated_at: new Date().toISOString() }),
     uploadLogo: async id => { const [file]=await chooseImages(false);if(!file)return null;return Object.assign(memory.projects.find(x=>x.id===id),{logo_url:await asDataUrl(file),logo_path:file.name}) },
   },
   media: {
@@ -25,8 +25,8 @@ const previewApi = {
   },
   entities: {
     list: async (type, projectId) => memory[type].filter(x => x.project_id === projectId),
-    create: async (type, data) => { const item = { ...data, id: crypto.randomUUID() }; memory[type].push(item); return item },
-    update: async (type, id, data) => Object.assign(memory[type].find(x => x.id === id), data),
+    create: async (type, data) => { const now = new Date().toISOString(); const item = { ...data, id: crypto.randomUUID(), created_at: now, updated_at: now }; memory[type].push(item); return item },
+    update: async (type, id, data) => Object.assign(memory[type].find(x => x.id === id), data, { updated_at: new Date().toISOString() }),
     remove: async (type, id) => { memory[type] = memory[type].filter(x => x.id !== id); return { ok: true } },
   },
   supplierDocuments: {

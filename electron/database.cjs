@@ -1,5 +1,6 @@
 const { DatabaseSync } = require('node:sqlite')
 const crypto = require('node:crypto')
+const sqlValue = value => typeof value === 'boolean' ? Number(value) : value
 
 const ENTITY_TABLES = {
   tasks: ['title', 'status', 'priority', 'assignee', 'assignee_id', 'start_date', 'due_date', 'progress', 'notes', 'color',
@@ -28,6 +29,9 @@ const ENTITY_TABLES = {
     'delivery_score', 'cost_score', 'compliance_score', 'communication_score', 'overall_score', 'comments'],
   supplier_documents: ['supplier_id', 'procurement_id', 'contract_id', 'document_type', 'title', 'file_name',
     'stored_path', 'issue_date', 'expiry_date', 'status', 'notes'],
+  comments: ['entity_type', 'entity_id', 'author_name', 'body'],
+  activities: ['event_type', 'entity_type', 'entity_id', 'title', 'description', 'actor_name'],
+  notifications: ['event_type', 'entity_type', 'entity_id', 'title', 'body', 'is_read'],
 }
 
 class JalonisDatabase {
@@ -160,6 +164,24 @@ class JalonisDatabase {
         mime_type TEXT NOT NULL, stored_path TEXT NOT NULL, size_bytes INTEGER DEFAULT 0, caption TEXT,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS comments (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        entity_type TEXT NOT NULL DEFAULT 'project', entity_id TEXT NOT NULL,
+        author_name TEXT NOT NULL DEFAULT 'Chef de projet', body TEXT NOT NULL,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS activities (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        event_type TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT,
+        title TEXT NOT NULL, description TEXT, actor_name TEXT NOT NULL DEFAULT 'Chef de projet',
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        event_type TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT,
+        title TEXT NOT NULL, body TEXT, is_read INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
     `)
     const taskColumns = this.db.prepare('PRAGMA table_info(tasks)').all().map(column => column.name)
     const taskMigrations = {
@@ -287,7 +309,7 @@ class JalonisDatabase {
     const entries = Object.entries(data).filter(([key]) => allowed.includes(key))
     if (!entries.length) return this.db.prepare('SELECT * FROM projects WHERE id=?').get(id)
     const sql = `UPDATE projects SET ${entries.map(([key]) => `${key}=?`).join(',')}, updated_at=? WHERE id=?`
-    this.db.prepare(sql).run(...entries.map(([,v]) => v), new Date().toISOString(), id)
+    this.db.prepare(sql).run(...entries.map(([,v]) => sqlValue(v)), new Date().toISOString(), id)
     return this.db.prepare('SELECT * FROM projects WHERE id=?').get(id)
   }
 
@@ -311,7 +333,7 @@ class JalonisDatabase {
       data.wbs_code = String(total + 1)
     }
     const fields = ['id','project_id',...columns,'created_at','updated_at']
-    const values = [id,data.project_id,...columns.map((key) => data[key] ?? null),now,now]
+    const values = [id,data.project_id,...columns.map((key) => sqlValue(data[key] ?? null)),now,now]
     this.db.prepare(`INSERT INTO ${type} (${fields.join(',')}) VALUES (${fields.map(()=>'?').join(',')})`).run(...values)
     return this.db.prepare(`SELECT * FROM ${type} WHERE id=?`).get(id)
   }
@@ -320,7 +342,7 @@ class JalonisDatabase {
     const allowed = ENTITY_TABLES[type]
     if (!allowed) throw new Error('Type non autorisé')
     const entries = Object.entries(data).filter(([key]) => allowed.includes(key))
-    if (entries.length) this.db.prepare(`UPDATE ${type} SET ${entries.map(([key])=>`${key}=?`).join(',')},updated_at=? WHERE id=?`).run(...entries.map(([,v])=>v),new Date().toISOString(),id)
+    if (entries.length) this.db.prepare(`UPDATE ${type} SET ${entries.map(([key])=>`${key}=?`).join(',')},updated_at=? WHERE id=?`).run(...entries.map(([,v])=>sqlValue(v)),new Date().toISOString(),id)
     return this.db.prepare(`SELECT * FROM ${type} WHERE id=?`).get(id)
   }
 

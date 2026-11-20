@@ -7,6 +7,8 @@ import GanttView from './features/planning/GanttView'
 import ScrumView from './features/agile/ScrumView'
 import SupplierManagement from './features/procurement/SupplierManagement'
 import WorkspaceView, { InviteMemberForm } from './features/workspace/WorkspaceView'
+import ActivityView from './features/collaboration/ActivityView'
+import NotificationCenter from './features/collaboration/NotificationCenter'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette } from 'lucide-react'
@@ -19,13 +21,15 @@ const NAV = [
   ['team','Équipe',Users],['suppliers','Fournisseurs & Achats',Truck],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
 ]
 
-const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents']
+const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications']
+const ENTITY_LABELS={tasks:'Tâche',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message'}
 
 export default function App() {
   const [projects,setProjects]=useState([]), [activeId,setActiveId]=useState(null), [view,setView]=useState('dashboard')
   const [entities,setEntities]=useState(Object.fromEntries(ENTITY_TYPES.map(type=>[type,[]]))), [modal,setModal]=useState(null), [query,setQuery]=useState('')
   const [workspace,setWorkspace]=useState(null), [error,setError]=useState('')
   const [agileTab,setAgileTab]=useState('board'), [dark,setDark]=useState(()=>localStorage.getItem('jalonis-theme')==='dark')
+  const [notificationOpen,setNotificationOpen]=useState(false)
   const active=projects.find(p=>p.id===activeId)
 
   async function loadProjects(selectFirst=true){ const rows=await api.projects.list(); setProjects(rows); if(selectFirst&&!activeId&&rows[0]) setActiveId(rows[0].id) }
@@ -41,10 +45,40 @@ export default function App() {
   },[entities])
 
   async function createProject(data){ const item=await api.projects.create(data); setModal(null); await loadProjects(false); setActiveId(item.id); setView('dashboard') }
-  async function addEntity(type,data){ const item=await api.entities.create(type,{...data,project_id:activeId}); setModal(null); await loadEntities(activeId); await loadProjects(false); return item }
-  async function removeEntity(type,id){ await api.entities.remove(type,id); await loadEntities(activeId); await loadProjects(false) }
-  async function updateEntity(type,id,data){ await api.entities.update(type,id,data); await loadEntities(activeId); await loadProjects(false) }
-  async function updateCharter(data){ await api.projects.update(activeId,data); await loadProjects(false) }
+  async function recordEvent({projectId=activeId,eventType,entityType,entityId,title,description,notify=true}){
+    if(!projectId)return
+    const actorName=workspace?.current_user?.full_name||'Chef de projet'
+    await api.entities.create('activities',{project_id:projectId,event_type:eventType,entity_type:entityType,entity_id:entityId,title,description,actor_name:actorName})
+    if(notify)await api.entities.create('notifications',{project_id:projectId,event_type:eventType,entity_type:entityType,entity_id:entityId,title,body:description,is_read:false})
+  }
+  async function addEntity(type,data){
+    const item=await api.entities.create(type,{...data,project_id:activeId})
+    if(!['activities','notifications','attachments'].includes(type)){
+      const isComment=type==='comments', label=ENTITY_LABELS[type]||'Élément', name=item.title||item.name||item.body?.slice(0,55)||label
+      await recordEvent({eventType:isComment?'comment.created':`${type}.created`,entityType:type,entityId:item.id,title:isComment?'Nouveau message dans le projet':`${label} créé`,description:isComment?`${item.author_name||'Un membre'} : ${item.body}`:name,notify:isComment||['tasks','risks','backlog_items'].includes(type)})
+    }
+    setModal(null); await loadEntities(activeId); await loadProjects(false); return item
+  }
+  async function removeEntity(type,id){
+    const previous=entities[type]?.find(item=>item.id===id)
+    await api.entities.remove(type,id)
+    if(previous&&!['activities','notifications','comments','attachments'].includes(type))await recordEvent({eventType:`${type}.deleted`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} supprimé`,description:previous.title||previous.name||'',notify:false})
+    await loadEntities(activeId); await loadProjects(false)
+  }
+  async function updateEntity(type,id,data){
+    const previous=entities[type]?.find(item=>item.id===id)
+    const item=await api.entities.update(type,id,data)
+    const name=item?.title||item?.name||ENTITY_LABELS[type]||'Élément'
+    let recorded=false
+    if(previous&&data.status!==undefined&&previous.status!==item.status){await recordEvent({eventType:'status.changed',entityType:type,entityId:id,title:`${name} · ${item.status}`,description:`Statut modifié de « ${previous.status||'Non défini'} » vers « ${item.status} ».`});recorded=true}
+    const oldAssignee=previous?.assignee||previous?.assignee_id, nextAssignee=item?.assignee||item?.assignee_id
+    if(previous&&(data.assignee!==undefined||data.assignee_id!==undefined)&&oldAssignee!==nextAssignee){await recordEvent({eventType:'assignment.changed',entityType:type,entityId:id,title:`Nouvelle affectation · ${name}`,description:nextAssignee?`Assigné à ${item.assignee||'un membre de l’équipe'}.`:'Affectation retirée.'});recorded=true}
+    if(previous&&type==='tasks'&&Number(previous.progress)<100&&Number(item.progress)===100){await recordEvent({eventType:'task.completed',entityType:type,entityId:id,title:`Activité terminée · ${name}`,description:'L’avancement a atteint 100 %.'});recorded=true}
+    if(previous&&!recorded&&!['notifications','activities'].includes(type))await recordEvent({eventType:`${type}.updated`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} mis à jour`,description:name,notify:false})
+    await loadEntities(activeId); await loadProjects(false)
+    return item
+  }
+  async function updateCharter(data){ await api.projects.update(activeId,data); await recordEvent({eventType:'project.updated',entityType:'projects',entityId:activeId,title:'Charte du projet mise à jour',description:data.name||active?.name,notify:false}); await loadEntities(activeId); await loadProjects(false) }
   async function attachMedia(entityType,entityId){await api.media.attach({project_id:activeId,entity_type:entityType,entity_id:entityId});await loadEntities(activeId)}
   async function updateBranding(data){await api.projects.update(activeId,{theme_color:data.theme_color});if(data.upload_logo)await api.projects.uploadLogo(activeId);setModal(null);await loadProjects(false)}
   async function renameWorkspace(data){ setWorkspace(await api.workspace.update(data)) }
@@ -59,6 +93,9 @@ export default function App() {
   const currentUser=workspace?.current_user
   function toggleTheme(){setDark(value=>{const next=!value;localStorage.setItem('jalonis-theme',next?'dark':'light');return next})}
   function openProjectView(nextView,nextAgileTab){if(nextAgileTab)setAgileTab(nextAgileTab);setView(nextView)}
+  async function readNotification(id){await api.entities.update('notifications',id,{is_read:true});await loadEntities(activeId)}
+  async function readAllNotifications(){await Promise.all(entities.notifications.filter(item=>!Number(item.is_read)).map(item=>api.entities.update('notifications',item.id,{is_read:true})));await loadEntities(activeId)}
+  const unreadNotifications=entities.notifications.filter(item=>!Number(item.is_read)).length
 
   return <div className={`app-shell${dark?' dark':''}`}>
     <aside className="sidebar">
@@ -70,14 +107,14 @@ export default function App() {
       <div className="user-chip"><div className="avatar">{(currentUser?.full_name||'CP').split(' ').map(part=>part[0]).slice(0,2).join('')}</div><div><b>{currentUser?.full_name||'Chef de projet'}</b><small>{currentUser?.role||'Administrateur local'}</small></div><MoreHorizontal size={17}/></div>
     </aside>
     <main>
-      <header><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn"><Bell size={18}/></button><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Créer</button></header>
+      <header className="app-header"><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Créer</button>{notificationOpen&&<NotificationCenter notifications={entities.notifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
       <section className={`content${active&&view!=='workspace'&&view!=='settings'?' project-content':''}`} style={active?{'--project-color':active.theme_color||'#4f46e5'}:undefined}>
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
         {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les futurs canaux de notification.</p></div></div><WorkspaceView data={workspace} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Configuration de cette installation de Jalonis.</p></div></div><SettingsView/></>
         : !active ? <Empty onCreate={()=>setModal('project')}/> : <>
           <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} onNavigate={openProjectView} onShare={()=>setModal('invite-member')} onBranding={()=>setModal('branding')}/>
-          {view!=='scrum'&&<div className="page-title compact-title"><div><span className="eyebrow">{active.code||'PROJET'}</span><h1>{view==='dashboard'?'Vue d’ensemble':NAV.find(n=>n[0]===view)?.[1]||'Paramètres'}</h1><p>{view==='dashboard'?'Les signaux essentiels pour prendre les bonnes décisions.':active.name}</p></div>{['tasks','risks','team','meetings'].includes(view)&&<button className="btn primary" onClick={()=>setModal(view)}><Plus size={17}/>Ajouter</button>}</div>}
+          {view!=='scrum'&&<div className="page-title compact-title"><div><span className="eyebrow">{active.code||'PROJET'}</span><h1>{view==='dashboard'?'Vue d’ensemble':view==='activity'?'Activité du projet':NAV.find(n=>n[0]===view)?.[1]||'Paramètres'}</h1><p>{view==='dashboard'?'Les signaux essentiels pour prendre les bonnes décisions.':view==='activity'?'Messages, notifications et historique des changements.':active.name}</p></div>{['tasks','risks','team','meetings'].includes(view)&&<button className="btn primary" onClick={()=>setModal(view)}><Plus size={17}/>Ajouter</button>}</div>}
           {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView}/>} 
           {view==='charter'&&<Charter project={active} onSave={updateCharter}/>} 
           {view==='tasks'&&<Tasks rows={entities.tasks} team={entities.team} attachments={entities.attachments} query={query} onAttach={id=>attachMedia('tasks',id)} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
@@ -86,6 +123,7 @@ export default function App() {
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>} 
           {view==='team'&&<Team rows={entities.team} query={query} onDelete={id=>removeEntity('team',id)}/>} 
           {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('meetings',id)}/>} 
+          {view==='activity'&&<ActivityView project={active} comments={entities.comments} activities={entities.activities} currentUser={currentUser} onComment={data=>addEntity('comments',data)}/>}
         </>}
       </section>
     </main>
@@ -99,7 +137,7 @@ export default function App() {
 
 const PROJECT_TABS=[
   ['dashboard',null,'Résumé',LayoutDashboard],['tasks',null,'Planning',ChartNoAxesGantt],['scrum','board','Tableau',Columns3],['scrum','backlog','Backlog',ClipboardList],
-  ['suppliers',null,'Fournisseurs',Truck],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],
+  ['suppliers',null,'Fournisseurs',Truck],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
 ]
 
 function ProjectHeader({active,view,agileTab,members,onNavigate,onShare,onBranding}){
