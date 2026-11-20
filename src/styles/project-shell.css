@@ -65,6 +65,13 @@
 .logo-choice { flex-direction: row !important; align-items: center; border: 1px solid #dfe3eb; border-radius: 8px; padding: 8px 11px; }
 .logo-choice input { width: 16px !important; }.logo-choice span { display: flex; flex-direction: column; gap: 3px; }.logo-choice small { font-size: 8px; color: #8d94a5; }
 .visual-cell { display: flex; align-items: center; gap: 4px; }.visual-cell img, .visual-cell button { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; }.visual-cell button { border: 1px dashed #cdd2dd; background: #f8f9fb; color: #6b7387; display: grid; place-items: center; }
+.team-view { margin-left: 30px; margin-right: 30px; }
+.team-fresco { position: relative; height: 190px; margin-bottom: 16px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--project-color, #4f46e5) 16%, #e7eaf1); border-radius: 14px; background: linear-gradient(105deg, color-mix(in srgb, var(--project-color, #4f46e5) 8%, #f8f9fc), #f8fafc 58%, color-mix(in srgb, var(--project-color, #4f46e5) 5%, #f8fafc)); }
+.team-fresco:after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #f8f9fce8 0, #f8f9fc9e 27%, transparent 62%); }
+.team-fresco img { position: absolute; z-index: 0; right: 1%; bottom: -53px; width: min(790px, 70%); height: auto; opacity: .34; filter: saturate(.7) contrast(.95); mix-blend-mode: multiply; }
+.team-fresco > div { position: absolute; z-index: 1; left: 28px; top: 50%; display: grid; gap: 7px; transform: translateY(-50%); }
+.team-fresco span { color: var(--project-color, #4f46e5); font-size: 9px; font-weight: 700; letter-spacing: .12em; }
+.team-fresco strong { color: #242c40; font: 600 22px/1.1 var(--apple-display); letter-spacing: -.025em; }
 
 .app-shell.dark { --line: #303545; --muted: #9ca3b4; background: #191b21; color: #e6e8ed; }
 .app-shell.dark main, .app-shell.dark .content { background: #191b21; }
@@ -78,9 +85,14 @@
 .app-shell.dark table thead, .app-shell.dark .backlog-head { background: #262930; }
 .app-shell.dark td, .app-shell.dark th, .app-shell.dark .card-head, .app-shell.dark .section-title, .app-shell.dark .setting-row { border-color: #343842; }
 .app-shell.dark .modal-backdrop { background: #07080ac7; }
+.app-shell.dark .team-fresco { background: linear-gradient(105deg, color-mix(in srgb, var(--project-color, #4f46e5) 12%, #202228), #202228 58%, #23262d); border-color: #303545; }
+.app-shell.dark .team-fresco:after { background: linear-gradient(90deg, #202228ed 0, #202228a8 27%, transparent 62%); }
+.app-shell.dark .team-fresco img { mix-blend-mode: screen; opacity: .23; }
+.app-shell.dark .team-fresco strong { color: #f0f1f4; }
 
 @media (max-width: 1180px) {
   .project-tabs button { padding: 0 8px; }
   .project-context-main { padding-left: 24px; padding-right: 24px; }
   .project-content > .page-title, .project-content > .kpi-grid, .project-content > .dashboard-grid, .project-content > .card, .project-content > .table-card, .project-content > .people-grid, .project-content > .meeting-list, .project-content > .planning-toolbar, .project-content > .calendar, .project-content > .gantt-wrap, .project-content > .supplier-view, .project-content > .scrum-view { margin-left: 22px; margin-right: 22px; }
+  .team-view { margin-left: 22px; margin-right: 22px; }
 }
