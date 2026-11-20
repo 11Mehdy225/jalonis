@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Building2, Mail, MessageCircle, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
+import { BellRing, Building2, Clock3, Mail, MessageCircle, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
 
 const ROLES = ['Administrateur', 'Chef de projet', 'Scrum Master', 'Product Owner', 'Membre', 'Observateur', 'Fournisseur externe']
+const PREFERENCE_DEFAULTS = { notify_in_app: true, notify_email: true, notify_whatsapp: false, notify_assignments: true, notify_status_changes: true, notify_comments: true, daily_digest: true, quiet_start: '20:00', quiet_end: '07:00' }
 
-export default function WorkspaceView({ data, onRename, onInvite, onRemove }) {
+export default function WorkspaceView({ data, onRename, onInvite, onRemove, onUpdatePreferences }) {
   const [name, setName] = useState(data?.workspace?.name || '')
   const [accountType, setAccountType] = useState(data?.workspace?.account_type || 'Personnel')
   const [saved, setSaved] = useState(false)
@@ -38,8 +39,27 @@ export default function WorkspaceView({ data, onRename, onInvite, onRemove }) {
         </div>)}
       </div>
     </section>
+    <NotificationPreferences user={data.current_user} onSave={onUpdatePreferences}/>
     <section className="workspace-note"><ShieldCheck size={18}/><div><b>Fondation collaborative activée</b><p>Les membres et leurs rôles sont enregistrés localement. La prochaine étape connectera cette structure au serveur web et aux invitations réelles.</p></div></section>
   </div>
+}
+
+function NotificationPreferences({ user, onSave }) {
+  const [form, setForm] = useState(PREFERENCE_DEFAULTS)
+  const [saved, setSaved] = useState(false)
+  useEffect(() => { if (user) setForm(Object.fromEntries(Object.entries(PREFERENCE_DEFAULTS).map(([key,value]) => [key,user[key] ?? value]))) }, [user])
+  const toggle = event => setForm({ ...form, [event.target.name]: event.target.checked })
+  const submit = async event => { event.preventDefault(); await onSave(form); setSaved(true); setTimeout(() => setSaved(false), 1600) }
+  const choices = [
+    ['notify_in_app','Dans Jalonis','Cloche, compteur et centre de notifications.'],
+    ['notify_assignments','Affectations','Quand une tâche ou une story m’est attribuée.'],
+    ['notify_status_changes','Changements de statut','Passage en cours, en revue, terminé ou bloqué.'],
+    ['notify_comments','Messages et mentions','Nouveaux commentaires et mentions avec @.'],
+    ['daily_digest','Résumé quotidien','Priorités, retards, réunions et risques du jour.'],
+    ['notify_email','E-mail','Prêt à être activé avec le service d’envoi.'],
+    ['notify_whatsapp','WhatsApp','Prêt à être activé après consentement.'],
+  ]
+  return <form className="card preference-card" onSubmit={submit}><div className="preference-head"><div className="workspace-mark"><BellRing size={22}/></div><div><h3>Mes notifications</h3><p>Choisissez les événements qui doivent attirer votre attention.</p></div><button className="btn primary">{saved?'Enregistré':'Enregistrer'}</button></div><div className="preference-grid">{choices.map(([key,title,description])=><label key={key}><input type="checkbox" name={key} checked={Boolean(Number(form[key]))} onChange={toggle}/><span><b>{title}</b><small>{description}</small></span></label>)}</div><div className="quiet-hours"><Clock3 size={17}/><div><b>Heures silencieuses</b><small>Aucun rappel externe pendant cette période.</small></div><label>De<input type="time" value={form.quiet_start||'20:00'} onChange={event=>setForm({...form,quiet_start:event.target.value})}/></label><label>À<input type="time" value={form.quiet_end||'07:00'} onChange={event=>setForm({...form,quiet_end:event.target.value})}/></label></div></form>
 }
 
 export function InviteMemberForm({ onSubmit, onCancel }) {

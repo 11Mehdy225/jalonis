@@ -1,5 +1,6 @@
 const memory = { projects: [], tasks: [], risks: [], team: [], meetings: [], sprints: [], backlog_items: [], attachments: [], suppliers: [], procurements: [], supplier_quotes: [], supplier_contracts: [], supplier_evaluations: [], supplier_documents: [], comments: [], activities: [], notifications: [] }
-const browserWorkspace = { workspace: { id: 'browser', name: 'Mon espace Jalonis', mode: 'local' }, members: [], current_user: null }
+const browserUser = { id: 'browser-user', membership_id: 'browser-owner', membership_status: 'Actif', full_name: 'Chef de projet', role: 'Propriétaire', notify_email: 1, notify_whatsapp: 0, notify_in_app: 1, notify_assignments: 1, notify_status_changes: 1, notify_comments: 1, daily_digest: 1, quiet_start: '20:00', quiet_end: '07:00' }
+const browserWorkspace = { workspace: { id: 'browser', name: 'Mon espace Jalonis', mode: 'local' }, members: [browserUser], current_user: browserUser }
 
 const chooseImages = multiple => new Promise(resolve => {
   const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.multiple = multiple
@@ -13,6 +14,7 @@ const previewApi = {
     update: async (data) => { Object.assign(browserWorkspace.workspace, data); return browserWorkspace },
     invite: async (data) => { browserWorkspace.members.push({ ...data, id: crypto.randomUUID(), membership_id: crypto.randomUUID(), membership_status: 'Invitation en attente' }); return browserWorkspace },
     removeMember: async (id) => { browserWorkspace.members = browserWorkspace.members.filter(member => member.membership_id !== id); return browserWorkspace },
+    updatePreferences: async data => { Object.assign(browserUser, data); return browserWorkspace },
   },
   projects: {
     list: async () => memory.projects,

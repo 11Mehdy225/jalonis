@@ -215,6 +215,13 @@ class JalonisDatabase {
     ensureColumn('workspaces', 'subscription_status', "TEXT DEFAULT 'Essai'")
     ensureColumn('workspaces', 'seat_limit', 'INTEGER DEFAULT 1')
     ensureColumn('workspaces', 'trial_ends_at', 'TEXT')
+    ensureColumn('users', 'notify_in_app', 'INTEGER DEFAULT 1')
+    ensureColumn('users', 'notify_assignments', 'INTEGER DEFAULT 1')
+    ensureColumn('users', 'notify_status_changes', 'INTEGER DEFAULT 1')
+    ensureColumn('users', 'notify_comments', 'INTEGER DEFAULT 1')
+    ensureColumn('users', 'daily_digest', 'INTEGER DEFAULT 1')
+    ensureColumn('users', 'quiet_start', "TEXT DEFAULT '20:00'")
+    ensureColumn('users', 'quiet_end', "TEXT DEFAULT '07:00'")
     this.ensureLocalWorkspace()
     const palette = ['#4f46e5','#0f9f8f','#e46c45','#2878c7','#9b51c7','#cf4f83','#ca8a04','#475569']
     const colorless = this.db.prepare("SELECT id FROM tasks WHERE color IS NULL OR color = ''").all()
@@ -247,7 +254,8 @@ class JalonisDatabase {
   getWorkspace() {
     const workspace = this.ensureLocalWorkspace()
     const members = this.db.prepare(`SELECT wm.id membership_id, wm.role, wm.status membership_status,
-      u.id, u.full_name, u.email, u.phone, u.job_title, u.status, u.timezone, u.notify_email, u.notify_whatsapp
+      u.id, u.full_name, u.email, u.phone, u.job_title, u.status, u.timezone, u.notify_email, u.notify_whatsapp,
+      u.notify_in_app, u.notify_assignments, u.notify_status_changes, u.notify_comments, u.daily_digest, u.quiet_start, u.quiet_end
       FROM workspace_members wm JOIN users u ON u.id=wm.user_id
       WHERE wm.workspace_id=? ORDER BY CASE wm.role WHEN 'Propriétaire' THEN 0 WHEN 'Administrateur' THEN 1 WHEN 'Chef de projet' THEN 2 ELSE 3 END, u.full_name`).all(workspace.id)
     return { workspace, members, current_user: members[0] || null }
@@ -285,6 +293,15 @@ class JalonisDatabase {
     if (!membership) return this.getWorkspace()
     if (membership.role === 'Propriétaire') throw new Error("Le propriétaire de l’espace ne peut pas être retiré")
     this.db.prepare('DELETE FROM workspace_members WHERE id=?').run(membershipId)
+    return this.getWorkspace()
+  }
+
+  updateCurrentUserPreferences(data) {
+    const state = this.getWorkspace(); const user = state.current_user
+    if (!user) throw new Error('Utilisateur local introuvable')
+    const allowed = ['notify_email','notify_whatsapp','notify_in_app','notify_assignments','notify_status_changes','notify_comments','daily_digest','quiet_start','quiet_end']
+    const entries = Object.entries(data).filter(([key]) => allowed.includes(key))
+    if (entries.length) this.db.prepare(`UPDATE users SET ${entries.map(([key])=>`${key}=?`).join(',')},updated_at=? WHERE id=?`).run(...entries.map(([,value])=>sqlValue(value)),new Date().toISOString(),user.id)
     return this.getWorkspace()
   }
 

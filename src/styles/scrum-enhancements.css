@@ -4,7 +4,9 @@
 .backlog-section-title b { color: #293147; font-size: 11px; }
 .backlog-section-title em { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 8px; display: grid; place-items: center; background: #eeedff; color: #5750d2; font-size: 8px; font-style: normal; }
 .backlog-section-title > span { color: #858c9d; font-size: 8px; text-transform: uppercase; }
-.backlog-head, .backlog-row { grid-template-columns: 28px 75px minmax(190px, 1fr) 48px 65px 45px 55px 60px 30px; }
+.backlog-head, .backlog-row { grid-template-columns: 28px 75px minmax(190px, 1fr) 48px 65px 45px 55px 60px 64px; }
+.backlog-actions { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+.backlog-actions button { position: relative; padding: 5px 3px; }
 .backlog-row { cursor: grab; }
 .backlog-row:active { cursor: grabbing; }
 .backlog-row:hover { background: #fafaff; }
@@ -74,5 +76,5 @@
 .app-shell.dark .backlog-row:hover { background: #282b32; }
 
 @media (max-width: 1250px) {
-  .backlog-head, .backlog-row { grid-template-columns: 25px 65px minmax(160px, 1fr) 42px 58px 42px 50px 50px 28px; }
+  .backlog-head, .backlog-row { grid-template-columns: 25px 65px minmax(160px, 1fr) 42px 58px 42px 50px 50px 58px; }
 }
