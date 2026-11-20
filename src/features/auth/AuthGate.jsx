@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, Flag, Layers3, LockKeyhole, Sparkles, Target, UsersRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, LockKeyhole, Sparkles } from 'lucide-react'
 import { cloudAuth, isCloudConfigured } from '../../services/supabase'
 import '../../styles/auth.css'
 
 const journey = [
-  { icon: Target, step: '01', title: 'Cadrer', detail: 'Vision, charte et objectifs' },
-  { icon: Layers3, step: '02', title: 'Planifier', detail: 'Backlog, jalons et charges' },
-  { icon: UsersRound, step: '03', title: 'Collaborer', detail: 'Équipe, rituels et décisions' },
-  { icon: CalendarDays, step: '04', title: 'Piloter', detail: 'Délais, risques et budget' },
-  { icon: Flag, step: '05', title: 'Livrer', detail: 'Résultats et clôture' },
+  { step: '01', title: 'Cadrer' },
+  { step: '02', title: 'Planifier' },
+  { step: '03', title: 'Collaborer' },
+  { step: '04', title: 'Piloter' },
+  { step: '05', title: 'Livraison' },
 ]
 
 export default function AuthGate({ children }) {
@@ -46,12 +46,12 @@ function WelcomeScreen({ onConnect, onPreview }) {
       <p>Le poste de pilotage conçu pour réunir stratégie, exécution et collaboration — sans perdre le fil de votre projet.</p>
     </section>
 
-    <section className="project-journey" aria-label="Cycle de vie d’un projet">
-      <div className="journey-line"><i/></div>
-      {journey.map(({ icon: Icon, step, title, detail }, index) => <article className="journey-step" key={title} style={{ '--step-delay': `${index * 0.16}s` }}>
-        <div className="journey-node"><span>{step}</span><Icon size={22}/></div>
-        <div className="journey-copy"><b>{title}</b><small>{detail}</small></div>
-      </article>)}
+    <section className="chain-stage" aria-label="Réaction en chaîne du cycle de projet">
+      <div className="chain-floor"/>
+      {journey.map(({ step, title }, index) => <div className={`chain-box chain-box-${index + 1}`} key={title} style={{ '--relay': index }}>
+        <span>{step}</span><b>{title}</b><i/>
+      </div>)}
+      <div className="chain-finish"><i/><span>Projet livré</span></div>
     </section>
 
     <section className="welcome-actions">
@@ -59,7 +59,6 @@ function WelcomeScreen({ onConnect, onPreview }) {
       <button className="welcome-secondary" onClick={onPreview}>Parcourir l’interface en mode aperçu</button>
       <small>Le mode aperçu vous permet de découvrir Jalonis sans créer de compte.</small>
     </section>
-    <footer className="welcome-footer"><span>Planifier</span><i/><span>Collaborer</span><i/><span>Livrer</span></footer>
   </main>
 }
 
