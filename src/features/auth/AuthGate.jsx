@@ -47,6 +47,7 @@ function WelcomeScreen({ onConnect, onPreview }) {
     </section>
 
     <section className="chain-stage" aria-label="Réaction en chaîne du cycle de projet">
+      <img className="office-fresco" src="./assets/jalonis-office-fresco.png" alt=""/>
       <div className="chain-floor"/>
       {journey.map(({ step, title }, index) => <div className={`chain-box chain-box-${index + 1}`} key={title} style={{ '--relay': index }}>
         <span>{step}</span><b>{title}</b><i/>
