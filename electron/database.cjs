@@ -32,6 +32,7 @@ const ENTITY_TABLES = {
   comments: ['entity_type', 'entity_id', 'author_name', 'body'],
   activities: ['event_type', 'entity_type', 'entity_id', 'title', 'description', 'actor_name'],
   notifications: ['event_type', 'entity_type', 'entity_id', 'title', 'body', 'is_read'],
+  checklist_items: ['entity_type', 'entity_id', 'title', 'is_done', 'rank'],
 }
 
 class JalonisDatabase {
@@ -180,6 +181,12 @@ class JalonisDatabase {
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         event_type TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT,
         title TEXT NOT NULL, body TEXT, is_read INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS checklist_items (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, title TEXT NOT NULL,
+        is_done INTEGER NOT NULL DEFAULT 0, rank INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
     `)
@@ -332,7 +339,7 @@ class JalonisDatabase {
 
   listEntities(type, projectId) {
     if (!ENTITY_TABLES[type]) throw new Error('Type non autorisé')
-    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC' }
+    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC', checklist_items: 'rank ASC, created_at ASC' }
     const order = orders[type] || 'created_at DESC'
     return this.db.prepare(`SELECT * FROM ${type} WHERE project_id=? ORDER BY ${order}`).all(projectId)
   }

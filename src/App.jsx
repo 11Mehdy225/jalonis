@@ -11,6 +11,7 @@ import ActivityView from './features/collaboration/ActivityView'
 import NotificationCenter from './features/collaboration/NotificationCenter'
 import DailyBrief from './features/collaboration/DailyBrief'
 import EntityDiscussion from './features/collaboration/EntityDiscussion'
+import WorkItemDetails from './features/projects/WorkItemDetails'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette } from 'lucide-react'
@@ -23,7 +24,7 @@ const NAV = [
   ['team','Équipe',Users],['suppliers','Fournisseurs & Achats',Truck],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
 ]
 
-const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications']
+const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items']
 const ENTITY_LABELS={tasks:'Tâche',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message'}
 
 export default function App() {
@@ -59,7 +60,7 @@ export default function App() {
   }
   async function addEntity(type,data){
     const item=await api.entities.create(type,{...data,project_id:activeId})
-    if(!['activities','notifications','attachments'].includes(type)){
+    if(!['activities','notifications','attachments','checklist_items'].includes(type)){
       const isComment=type==='comments', label=ENTITY_LABELS[type]||'Élément', name=item.title||item.name||item.body?.slice(0,55)||label
       await recordEvent({eventType:isComment?'comment.created':`${type}.created`,entityType:type,entityId:item.id,title:isComment?'Nouveau message dans le projet':`${label} créé`,description:isComment?`${item.author_name||'Un membre'} : ${item.body}`:name,notify:isComment||['tasks','risks','backlog_items'].includes(type)})
     }
@@ -68,7 +69,7 @@ export default function App() {
   async function removeEntity(type,id){
     const previous=entities[type]?.find(item=>item.id===id)
     await api.entities.remove(type,id)
-    if(previous&&!['activities','notifications','comments','attachments'].includes(type))await recordEvent({eventType:`${type}.deleted`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} supprimé`,description:previous.title||previous.name||'',notify:false})
+    if(previous&&!['activities','notifications','comments','attachments','checklist_items'].includes(type))await recordEvent({eventType:`${type}.deleted`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} supprimé`,description:previous.title||previous.name||'',notify:false})
     await loadEntities(activeId); await loadProjects(false)
   }
   async function updateEntity(type,id,data){
@@ -80,7 +81,7 @@ export default function App() {
     const oldAssignee=previous?.assignee||previous?.assignee_id, nextAssignee=item?.assignee||item?.assignee_id
     if(previous&&(data.assignee!==undefined||data.assignee_id!==undefined)&&oldAssignee!==nextAssignee){await recordEvent({eventType:'assignment.changed',entityType:type,entityId:id,title:`Nouvelle affectation · ${name}`,description:nextAssignee?`Assigné à ${item.assignee||'un membre de l’équipe'}.`:'Affectation retirée.'});recorded=true}
     if(previous&&type==='tasks'&&Number(previous.progress)<100&&Number(item.progress)===100){await recordEvent({eventType:'task.completed',entityType:type,entityId:id,title:`Activité terminée · ${name}`,description:'L’avancement a atteint 100 %.'});recorded=true}
-    if(previous&&!recorded&&!['notifications','activities'].includes(type))await recordEvent({eventType:`${type}.updated`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} mis à jour`,description:name,notify:false})
+    if(previous&&!recorded&&!['notifications','activities','checklist_items'].includes(type))await recordEvent({eventType:`${type}.updated`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} mis à jour`,description:name,notify:false})
     await loadEntities(activeId); await loadProjects(false)
     return item
   }
@@ -124,8 +125,8 @@ export default function App() {
           {view!=='scrum'&&<div className="page-title compact-title"><div><span className="eyebrow">{active.code||'PROJET'}</span><h1>{view==='dashboard'?'Vue d’ensemble':view==='activity'?'Activité du projet':NAV.find(n=>n[0]===view)?.[1]||'Paramètres'}</h1><p>{view==='dashboard'?'Les signaux essentiels pour prendre les bonnes décisions.':view==='activity'?'Messages, notifications et historique des changements.':active.name}</p></div>{['tasks','risks','team','meetings'].includes(view)&&<button className="btn primary" onClick={()=>setModal(view)}><Plus size={17}/>Ajouter</button>}</div>}
           {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView}/>} 
           {view==='charter'&&<Charter project={active} onSave={updateCharter}/>} 
-          {view==='tasks'&&<Tasks rows={entities.tasks} team={entities.team} attachments={entities.attachments} comments={entities.comments} currentUser={currentUser} query={query} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
-          {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} attachments={entities.attachments} comments={entities.comments} team={entities.team} members={workspace?.members||[]} currentUser={currentUser} activeTab={agileTab} onTabChange={setAgileTab} onAttach={id=>attachMedia('backlog_items',id)} onComment={data=>addEntity('comments',data)} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>}
+          {view==='tasks'&&<Tasks rows={entities.tasks} items={entities.backlog_items} sprints={entities.sprints} team={entities.team} members={workspace?.members||[]} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} currentUser={currentUser} query={query} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
+          {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} team={entities.team} members={workspace?.members||[]} currentUser={currentUser} activeTab={agileTab} onTabChange={setAgileTab} onAttach={id=>attachMedia('backlog_items',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>}
           {view==='suppliers'&&<SupplierManagement projectId={activeId} data={entities} tasks={entities.tasks} risks={entities.risks} onCreate={addEntity} onDelete={removeEntity} onReload={()=>loadEntities(activeId)}/>} 
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>} 
           {view==='team'&&<Team rows={entities.team} query={query} onDelete={id=>removeEntity('team',id)}/>} 
@@ -193,11 +194,12 @@ function Charter({project,onSave}){
 }
 
 const match=(row,q)=>!q||Object.values(row).some(v=>String(v||'').toLowerCase().includes(q.toLowerCase()))
-function Table({columns,rows,query,onDelete,empty}){return <div className="card table-card"><table><thead><tr>{columns.map(c=><th key={c.key}>{c.label}</th>)}<th></th></tr></thead><tbody>{rows.filter(r=>match(r,query)).map(row=><tr key={row.id}>{columns.map(c=><td key={c.key}>{c.render?c.render(row[c.key],row):row[c.key]||'—'}</td>)}<td><button className="row-delete" title="Supprimer" onClick={()=>onDelete(row.id)}><Trash2 size={16}/></button></td></tr>)}</tbody></table>{!rows.length&&<EmptyRow text={empty}/>}</div>}
+function Table({columns,rows,query,onDelete,onRowClick,empty}){return <div className="card table-card"><table><thead><tr>{columns.map(c=><th key={c.key}>{c.label}</th>)}<th></th></tr></thead><tbody>{rows.filter(r=>match(r,query)).map(row=><tr key={row.id} className={onRowClick?'clickable-row':''} onClick={()=>onRowClick?.(row)}>{columns.map(c=><td key={c.key}>{c.render?c.render(row[c.key],row):row[c.key]||'—'}</td>)}<td><button className="row-delete" title="Supprimer" onClick={event=>{event.stopPropagation();onDelete(row.id)}}><Trash2 size={16}/></button></td></tr>)}</tbody></table>{!rows.length&&<EmptyRow text={empty}/>}</div>}
 const status=v=><span className={`status ${String(v).toLowerCase().replaceAll(' ','-')}`}>{v||'—'}</span>
-function Tasks({rows,team,attachments=[],comments=[],currentUser,query,onAttach,onComment,onDelete,onUpdate}){
+function Tasks({rows,items,sprints,team,members,attachments=[],comments=[],activities=[],checklist=[],currentUser,query,onAttach,onComment,onAddChecklist,onUpdateChecklist,onDeleteChecklist,onDelete,onUpdate}){
   const [mode,setMode]=useState('calendar')
   const [discussion,setDiscussion]=useState(null)
+  const [selected,setSelected]=useState(null)
   const setBaseline=async()=>{await Promise.all(rows.filter(t=>t.start_date&&t.due_date).map(t=>onUpdate(t.id,{baseline_start:t.start_date,baseline_end:t.due_date}))) }
   return <>
     <div className="planning-toolbar"><div className="view-toggle"><button className={mode==='calendar'?'active':''} onClick={()=>setMode('calendar')}><CalendarDays size={15}/>Calendrier</button><button className={mode==='gantt'?'active':''} onClick={()=>setMode('gantt')}><CalendarRange size={15}/>Gantt</button><button className={mode==='list'?'active':''} onClick={()=>setMode('list')}><List size={15}/>Liste</button></div><span>Calendrier, dépendances et trajectoire critique synchronisés.</span></div>
@@ -205,9 +207,10 @@ function Tasks({rows,team,attachments=[],comments=[],currentUser,query,onAttach,
       ? <MonthCalendar rows={rows.filter(r=>match(r,query))}/>
       : mode === 'gantt'
         ? <GanttView rows={rows.filter(r=>match(r,query))} team={team} onSetBaseline={setBaseline}/>
-        : <Table rows={rows} query={query} onDelete={onDelete} empty="Ajoutez la première activité du planning." columns={[{key:'wbs_code',label:'WBS'},{key:'title',label:'Activité',render:(v,r)=><b>{r.is_milestone?'◆ ':''}{v}</b>},{key:'visuals',label:'Rendus',render:(_,r)=><VisualCell files={attachments.filter(file=>file.entity_type==='tasks'&&file.entity_id===r.id)} onAttach={()=>onAttach(r.id)}/>},{key:'comments',label:'Messages',render:(_,r)=>{const count=comments.filter(item=>item.entity_type==='tasks'&&item.entity_id===r.id).length;return <button className="comment-link" onClick={()=>setDiscussion(r)}><MessageSquareText size={13}/>{count}</button>}},{key:'status',label:'Statut',render:status},{key:'priority',label:'Priorité'},{key:'assignee',label:'Responsable'},{key:'due_date',label:'Échéance',render:date},{key:'progress',label:'Avancement',render:v=><div className="progress-cell"><i><span style={{width:`${v||0}%`}}/></i><b>{v||0}%</b></div>}]}/>
+        : <Table rows={rows} query={query} onDelete={onDelete} onRowClick={setSelected} empty="Ajoutez la première activité du planning." columns={[{key:'wbs_code',label:'WBS'},{key:'title',label:'Activité',render:(v,r)=><b>{r.is_milestone?'◆ ':''}{v}</b>},{key:'visuals',label:'Rendus',render:(_,r)=><VisualCell files={attachments.filter(file=>file.entity_type==='tasks'&&file.entity_id===r.id)} onAttach={()=>onAttach(r.id)}/>},{key:'comments',label:'Messages',render:(_,r)=>{const count=comments.filter(item=>item.entity_type==='tasks'&&item.entity_id===r.id).length;return <button className="comment-link" onClick={event=>{event.stopPropagation();setDiscussion(r)}}><MessageSquareText size={13}/>{count}</button>}},{key:'status',label:'Statut',render:status},{key:'priority',label:'Priorité'},{key:'assignee',label:'Responsable'},{key:'due_date',label:'Échéance',render:date},{key:'progress',label:'Avancement',render:v=><div className="progress-cell"><i><span style={{width:`${v||0}%`}}/></i><b>{v||0}%</b></div>}]}/>
     }
     {discussion&&<Modal title="Discussion de l’activité" onClose={()=>setDiscussion(null)}><EntityDiscussion entity={discussion} entityType="tasks" comments={comments} currentUser={currentUser} onComment={onComment}/></Modal>}
+    {selected&&<Modal title="Fiche complète de l’activité" onClose={()=>setSelected(null)}><WorkItemDetails item={rows.find(row=>row.id===selected.id)||selected} type="tasks" tasks={rows} items={items} sprints={sprints} members={members} attachments={attachments} comments={comments} activities={activities} checklist={checklist} currentUser={currentUser} onUpdate={onUpdate} onAttach={()=>onAttach(selected.id)} onComment={onComment} onAddChecklist={onAddChecklist} onUpdateChecklist={onUpdateChecklist} onDeleteChecklist={onDeleteChecklist}/></Modal>}
   </>
 }
 
