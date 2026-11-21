@@ -13,20 +13,21 @@ import DailyBrief from './features/collaboration/DailyBrief'
 import EntityDiscussion from './features/collaboration/EntityDiscussion'
 import WorkItemDetails from './features/projects/WorkItemDetails'
 import ResourceManagement from './features/resources/ResourceManagement'
+import FinancialView from './features/finance/FinancialView'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette } from 'lucide-react'
 
-const money = n => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Number(n)||0)
+const money = (n,currency='XOF') => new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0)
 const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)) : '—'
 
 const NAV = [
   ['dashboard','Vue d’ensemble',LayoutDashboard],['charter','Charte du projet',FileText],['tasks','Planning',CalendarRange],['scrum','Agile & Sprints',Columns3],
-  ['team','Équipe',Users],['suppliers','Fournisseurs & Achats',Truck],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
+  ['team','Équipe',Users],['suppliers','Fournisseurs & Achats',Truck],['finance','Budget & Coûts',CircleDollarSign],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
 ]
 
-const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries']
-const ENTITY_LABELS={tasks:'Tâche',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message',time_entries:'Temps saisi'}
+const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries','cost_entries']
+const ENTITY_LABELS={tasks:'Tâche',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message',time_entries:'Temps saisi',cost_entries:'Coût'}
 
 export default function App() {
   const [projects,setProjects]=useState([]), [activeId,setActiveId]=useState(null), [view,setView]=useState('dashboard')
@@ -143,6 +144,7 @@ export default function App() {
           {view==='tasks'&&<Tasks rows={entities.tasks} items={entities.backlog_items} sprints={entities.sprints} team={entities.team} members={workspace?.members||[]} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} currentUser={currentUser} query={query} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
           {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} snapshots={entities.sprint_snapshots} team={entities.team} members={workspace?.members||[]} currentUser={currentUser} activeTab={agileTab} onTabChange={setAgileTab} onAttach={id=>attachMedia('backlog_items',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onSnapshot={createSprintSnapshot} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>}
           {view==='suppliers'&&<SupplierManagement projectId={activeId} data={entities} tasks={entities.tasks} risks={entities.risks} onCreate={addEntity} onDelete={removeEntity} onReload={()=>loadEntities(activeId)}/>} 
+          {view==='finance'&&<FinancialView project={active} costs={entities.cost_entries} team={entities.team} tasks={entities.tasks} timeEntries={entities.time_entries} suppliers={entities.suppliers} onCreate={data=>addEntity('cost_entries',data)} onDelete={id=>removeEntity('cost_entries',id)} onUpdateProject={updateCharter}/>}
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>} 
           {view==='team'&&<ResourceManagement members={entities.team} tasks={entities.tasks} entries={entities.time_entries} query={query} onCreateEntry={data=>addEntity('time_entries',data)} onUpdateEntry={(id,data)=>updateEntity('time_entries',id,data)} onDeleteEntry={id=>removeEntity('time_entries',id)} onDeleteMember={id=>removeEntity('team',id)}/>}
           {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('meetings',id)}/>} 
@@ -160,7 +162,7 @@ export default function App() {
 
 const PROJECT_TABS=[
   ['dashboard',null,'Résumé',LayoutDashboard],['tasks',null,'Planning',ChartNoAxesGantt],['scrum','board','Tableau',Columns3],['scrum','backlog','Backlog',ClipboardList],
-  ['suppliers',null,'Fournisseurs',Truck],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
+  ['suppliers',null,'Fournisseurs',Truck],['finance',null,'Budget',CircleDollarSign],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
 ]
 
 function ProjectHeader({active,view,agileTab,members,onNavigate,onShare,onBranding}){
@@ -184,7 +186,7 @@ function Dashboard({active,entities,stats,setView}){
     <div className="kpi-grid">
       <Kpi icon={Target} label="Avancement global" value={`${stats.progress}%`} note={`${stats.done}/${entities.tasks.length} activités terminées`} color="indigo" progress={stats.progress}/>
       <Kpi icon={Clock3} label="Échéance cible" value={date(active.end_date)} note={active.status} color="blue"/>
-      <Kpi icon={CircleDollarSign} label="Budget de référence" value={money(active.budget)} note="Coûts détaillés à venir" color="teal"/>
+      <Kpi icon={CircleDollarSign} label="Budget de référence" value={money(active.budget,active.currency||'XOF')} note={`${entities.cost_entries.length} ligne(s) de coûts suivie(s)`} color="teal"/>
       <Kpi icon={ShieldAlert} label="Risques critiques" value={stats.critical} note={`${entities.risks.filter(r=>r.status!=='Fermé').length} risques ouverts`} color="orange"/>
     </div>
     <div className="dashboard-grid">
@@ -205,7 +207,7 @@ function Charter({project,onSave}){
   useEffect(()=>setForm(project),[project])
   const change=e=>setForm({...form,[e.target.name]:e.target.value})
   const save=async e=>{e.preventDefault();await onSave(form);setSaved(true);setTimeout(()=>setSaved(false),1800)}
-  return <form className="card charter" onSubmit={save}><div className="section-title"><FileText size={20}/><div><h3>Charte de projet</h3><p>Le mandat qui aligne le sponsor, l’équipe et les parties prenantes.</p></div></div><div className="form-grid"><label>Code<input name="code" value={form.code||''} onChange={change}/></label><label>Statut<select name="status" value={form.status||''} onChange={change}>{['Initialisation','Planification','Exécution','Surveillance','Clôture','Archivé'].map(x=><option key={x}>{x}</option>)}</select></label><label>Mode de pilotage<select name="methodology" value={form.methodology||'Hybride'} onChange={change}><option>Hybride</option><option>Scrum</option><option>Prédictif</option></select></label><label>Sponsor<input name="sponsor" value={form.sponsor||''} onChange={change}/></label><label>Chef de projet<input name="manager" value={form.manager||''} onChange={change}/></label><label className="span-2">Description<textarea name="description" value={form.description||''} onChange={change}/></label><label className="span-2">Objectif principal<textarea name="objective" value={form.objective||''} onChange={change}/></label><label className="span-2">Critères de succès<textarea name="success_criteria" value={form.success_criteria||''} onChange={change}/></label><label>Début<input type="date" name="start_date" value={form.start_date||''} onChange={change}/></label><label>Fin cible<input type="date" name="end_date" value={form.end_date||''} onChange={change}/></label></div><div className="form-actions"><span className={saved?'save-state visible':'save-state'}>Enregistré localement</span><button className="btn primary">Enregistrer la charte</button></div></form>
+  return <form className="card charter" onSubmit={save}><div className="section-title"><FileText size={20}/><div><h3>Charte de projet</h3><p>Le mandat qui aligne le sponsor, l’équipe et les parties prenantes.</p></div></div><div className="form-grid"><label>Code<input name="code" value={form.code||''} onChange={change}/></label><label>Statut<select name="status" value={form.status||''} onChange={change}>{['Initialisation','Planification','Exécution','Surveillance','Clôture','Archivé'].map(x=><option key={x}>{x}</option>)}</select></label><label>Mode de pilotage<select name="methodology" value={form.methodology||'Hybride'} onChange={change}><option>Hybride</option><option>Scrum</option><option>Prédictif</option></select></label><label>Sponsor<input name="sponsor" value={form.sponsor||''} onChange={change}/></label><label>Chef de projet<input name="manager" value={form.manager||''} onChange={change}/></label><label>Budget de référence<input type="number" min="0" name="budget" value={form.budget||''} onChange={change}/></label><label>Devise<select name="currency" value={form.currency||'XOF'} onChange={change}><option value="XOF">FCFA (XOF)</option><option value="EUR">Euro (EUR)</option><option value="USD">Dollar (USD)</option><option value="GBP">Livre sterling (GBP)</option></select></label><label className="span-2">Description<textarea name="description" value={form.description||''} onChange={change}/></label><label className="span-2">Objectif principal<textarea name="objective" value={form.objective||''} onChange={change}/></label><label className="span-2">Critères de succès<textarea name="success_criteria" value={form.success_criteria||''} onChange={change}/></label><label>Début<input type="date" name="start_date" value={form.start_date||''} onChange={change}/></label><label>Fin cible<input type="date" name="end_date" value={form.end_date||''} onChange={change}/></label></div><div className="form-actions"><span className={saved?'save-state visible':'save-state'}>Enregistré localement</span><button className="btn primary">Enregistrer la charte</button></div></form>
 }
 
 const match=(row,q)=>!q||Object.values(row).some(v=>String(v||'').toLowerCase().includes(q.toLowerCase()))

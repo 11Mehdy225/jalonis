@@ -7,7 +7,7 @@ const ENTITY_TABLES = {
     'wbs_code', 'predecessor_id', 'dependency_type', 'lag_days', 'is_milestone',
     'baseline_start', 'baseline_end', 'actual_start', 'actual_end', 'work_hours'],
   risks: ['title', 'category', 'probability', 'impact', 'owner', 'response', 'status', 'linked_task_id'],
-  team: ['name', 'role', 'email', 'availability', 'weekly_capacity', 'skills'],
+  team: ['name', 'role', 'email', 'availability', 'weekly_capacity', 'hourly_cost', 'billing_rate', 'skills'],
   meetings: ['title', 'meeting_date', 'participants', 'agenda', 'decisions', 'actions', 'linked_task_id'],
   sprints: ['name', 'goal', 'start_date', 'end_date', 'status', 'capacity_points', 'review_notes', 'retrospective_notes'],
   backlog_items: ['title', 'item_type', 'description', 'acceptance_criteria', 'definition_done', 'priority',
@@ -35,6 +35,8 @@ const ENTITY_TABLES = {
   checklist_items: ['entity_type', 'entity_id', 'title', 'is_done', 'rank'],
   sprint_snapshots: ['sprint_id', 'snapshot_date', 'total_points', 'remaining_points', 'completed_points', 'item_count', 'completed_count'],
   time_entries: ['member_id', 'member_name', 'task_id', 'entry_date', 'hours', 'billable', 'description', 'status'],
+  cost_entries: ['description', 'category', 'cost_type', 'planned_amount', 'committed_amount', 'actual_amount',
+    'entry_date', 'status', 'supplier_id', 'task_id', 'notes'],
 }
 
 class JalonisDatabase {
@@ -49,7 +51,7 @@ class JalonisDatabase {
       CREATE TABLE IF NOT EXISTS projects (
         id TEXT PRIMARY KEY, name TEXT NOT NULL, code TEXT, description TEXT,
         sponsor TEXT, manager TEXT, objective TEXT, success_criteria TEXT,
-        start_date TEXT, end_date TEXT, budget REAL DEFAULT 0,
+        start_date TEXT, end_date TEXT, budget REAL DEFAULT 0, currency TEXT DEFAULT 'XOF',
         status TEXT DEFAULT 'Planification', health TEXT DEFAULT 'good', methodology TEXT DEFAULT 'Hybride',
         product_goal TEXT, definition_done TEXT,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
@@ -90,7 +92,8 @@ class JalonisDatabase {
       );
       CREATE TABLE IF NOT EXISTS team (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-        name TEXT NOT NULL, role TEXT, email TEXT, availability INTEGER DEFAULT 100, weekly_capacity REAL DEFAULT 40, skills TEXT,
+        name TEXT NOT NULL, role TEXT, email TEXT, availability INTEGER DEFAULT 100, weekly_capacity REAL DEFAULT 40,
+        hourly_cost REAL DEFAULT 0, billing_rate REAL DEFAULT 0, skills TEXT,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS meetings (
@@ -205,6 +208,14 @@ class JalonisDatabase {
         description TEXT, status TEXT NOT NULL DEFAULT 'Brouillon',
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS cost_entries (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        description TEXT NOT NULL, category TEXT, cost_type TEXT DEFAULT 'Ponctuel',
+        planned_amount REAL NOT NULL DEFAULT 0, committed_amount REAL NOT NULL DEFAULT 0,
+        actual_amount REAL NOT NULL DEFAULT 0, entry_date TEXT, status TEXT DEFAULT 'Prévu',
+        supplier_id TEXT, task_id TEXT, notes TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
     `)
     const taskColumns = this.db.prepare('PRAGMA table_info(tasks)').all().map(column => column.name)
     const taskMigrations = {
@@ -222,12 +233,15 @@ class JalonisDatabase {
     ensureColumn('risks', 'linked_task_id', 'TEXT')
     ensureColumn('meetings', 'linked_task_id', 'TEXT')
     ensureColumn('team', 'weekly_capacity', 'REAL DEFAULT 40')
+    ensureColumn('team', 'hourly_cost', 'REAL DEFAULT 0')
+    ensureColumn('team', 'billing_rate', 'REAL DEFAULT 0')
     ensureColumn('projects', 'methodology', "TEXT DEFAULT 'Hybride'")
     ensureColumn('projects', 'product_goal', 'TEXT')
     ensureColumn('projects', 'definition_done', 'TEXT')
     ensureColumn('projects', 'workspace_id', 'TEXT')
     ensureColumn('projects', 'theme_color', "TEXT DEFAULT '#4f46e5'")
     ensureColumn('projects', 'logo_path', 'TEXT')
+    ensureColumn('projects', 'currency', "TEXT DEFAULT 'XOF'")
     ensureColumn('tasks', 'assignee_id', 'TEXT')
     ensureColumn('backlog_items', 'assignee_id', 'TEXT')
     ensureColumn('backlog_items', 'parent_epic_id', 'TEXT')
@@ -340,13 +354,13 @@ class JalonisDatabase {
   createProject(data) {
     const id = crypto.randomUUID(); const now = new Date().toISOString()
     const workspace = this.ensureLocalWorkspace()
-    this.db.prepare(`INSERT INTO projects (id,name,code,description,manager,start_date,end_date,budget,status,health,methodology,theme_color,workspace_id,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, data.name, data.code || '', data.description || '', data.manager || '', data.start_date || '', data.end_date || '', Number(data.budget)||0, 'Initialisation', 'good', data.methodology || 'Hybride', data.theme_color || '#4f46e5', workspace.id, now, now)
+    this.db.prepare(`INSERT INTO projects (id,name,code,description,manager,start_date,end_date,budget,currency,status,health,methodology,theme_color,workspace_id,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, data.name, data.code || '', data.description || '', data.manager || '', data.start_date || '', data.end_date || '', Number(data.budget)||0, data.currency || 'XOF', 'Initialisation', 'good', data.methodology || 'Hybride', data.theme_color || '#4f46e5', workspace.id, now, now)
     return this.db.prepare('SELECT * FROM projects WHERE id=?').get(id)
   }
 
   updateProject(id, data) {
-    const allowed = ['name','code','description','sponsor','manager','objective','success_criteria','start_date','end_date','budget','status','health','methodology','product_goal','definition_done','theme_color','logo_path']
+    const allowed = ['name','code','description','sponsor','manager','objective','success_criteria','start_date','end_date','budget','currency','status','health','methodology','product_goal','definition_done','theme_color','logo_path']
     const entries = Object.entries(data).filter(([key]) => allowed.includes(key))
     if (!entries.length) return this.db.prepare('SELECT * FROM projects WHERE id=?').get(id)
     const sql = `UPDATE projects SET ${entries.map(([key]) => `${key}=?`).join(',')}, updated_at=? WHERE id=?`
@@ -356,7 +370,7 @@ class JalonisDatabase {
 
   listEntities(type, projectId) {
     if (!ENTITY_TABLES[type]) throw new Error('Type non autorisé')
-    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC', checklist_items: 'rank ASC, created_at ASC', sprint_snapshots: 'snapshot_date ASC, created_at ASC', time_entries: 'entry_date DESC, created_at DESC' }
+    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC', checklist_items: 'rank ASC, created_at ASC', sprint_snapshots: 'snapshot_date ASC, created_at ASC', time_entries: 'entry_date DESC, created_at DESC', cost_entries: 'entry_date DESC, created_at DESC' }
     const order = orders[type] || 'created_at DESC'
     return this.db.prepare(`SELECT * FROM ${type} WHERE project_id=? ORDER BY ${order}`).all(projectId)
   }

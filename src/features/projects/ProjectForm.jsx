@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 export default function ProjectForm({ onSubmit, onCancel }) {
-  const [form, setForm] = useState({ name: '', code: '', manager: '', methodology: 'Hybride', theme_color: '#4f46e5', start_date: '', end_date: '', budget: '', description: '' })
+  const [form, setForm] = useState({ name: '', code: '', manager: '', methodology: 'Hybride', theme_color: '#4f46e5', start_date: '', end_date: '', budget: '', currency: 'XOF', description: '' })
   const change = e => setForm({ ...form, [e.target.name]: e.target.value })
   return <form onSubmit={e => { e.preventDefault(); onSubmit(form) }}>
     <div className="form-grid">
@@ -12,7 +12,8 @@ export default function ProjectForm({ onSubmit, onCancel }) {
       <label>Couleur du projet<span className="color-field"><input type="color" name="theme_color" value={form.theme_color} onChange={change}/><b>{form.theme_color}</b></span></label>
       <label>Date de début<input type="date" name="start_date" value={form.start_date} onChange={change} /></label>
       <label>Date de fin cible<input type="date" name="end_date" value={form.end_date} onChange={change} /></label>
-      <label className="span-2">Budget prévisionnel<input type="number" name="budget" value={form.budget} onChange={change} placeholder="0" /></label>
+      <label>Budget prévisionnel<input type="number" min="0" name="budget" value={form.budget} onChange={change} placeholder="0" /></label>
+      <label>Devise<select name="currency" value={form.currency} onChange={change}><option value="XOF">FCFA (XOF)</option><option value="EUR">Euro (EUR)</option><option value="USD">Dollar (USD)</option><option value="GBP">Livre sterling (GBP)</option></select></label>
       <label className="span-2">Description<textarea name="description" value={form.description} onChange={change} placeholder="Pourquoi ce projet existe-t-il ?" /></label>
     </div>
     <div className="form-actions"><button type="button" className="btn ghost" onClick={onCancel}>Annuler</button><button className="btn primary">Créer le projet</button></div>
