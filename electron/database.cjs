@@ -33,6 +33,7 @@ const ENTITY_TABLES = {
   activities: ['event_type', 'entity_type', 'entity_id', 'title', 'description', 'actor_name'],
   notifications: ['event_type', 'entity_type', 'entity_id', 'title', 'body', 'is_read'],
   checklist_items: ['entity_type', 'entity_id', 'title', 'is_done', 'rank'],
+  sprint_snapshots: ['sprint_id', 'snapshot_date', 'total_points', 'remaining_points', 'completed_points', 'item_count', 'completed_count'],
 }
 
 class JalonisDatabase {
@@ -189,6 +190,13 @@ class JalonisDatabase {
         is_done INTEGER NOT NULL DEFAULT 0, rank INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS sprint_snapshots (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        sprint_id TEXT NOT NULL, snapshot_date TEXT NOT NULL, total_points REAL NOT NULL DEFAULT 0,
+        remaining_points REAL NOT NULL DEFAULT 0, completed_points REAL NOT NULL DEFAULT 0,
+        item_count INTEGER NOT NULL DEFAULT 0, completed_count INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
     `)
     const taskColumns = this.db.prepare('PRAGMA table_info(tasks)').all().map(column => column.name)
     const taskMigrations = {
@@ -339,7 +347,7 @@ class JalonisDatabase {
 
   listEntities(type, projectId) {
     if (!ENTITY_TABLES[type]) throw new Error('Type non autorisé')
-    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC', checklist_items: 'rank ASC, created_at ASC' }
+    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC', checklist_items: 'rank ASC, created_at ASC', sprint_snapshots: 'snapshot_date ASC, created_at ASC' }
     const order = orders[type] || 'created_at DESC'
     return this.db.prepare(`SELECT * FROM ${type} WHERE project_id=? ORDER BY ${order}`).all(projectId)
   }

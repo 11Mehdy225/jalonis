@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Circle, Clock3, History, ImagePlus, Link2, ListChecks, MessageSquareText, Plus, Save, Trash2 } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Circle, Clock3, History, ImagePlus, Link2, ListChecks, MessageSquareText, Plus, Save, Trash2 } from 'lucide-react'
 import EntityDiscussion from '../collaboration/EntityDiscussion'
 import '../../styles/work-item-details.css'
 
@@ -13,6 +13,7 @@ export default function WorkItemDetails({item,type,tasks=[],items=[],sprints=[],
   const [form,setForm]=useState(item)
   const [newCheck,setNewCheck]=useState('')
   const [saved,setSaved]=useState(false)
+  const [error,setError]=useState('')
   useEffect(()=>setForm(item),[item])
   const files=attachments.filter(file=>file.entity_type===type&&file.entity_id===item.id)
   const checks=checklist.filter(row=>row.entity_type===type&&row.entity_id===item.id)
@@ -20,10 +21,11 @@ export default function WorkItemDetails({item,type,tasks=[],items=[],sprints=[],
   const completion=checks.length?Math.round(checks.filter(row=>Boolean(Number(row.is_done))).length/checks.length*100):0
   const people=useMemo(()=>members.map(member=>({id:member.id,name:member.full_name||member.name,role:member.role})),[members])
   const change=event=>setForm({...form,[event.target.name]:event.target.type==='number'?Number(event.target.value):event.target.value})
-  const save=async event=>{event.preventDefault();const {id,project_id,created_at,updated_at,...editable}=form;const person=people.find(row=>row.id===form.assignee_id);await onUpdate(item.id,{...editable,assignee:person?.name||form.assignee||null});setSaved(true);setTimeout(()=>setSaved(false),1600)}
+  const save=async event=>{event.preventDefault();if(!isTask&&form.status==='Terminé'&&form.item_type!=='Epic'&&(!form.acceptance_criteria||!form.definition_done)){setError('Renseignez les critères d’acceptation et la Definition of Done avant de terminer cet élément.');return}setError('');const {id,project_id,created_at,updated_at,...editable}=form;const person=people.find(row=>row.id===form.assignee_id);await onUpdate(item.id,{...editable,assignee:person?.name||form.assignee||null});setSaved(true);setTimeout(()=>setSaved(false),1600)}
   const addCheck=async event=>{event.preventDefault();const title=newCheck.trim();if(!title)return;await onAddChecklist({entity_type:type,entity_id:item.id,title,is_done:false,rank:checks.length+1});setNewCheck('')}
   return <div className="work-item-detail">
     <div className="work-item-summary"><div><span className={`story-type ${String(form.item_type||'tâche').toLowerCase().replace(' ','-')}`}>{isTask?'Activité':form.item_type||'Élément'}</span><h3>{form.title}</h3><p>{isTask?`WBS ${form.wbs_code||'—'}`:`${form.story_points||0} points · ${form.estimate_hours||0} h`}</p></div><div className="work-item-completion"><b>{completion}%</b><span>check-list</span></div></div>
+    {error&&<div className="work-item-error"><AlertTriangle size={16}/>{error}</div>}
     <form onSubmit={save} className="work-item-form">
       <section><div className="detail-section-head"><div><Link2 size={16}/><span><b>Détails et liaisons</b><small>Informations, responsable, calendrier et dépendances.</small></span></div><button className="btn primary"><Save size={15}/>{saved?'Enregistré':'Enregistrer'}</button></div>
         <div className="form-grid"><label className="span-2">Titre<input required name="title" value={form.title||''} onChange={change}/></label>

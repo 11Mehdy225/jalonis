@@ -24,7 +24,7 @@ const NAV = [
   ['team','Équipe',Users],['suppliers','Fournisseurs & Achats',Truck],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
 ]
 
-const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items']
+const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots']
 const ENTITY_LABELS={tasks:'Tâche',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message'}
 
 export default function App() {
@@ -60,7 +60,7 @@ export default function App() {
   }
   async function addEntity(type,data){
     const item=await api.entities.create(type,{...data,project_id:activeId})
-    if(!['activities','notifications','attachments','checklist_items'].includes(type)){
+    if(!['activities','notifications','attachments','checklist_items','sprint_snapshots'].includes(type)){
       const isComment=type==='comments', label=ENTITY_LABELS[type]||'Élément', name=item.title||item.name||item.body?.slice(0,55)||label
       await recordEvent({eventType:isComment?'comment.created':`${type}.created`,entityType:type,entityId:item.id,title:isComment?'Nouveau message dans le projet':`${label} créé`,description:isComment?`${item.author_name||'Un membre'} : ${item.body}`:name,notify:isComment||['tasks','risks','backlog_items'].includes(type)})
     }
@@ -69,7 +69,7 @@ export default function App() {
   async function removeEntity(type,id){
     const previous=entities[type]?.find(item=>item.id===id)
     await api.entities.remove(type,id)
-    if(previous&&!['activities','notifications','comments','attachments','checklist_items'].includes(type))await recordEvent({eventType:`${type}.deleted`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} supprimé`,description:previous.title||previous.name||'',notify:false})
+    if(previous&&!['activities','notifications','comments','attachments','checklist_items','sprint_snapshots'].includes(type))await recordEvent({eventType:`${type}.deleted`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} supprimé`,description:previous.title||previous.name||'',notify:false})
     await loadEntities(activeId); await loadProjects(false)
   }
   async function updateEntity(type,id,data){
@@ -81,9 +81,23 @@ export default function App() {
     const oldAssignee=previous?.assignee||previous?.assignee_id, nextAssignee=item?.assignee||item?.assignee_id
     if(previous&&(data.assignee!==undefined||data.assignee_id!==undefined)&&oldAssignee!==nextAssignee){await recordEvent({eventType:'assignment.changed',entityType:type,entityId:id,title:`Nouvelle affectation · ${name}`,description:nextAssignee?`Assigné à ${item.assignee||'un membre de l’équipe'}.`:'Affectation retirée.'});recorded=true}
     if(previous&&type==='tasks'&&Number(previous.progress)<100&&Number(item.progress)===100){await recordEvent({eventType:'task.completed',entityType:type,entityId:id,title:`Activité terminée · ${name}`,description:'L’avancement a atteint 100 %.'});recorded=true}
-    if(previous&&!recorded&&!['notifications','activities','checklist_items'].includes(type))await recordEvent({eventType:`${type}.updated`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} mis à jour`,description:name,notify:false})
+    if(previous&&!recorded&&!['notifications','activities','checklist_items','sprint_snapshots'].includes(type))await recordEvent({eventType:`${type}.updated`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} mis à jour`,description:name,notify:false})
+    if(type==='backlog_items'){
+      const nextItems=entities.backlog_items.map(row=>row.id===id?item:row)
+      const sprintIds=[...new Set([previous?.sprint_id,item?.sprint_id].filter(Boolean))]
+      for(const sprintId of sprintIds)await createSprintSnapshot(sprintId,nextItems,false)
+    }
     await loadEntities(activeId); await loadProjects(false)
     return item
+  }
+  async function createSprintSnapshot(sprintId,items=entities.backlog_items,reload=true){
+    if(!sprintId||!activeId)return
+    const sprintItems=items.filter(row=>row.sprint_id===sprintId)
+    const completed=sprintItems.filter(row=>row.status==='Terminé')
+    const total=sprintItems.reduce((sum,row)=>sum+Number(row.story_points||0),0)
+    const done=completed.reduce((sum,row)=>sum+Number(row.story_points||0),0)
+    await api.entities.create('sprint_snapshots',{project_id:activeId,sprint_id:sprintId,snapshot_date:new Date().toISOString().slice(0,10),total_points:total,remaining_points:Math.max(0,total-done),completed_points:done,item_count:sprintItems.length,completed_count:completed.length})
+    if(reload)await loadEntities(activeId)
   }
   async function updateCharter(data){ await api.projects.update(activeId,data); await recordEvent({eventType:'project.updated',entityType:'projects',entityId:activeId,title:'Charte du projet mise à jour',description:data.name||active?.name,notify:false}); await loadEntities(activeId); await loadProjects(false) }
   async function attachMedia(entityType,entityId){await api.media.attach({project_id:activeId,entity_type:entityType,entity_id:entityId});await loadEntities(activeId)}
@@ -126,7 +140,7 @@ export default function App() {
           {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView}/>} 
           {view==='charter'&&<Charter project={active} onSave={updateCharter}/>} 
           {view==='tasks'&&<Tasks rows={entities.tasks} items={entities.backlog_items} sprints={entities.sprints} team={entities.team} members={workspace?.members||[]} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} currentUser={currentUser} query={query} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
-          {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} team={entities.team} members={workspace?.members||[]} currentUser={currentUser} activeTab={agileTab} onTabChange={setAgileTab} onAttach={id=>attachMedia('backlog_items',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>}
+          {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} snapshots={entities.sprint_snapshots} team={entities.team} members={workspace?.members||[]} currentUser={currentUser} activeTab={agileTab} onTabChange={setAgileTab} onAttach={id=>attachMedia('backlog_items',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onSnapshot={createSprintSnapshot} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>}
           {view==='suppliers'&&<SupplierManagement projectId={activeId} data={entities} tasks={entities.tasks} risks={entities.risks} onCreate={addEntity} onDelete={removeEntity} onReload={()=>loadEntities(activeId)}/>} 
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>} 
           {view==='team'&&<Team rows={entities.team} query={query} onDelete={id=>removeEntity('team',id)}/>} 
