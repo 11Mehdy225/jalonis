@@ -6,7 +6,7 @@ const configs = {
   risks: { title: 'Nouveau risque', fields: [
     ['title','Risque','text'],['linked_task_id','Activité concernée','task-select'],['category','Catégorie','select',['Technique','Coût','Délai','Humain','Qualité','Externe']],['probability','Probabilité (1–5)','number'],['impact','Impact (1–5)','number'],['owner','Propriétaire','text'],['status','Statut','select',['Ouvert','Surveillé','Fermé']],['response','Réponse planifiée','textarea'] ] },
   team: { title: 'Nouveau membre', fields: [
-    ['name','Nom complet','text'],['role','Rôle','text'],['email','E-mail','email'],['availability','Disponibilité (%)','number'],['skills','Compétences','text'] ] },
+    ['name','Nom complet','text'],['role','Rôle','text'],['email','E-mail','email'],['availability','Disponibilité (%)','number'],['weekly_capacity','Capacité hebdomadaire (heures)','number'],['skills','Compétences','text'] ] },
   meetings: { title: 'Nouvelle réunion', fields: [
     ['title','Objet','text'],['meeting_date','Date et heure','datetime-local'],['linked_task_id','Activité concernée','task-select'],['participants','Participants','text'],['agenda','Ordre du jour','textarea'],['decisions','Décisions','textarea'],['actions','Actions','textarea'] ] },
 }

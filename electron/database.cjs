@@ -7,7 +7,7 @@ const ENTITY_TABLES = {
     'wbs_code', 'predecessor_id', 'dependency_type', 'lag_days', 'is_milestone',
     'baseline_start', 'baseline_end', 'actual_start', 'actual_end', 'work_hours'],
   risks: ['title', 'category', 'probability', 'impact', 'owner', 'response', 'status', 'linked_task_id'],
-  team: ['name', 'role', 'email', 'availability', 'skills'],
+  team: ['name', 'role', 'email', 'availability', 'weekly_capacity', 'skills'],
   meetings: ['title', 'meeting_date', 'participants', 'agenda', 'decisions', 'actions', 'linked_task_id'],
   sprints: ['name', 'goal', 'start_date', 'end_date', 'status', 'capacity_points', 'review_notes', 'retrospective_notes'],
   backlog_items: ['title', 'item_type', 'description', 'acceptance_criteria', 'definition_done', 'priority',
@@ -34,6 +34,7 @@ const ENTITY_TABLES = {
   notifications: ['event_type', 'entity_type', 'entity_id', 'title', 'body', 'is_read'],
   checklist_items: ['entity_type', 'entity_id', 'title', 'is_done', 'rank'],
   sprint_snapshots: ['sprint_id', 'snapshot_date', 'total_points', 'remaining_points', 'completed_points', 'item_count', 'completed_count'],
+  time_entries: ['member_id', 'member_name', 'task_id', 'entry_date', 'hours', 'billable', 'description', 'status'],
 }
 
 class JalonisDatabase {
@@ -89,7 +90,7 @@ class JalonisDatabase {
       );
       CREATE TABLE IF NOT EXISTS team (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-        name TEXT NOT NULL, role TEXT, email TEXT, availability INTEGER DEFAULT 100, skills TEXT,
+        name TEXT NOT NULL, role TEXT, email TEXT, availability INTEGER DEFAULT 100, weekly_capacity REAL DEFAULT 40, skills TEXT,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS meetings (
@@ -197,6 +198,13 @@ class JalonisDatabase {
         item_count INTEGER NOT NULL DEFAULT 0, completed_count INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS time_entries (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        member_id TEXT, member_name TEXT NOT NULL, task_id TEXT, entry_date TEXT NOT NULL,
+        hours REAL NOT NULL DEFAULT 0, billable INTEGER NOT NULL DEFAULT 0,
+        description TEXT, status TEXT NOT NULL DEFAULT 'Brouillon',
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
     `)
     const taskColumns = this.db.prepare('PRAGMA table_info(tasks)').all().map(column => column.name)
     const taskMigrations = {
@@ -213,6 +221,7 @@ class JalonisDatabase {
     }
     ensureColumn('risks', 'linked_task_id', 'TEXT')
     ensureColumn('meetings', 'linked_task_id', 'TEXT')
+    ensureColumn('team', 'weekly_capacity', 'REAL DEFAULT 40')
     ensureColumn('projects', 'methodology', "TEXT DEFAULT 'Hybride'")
     ensureColumn('projects', 'product_goal', 'TEXT')
     ensureColumn('projects', 'definition_done', 'TEXT')
@@ -347,7 +356,7 @@ class JalonisDatabase {
 
   listEntities(type, projectId) {
     if (!ENTITY_TABLES[type]) throw new Error('Type non autorisé')
-    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC', checklist_items: 'rank ASC, created_at ASC', sprint_snapshots: 'snapshot_date ASC, created_at ASC' }
+    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC', checklist_items: 'rank ASC, created_at ASC', sprint_snapshots: 'snapshot_date ASC, created_at ASC', time_entries: 'entry_date DESC, created_at DESC' }
     const order = orders[type] || 'created_at DESC'
     return this.db.prepare(`SELECT * FROM ${type} WHERE project_id=? ORDER BY ${order}`).all(projectId)
   }

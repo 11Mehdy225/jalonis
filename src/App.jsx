@@ -12,6 +12,7 @@ import NotificationCenter from './features/collaboration/NotificationCenter'
 import DailyBrief from './features/collaboration/DailyBrief'
 import EntityDiscussion from './features/collaboration/EntityDiscussion'
 import WorkItemDetails from './features/projects/WorkItemDetails'
+import ResourceManagement from './features/resources/ResourceManagement'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette } from 'lucide-react'
@@ -24,8 +25,8 @@ const NAV = [
   ['team','Équipe',Users],['suppliers','Fournisseurs & Achats',Truck],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
 ]
 
-const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots']
-const ENTITY_LABELS={tasks:'Tâche',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message'}
+const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries']
+const ENTITY_LABELS={tasks:'Tâche',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message',time_entries:'Temps saisi'}
 
 export default function App() {
   const [projects,setProjects]=useState([]), [activeId,setActiveId]=useState(null), [view,setView]=useState('dashboard')
@@ -143,7 +144,7 @@ export default function App() {
           {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} snapshots={entities.sprint_snapshots} team={entities.team} members={workspace?.members||[]} currentUser={currentUser} activeTab={agileTab} onTabChange={setAgileTab} onAttach={id=>attachMedia('backlog_items',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onSnapshot={createSprintSnapshot} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>}
           {view==='suppliers'&&<SupplierManagement projectId={activeId} data={entities} tasks={entities.tasks} risks={entities.risks} onCreate={addEntity} onDelete={removeEntity} onReload={()=>loadEntities(activeId)}/>} 
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>} 
-          {view==='team'&&<Team rows={entities.team} query={query} onDelete={id=>removeEntity('team',id)}/>} 
+          {view==='team'&&<ResourceManagement members={entities.team} tasks={entities.tasks} entries={entities.time_entries} query={query} onCreateEntry={data=>addEntity('time_entries',data)} onUpdateEntry={(id,data)=>updateEntity('time_entries',id,data)} onDeleteEntry={id=>removeEntity('time_entries',id)} onDeleteMember={id=>removeEntity('team',id)}/>}
           {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('meetings',id)}/>} 
           {view==='activity'&&<ActivityView project={active} comments={entities.comments} activities={entities.activities} currentUser={currentUser} onComment={data=>addEntity('comments',data)}/>}
         </>}
