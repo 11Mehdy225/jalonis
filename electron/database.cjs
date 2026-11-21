@@ -37,6 +37,11 @@ const ENTITY_TABLES = {
   time_entries: ['member_id', 'member_name', 'task_id', 'entry_date', 'hours', 'billable', 'description', 'status'],
   cost_entries: ['description', 'category', 'cost_type', 'planned_amount', 'committed_amount', 'actual_amount',
     'entry_date', 'status', 'supplier_id', 'task_id', 'notes'],
+  change_requests: ['title', 'description', 'reason', 'impact_scope', 'impact_schedule_days', 'impact_cost',
+    'priority', 'requested_by', 'owner', 'status', 'decision', 'decision_date', 'linked_task_id', 'linked_risk_id'],
+  issues: ['title', 'description', 'severity', 'owner', 'due_date', 'status', 'resolution', 'linked_task_id', 'linked_risk_id'],
+  decisions: ['title', 'decision_date', 'context', 'decision', 'rationale', 'owner', 'status', 'linked_meeting_id',
+    'linked_task_id', 'linked_change_id'],
 }
 
 class JalonisDatabase {
@@ -216,6 +221,25 @@ class JalonisDatabase {
         supplier_id TEXT, task_id TEXT, notes TEXT,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS change_requests (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        title TEXT NOT NULL, description TEXT, reason TEXT, impact_scope TEXT,
+        impact_schedule_days REAL DEFAULT 0, impact_cost REAL DEFAULT 0, priority TEXT DEFAULT 'Moyenne',
+        requested_by TEXT, owner TEXT, status TEXT DEFAULT 'Soumise', decision TEXT, decision_date TEXT,
+        linked_task_id TEXT, linked_risk_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS issues (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        title TEXT NOT NULL, description TEXT, severity TEXT DEFAULT 'Moyenne', owner TEXT, due_date TEXT,
+        status TEXT DEFAULT 'Ouvert', resolution TEXT, linked_task_id TEXT, linked_risk_id TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS decisions (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        title TEXT NOT NULL, decision_date TEXT, context TEXT, decision TEXT, rationale TEXT, owner TEXT,
+        status TEXT DEFAULT 'Décidée', linked_meeting_id TEXT, linked_task_id TEXT, linked_change_id TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
     `)
     const taskColumns = this.db.prepare('PRAGMA table_info(tasks)').all().map(column => column.name)
     const taskMigrations = {
@@ -370,7 +394,7 @@ class JalonisDatabase {
 
   listEntities(type, projectId) {
     if (!ENTITY_TABLES[type]) throw new Error('Type non autorisé')
-    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC', checklist_items: 'rank ASC, created_at ASC', sprint_snapshots: 'snapshot_date ASC, created_at ASC', time_entries: 'entry_date DESC, created_at DESC', cost_entries: 'entry_date DESC, created_at DESC' }
+    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC', checklist_items: 'rank ASC, created_at ASC', sprint_snapshots: 'snapshot_date ASC, created_at ASC', time_entries: 'entry_date DESC, created_at DESC', cost_entries: 'entry_date DESC, created_at DESC', decisions: 'decision_date DESC, created_at DESC', issues: 'due_date ASC, created_at DESC' }
     const order = orders[type] || 'created_at DESC'
     return this.db.prepare(`SELECT * FROM ${type} WHERE project_id=? ORDER BY ${order}`).all(projectId)
   }
