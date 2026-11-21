@@ -1,0 +1,17 @@
+{
+  "name": "Jalonis — Pilotage de projets",
+  "short_name": "Jalonis",
+  "description": "Plateforme de pilotage de projets, Scrum, équipes et fournisseurs.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "/assets/jalonis-logo.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
