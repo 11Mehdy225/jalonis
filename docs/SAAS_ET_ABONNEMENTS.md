@@ -99,7 +99,7 @@ Les droits fonctionnels seront calculés côté serveur à partir de l’offre a
 3. base PostgreSQL et synchronisation web/Desktop ;
 4. collaboration en temps réel ;
 5. essais gratuits, plans et limites ;
-6. paiement et portail de facturation ;
+6. paiement et portail de facturation — socle Flutterwave intégré, activation en attente des clés ;
 7. e-mails transactionnels ;
 8. WhatsApp et assistance intelligente ;
 9. édition Entreprise privée.

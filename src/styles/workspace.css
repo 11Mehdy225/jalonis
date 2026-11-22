@@ -54,7 +54,7 @@
 .app-shell.dark .preference-grid label,.app-shell.dark .quiet-hours { background: #272a31; border-color: #343842; }.app-shell.dark .quiet-hours input { background: #202228; border-color: #3a3e48; color: #e6e8ed; }
 
 .subscription-card { padding: 0; overflow: hidden; }
-.subscription-head { height: auto; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px; border-bottom: 1px solid #edf0f4; }
+.subscription-head { height: auto; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px; border-bottom: 1px solid #edf0f4; background: #fff; }
 .subscription-head > div:first-child { display: flex; align-items: center; gap: 12px; }
 .subscription-head > div:first-child > div { display: grid; gap: 2px; }
 .subscription-icon { width: 45px; height: 45px; display: grid; place-items: center; border-radius: 12px; background: #eeedff; color: #5750da; }
@@ -65,6 +65,9 @@
 .billing-toggle button { height: 31px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: #737b8e; font-size: 9px; font-weight: 700; }
 .billing-toggle button.active { background: #fff; color: #4f46d8; box-shadow: 0 1px 4px #17213c18; }
 .billing-toggle em { color: #1b916e; font-style: normal; }
+.billing-controls { display: flex; align-items: center; gap: 9px; }
+.billing-controls > label { display: flex; align-items: center; gap: 6px; color: #747c8f; font-size: 8px; font-weight: 700; }
+.billing-controls > label input { width: 62px; height: 37px; padding: 0 9px; border: 1px solid #dfe3eb; border-radius: 8px; background: #fff; color: #30384d; outline: 0; }
 .usage-grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 10px; padding: 16px 19px; background: #fafbfc; }
 .usage-meter,.trial-meter { display: flex; align-items: center; gap: 10px; min-height: 63px; padding: 12px; border: 1px solid #e7e9ef; border-radius: 11px; background: #fff; color: #625ada; }
 .usage-meter > span,.trial-meter > span { display: grid; flex: 1; gap: 3px; }
@@ -81,18 +84,31 @@
 .plan-grid p { min-height: 31px; margin: 0; color: #4e566a; font-size: 11px; }
 .plan-grid p b { font-size: 18px; }
 .plan-grid p small { color: #8990a0; font-size: 8px; }
+.plan-total { display: block; margin-top: 5px; color: #777f91; font-size: 8px; font-style: normal; }
 .plan-grid ul { display: grid; gap: 8px; margin: 13px 0; padding: 12px 0 0; border-top: 1px solid #edf0f4; list-style: none; }
 .plan-grid li { display: flex; align-items: center; gap: 6px; color: #687086; font-size: 8px; }
 .plan-grid li svg { color: #1c9a78; }
 .plan-grid article > button { height: 31px; margin-top: auto; border: 0; border-radius: 8px; background: #f0f1f5; color: #8990a0; font-size: 8px; font-weight: 700; }
 .plan-grid article.current > button { background: #eeedff; color: #554dd5; }
+.plan-grid article > button:not(:disabled) { background: #554dd8; color: #fff; box-shadow: 0 4px 10px #554dd829; }
+.plan-grid article > button:not(:disabled):hover { background: #443cc7; transform: translateY(-1px); }
+.billing-history { margin: 0 19px 18px; border: 1px solid #e5e8ef; border-radius: 11px; overflow: hidden; }
+.billing-history > div:first-child { display: flex; align-items: center; gap: 9px; padding: 12px 14px; border-bottom: 1px solid #edf0f4; background: #fafbfc; color: #5b54da; }
+.billing-history > div:first-child span { display: grid; gap: 2px; }.billing-history > div:first-child b { color: #30384d; font-size: 10px; }.billing-history > div:first-child small { color: #8b92a3; font-size: 8px; }
+.billing-history > div:last-child { display: grid; }
+.billing-history article { display: grid; grid-template-columns: 1fr auto 82px; align-items: center; gap: 13px; padding: 10px 14px; border-bottom: 1px solid #edf0f4; }
+.billing-history article:last-child { border-bottom: 0; }.billing-history article > span { display: grid; gap: 2px; }.billing-history article b { font-size: 9px; text-transform: uppercase; }.billing-history article small { color: #9299a9; font-size: 8px; }.billing-history article strong { font-size: 9px; }
+.billing-status { justify-self: end; padding: 4px 7px; border-radius: 9px; background: #fff4df; color: #ad6b12; font-size: 7px; font-style: normal; }.billing-status.successful { background: #e8f7f1; color: #1e8b70; }.billing-status.failed,.billing-status.cancelled { background: #fff0ed; color: #bf4e40; }
 .subscription-card > footer { display: flex; align-items: center; gap: 8px; padding: 11px 19px; border-top: 1px solid #edf0f4; background: #fafbfc; color: #7e8597; font-size: 8px; }
 .subscription-card > footer svg { color: #249476; flex: none; }
 .app-shell.dark .subscription-head,.app-shell.dark .subscription-card > footer { border-color: #343842; }
+.app-shell.dark .subscription-head { background: #202228; }
 .app-shell.dark .billing-toggle,.app-shell.dark .usage-grid,.app-shell.dark .subscription-card > footer { background: #272a31; }
+.app-shell.dark .billing-controls > label input { background: #202228; border-color: #3a3e48; color: #e6e8ed; }
 .app-shell.dark .billing-toggle button.active,.app-shell.dark .usage-meter,.app-shell.dark .trial-meter,.app-shell.dark .plan-grid article { background: #202228; border-color: #383c47; }
 .app-shell.dark .plan-grid article.current { border-color: #7770e7; box-shadow: 0 0 0 3px #302e4d; }
 .app-shell.dark .usage-meter b,.app-shell.dark .trial-meter b { color: #e6e8ed; }
+.app-shell.dark .billing-history { border-color: #383c47; }.app-shell.dark .billing-history > div:first-child { background: #272a31; border-color: #383c47; }.app-shell.dark .billing-history > div:first-child b { color: #e6e8ed; }.app-shell.dark .billing-history article { border-color: #383c47; }
 
 @media (max-width: 1200px) {
   .workspace-summary { grid-template-columns: 54px 1fr; }

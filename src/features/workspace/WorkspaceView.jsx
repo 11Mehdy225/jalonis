@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { BadgeCheck, BellRing, Building2, CalendarClock, Check, Clock3, Gauge, Mail, MessageCircle, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
+import { BadgeCheck, BellRing, Building2, CalendarClock, Check, Clock3, Gauge, Mail, MessageCircle, ReceiptText, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
 
 const ROLES = ['Administrateur', 'Chef de projet', 'Scrum Master', 'Product Owner', 'Membre', 'Observateur', 'Fournisseur externe']
 const PREFERENCE_DEFAULTS = { notify_in_app: true, notify_email: true, notify_whatsapp: false, notify_assignments: true, notify_status_changes: true, notify_comments: true, daily_digest: true, quiet_start: '20:00', quiet_end: '07:00' }
 
-export default function WorkspaceView({ data, canManage=false, canInvite=false, onRename, onInvite, onRemove, onUpdateRole, onUpdatePreferences }) {
+export default function WorkspaceView({ data, canManage=false, canInvite=false, onRename, onInvite, onRemove, onUpdateRole, onUpdatePreferences, onCheckout }) {
   const [name, setName] = useState(data?.workspace?.name || '')
   const [accountType, setAccountType] = useState(data?.workspace?.account_type || 'Personnel')
   const [saved, setSaved] = useState(false)
@@ -26,7 +26,7 @@ export default function WorkspaceView({ data, canManage=false, canInvite=false, 
       </form>
       <div className="workspace-kpis"><span><b>{data.members.length}</b>Membres</span><span><b>{active}</b>Actifs</span><span><b>{pending}</b>Invitations</span><span><b>{data.workspace.subscription_plan || 'Découverte'}</b>{data.workspace.subscription_status || 'Local'}</span></div>
     </section>
-    <SubscriptionOverview data={data}/>
+    <SubscriptionOverview data={data} canManage={canManage} onCheckout={onCheckout}/>
     <section className="card members-card">
       <div className="members-head"><div><h3>Membres et accès</h3><p>Invitez les personnes qui pourront participer aux projets de cet espace.</p></div>{canInvite&&<button className="btn primary" onClick={onInvite}><UserPlus size={16}/>Inviter un membre</button>}</div>
       <div className="members-table">
@@ -45,8 +45,9 @@ export default function WorkspaceView({ data, canManage=false, canInvite=false, 
   </div>
 }
 
-function SubscriptionOverview({ data }) {
+function SubscriptionOverview({ data, canManage, onCheckout }) {
   const [annual,setAnnual]=useState(false)
+  const [loading,setLoading]=useState('')
   const subscription=data.subscription||{}
   const currentCode=subscription.plan_code||'discovery'
   const currentPlan=data.plans?.find(plan=>plan.code===currentCode)
@@ -54,13 +55,16 @@ function SubscriptionOverview({ data }) {
   const projects=Number(data.usage?.projects||0)
   const billable=data.members.filter(member=>member.membership_status==='Actif'&&!['Observateur','Fournisseur externe'].includes(member.role)).length
   const seatLimit=Number(subscription.seats||data.workspace.seat_limit||1)
+  const [seats,setSeats]=useState(seatLimit)
   const trialEnd=subscription.current_period_end||data.workspace.trial_ends_at
   const trialDays=trialEnd?Math.max(0,Math.ceil((new Date(trialEnd)-new Date())/86400000)):null
   const plans=(data.plans||[]).filter(plan=>plan.account_type===data.workspace.account_type||plan.code==='discovery')
+  const checkout=async plan=>{setLoading(plan.code);try{await onCheckout({plan_code:plan.code,billing_cycle:annual?'annual':'monthly',seats:Math.max(seats,Number(plan.min_seats)||1)})}finally{setLoading('')}}
   return <section className="card subscription-card">
-    <header className="subscription-head"><div><span className="subscription-icon"><BadgeCheck size={21}/></span><div><small>ABONNEMENT</small><h3>{currentPlan?.name||data.workspace.subscription_plan||'Découverte'}</h3><p>{subscription.status==='trialing'&&trialDays!==null?`Essai gratuit · ${trialDays} jour${trialDays>1?'s':''} restant${trialDays>1?'s':''}`:data.workspace.subscription_status||'Mode local'}</p></div></div><div className="billing-toggle"><button className={!annual?'active':''} onClick={()=>setAnnual(false)}>Mensuel</button><button className={annual?'active':''} onClick={()=>setAnnual(true)}>Annuel <em>−15 %</em></button></div></header>
+    <header className="subscription-head"><div><span className="subscription-icon"><BadgeCheck size={21}/></span><div><small>ABONNEMENT</small><h3>{currentPlan?.name||data.workspace.subscription_plan||'Découverte'}</h3><p>{subscription.status==='trialing'&&trialDays!==null?`Essai gratuit · ${trialDays} jour${trialDays>1?'s':''} restant${trialDays>1?'s':''}`:data.workspace.subscription_status||'Mode local'}</p></div></div><div className="billing-controls">{data.workspace.account_type==='Organisation'&&<label>Sièges<input type="number" min="1" value={seats} onChange={event=>setSeats(Math.max(1,Number(event.target.value)||1))}/></label>}<div className="billing-toggle"><button className={!annual?'active':''} onClick={()=>setAnnual(false)}>Mensuel</button><button className={annual?'active':''} onClick={()=>setAnnual(true)}>Annuel <em>−15 %</em></button></div></div></header>
     <div className="usage-grid"><UsageMeter icon={Users} label="Sièges actifs" value={billable} limit={seatLimit}/><UsageMeter icon={Gauge} label="Projets" value={projects} limit={projectLimit}/><div className="trial-meter"><CalendarClock size={18}/><span><small>Prochaine échéance</small><b>{trialEnd?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'long',year:'numeric'}).format(new Date(trialEnd)):'Aucune'}</b></span></div></div>
-    <div className="plan-grid">{plans.map(plan=>{const price=Number(annual?plan.annual_price_eur:plan.monthly_price_eur);const selected=plan.code===currentCode;return <article key={plan.code} className={selected?'current':''}><div><span>{selected?'OFFRE ACTUELLE':plan.account_type.toUpperCase()}</span><h4>{plan.name}</h4><p>{price===0?'Gratuit':<><b>{annual?(price/12).toFixed(2):price.toFixed(2)} €</b><small> / mois{plan.min_seats>1?' / siège':''}</small></>}</p></div><ul><li><Check size={13}/>{Number(plan.features?.projects)<0?'Projets illimités':`${plan.features?.projects||2} projets`}</li><li><Check size={13}/>{formatStorage(plan.features?.storage_mb)}</li><li><Check size={13}/>{plan.features?.collaboration?'Collaboration en temps réel':'Pilotage individuel'}</li></ul><button disabled>{selected?'Plan actif':'Disponible avec le paiement'}</button></article>})}</div>
+    <div className="plan-grid">{plans.map(plan=>{const price=Number(annual?plan.annual_price_eur:plan.monthly_price_eur);const selected=plan.code===currentCode;const payable=!selected&&!['discovery','enterprise'].includes(plan.code);const minimum=Math.max(seats,Number(plan.min_seats)||1);return <article key={plan.code} className={selected?'current':''}><div><span>{selected?'OFFRE ACTUELLE':plan.account_type.toUpperCase()}</span><h4>{plan.name}</h4><p>{price===0?'Gratuit':<><b>{annual?(price/12).toFixed(2):price.toFixed(2)} €</b><small> / mois{plan.min_seats>1?' / siège':''}</small></>}</p>{payable&&minimum>1?<em className="plan-total">Total : {(price*minimum).toFixed(2)} € {annual?'par an':'par mois'}</em>:null}</div><ul><li><Check size={13}/>{Number(plan.features?.projects)<0?'Projets illimités':`${plan.features?.projects||2} projets`}</li><li><Check size={13}/>{formatStorage(plan.features?.storage_mb)}</li><li><Check size={13}/>{plan.features?.collaboration?'Collaboration en temps réel':'Pilotage individuel'}</li></ul><button disabled={!payable||!canManage||!data.billing_available||Boolean(loading)} onClick={()=>checkout(plan)}>{selected?'Plan actif':loading===plan.code?'Préparation…':plan.code==='enterprise'?'Nous contacter':data.billing_available?'Choisir cette offre':'Disponible en mode SaaS'}</button></article>})}</div>
+    {data.billing_transactions?.length>0&&<div className="billing-history"><div><ReceiptText size={17}/><span><b>Historique de facturation</b><small>Dernières tentatives et confirmations de paiement.</small></span></div><div>{data.billing_transactions.map(row=><article key={row.id}><span><b>{row.plan_code}</b><small>{new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(row.created_at))}</small></span><strong>{Number(row.amount).toFixed(2)} {row.currency}</strong><em className={`billing-status ${row.status}`}>{billingStatus(row.status)}</em></article>)}</div></div>}
     <footer><ShieldCheck size={15}/><span>Le changement d’offre sera activé uniquement après confirmation sécurisée du paiement. Aucune carte bancaire n’est stockée par Jalonis.</span></footer>
   </section>
 }
@@ -72,6 +76,7 @@ function UsageMeter({icon:Icon,label,value,limit}){
 }
 
 function formatStorage(megabytes){const value=Number(megabytes||250);return value>=1024?`${Math.round(value/1024)} Go de stockage`:`${value} Mo de stockage`}
+function billingStatus(status){return {pending:'En attente',successful:'Payé',failed:'Échoué',cancelled:'Annulé',refunded:'Remboursé'}[status]||status}
 
 function NotificationPreferences({ user, onSave }) {
   const [form, setForm] = useState(PREFERENCE_DEFAULTS)

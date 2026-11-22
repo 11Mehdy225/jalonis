@@ -49,6 +49,7 @@ export default function App() {
   async function loadEntities(id){ if(!id)return; const values=await Promise.all(ENTITY_TYPES.map(t=>api.entities.list(t,id))); setEntities(Object.fromEntries(ENTITY_TYPES.map((t,i)=>[t,values[i]]))) }
   async function loadWorkspace(){ setWorkspace(await api.workspace.get()) }
   useEffect(()=>{loadProjects();loadWorkspace()},[])
+  useEffect(()=>{const params=new URLSearchParams(window.location.search);if(params.get('billing')==='return'){const status=params.get('status');setNotice(status==='successful'?'Paiement reçu. La vérification sécurisée de votre abonnement est en cours.':status==='cancelled'?'Paiement annulé. Aucun changement n’a été appliqué.':'Le paiement n’a pas été finalisé.');params.delete('billing');params.delete('status');params.delete('tx_ref');params.delete('transaction_id');window.history.replaceState({},'',`${window.location.pathname}${params.size?`?${params}`:''}`)}},[])
   useEffect(()=>{loadEntities(activeId)},[activeId])
   useEffect(()=>{if(!activeId||!api.realtime?.subscribeProject)return;let timer;const unsubscribe=api.realtime.subscribeProject(activeId,()=>{clearTimeout(timer);timer=setTimeout(()=>loadEntities(activeId),120)});return()=>{clearTimeout(timer);unsubscribe?.()}},[activeId])
   useEffect(()=>{if(!active)return;if(active.methodology==='Scrum'&&view==='tasks'){setView('scrum');setAgileTab('backlog')}if(active.methodology==='Prédictif'&&view==='scrum')setView('tasks')},[active?.methodology,view])
@@ -158,6 +159,11 @@ export default function App() {
   async function updateBranding(data){if(!permissions.manageProject)return deny('Votre rôle ne permet pas de personnaliser ce projet.');await api.projects.update(activeId,{theme_color:data.theme_color});if(data.upload_logo)await api.projects.uploadLogo(activeId);setModal(null);await loadProjects(false)}
   async function renameWorkspace(data){if(!permissions.manageWorkspace)return deny('Seuls le propriétaire et les administrateurs peuvent modifier cet espace.');setWorkspace(await api.workspace.update(data))}
   async function updateNotificationPreferences(data){ setWorkspace(await api.workspace.updatePreferences(data)) }
+  async function startCheckout(data){
+    if(!permissions.manageWorkspace)return deny('Seuls le propriétaire et les administrateurs peuvent gérer la facturation.')
+    try{setError('');const result=await api.billing.createCheckout(data);if(!result?.checkout_url)throw new Error('Lien de paiement indisponible.');window.location.assign(result.checkout_url)}
+    catch(reason){setError(reason.message||'Impossible de préparer le paiement.')}
+  }
   async function inviteMember(data){
     if(!permissions.inviteMembers)return deny('Votre rôle ne permet pas d’inviter des membres.')
     try { setError('');const next=await api.workspace.invite(data);setWorkspace(next);setNotice(next?.invite_result?.message||'Invitation créée.');setModal(null) }
@@ -194,7 +200,7 @@ export default function App() {
       <section className={`content${active&&view!=='workspace'&&view!=='settings'?' project-content':''}`} style={active?{'--project-color':active.theme_color||'#4f46e5'}:undefined}>
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
         {notice&&<div className="app-notice">{notice}<button onClick={()=>setNotice('')}>×</button></div>}
-        {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les futurs canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences}/></>
+        {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les futurs canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Configuration de cette installation de Jalonis.</p></div></div><SettingsView/></>
         : !active ? <Empty canCreate={permissions.createProject} onCreate={()=>setModal('project')}/> : <>
           <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} canManage={permissions.manageProject} canInvite={permissions.inviteMembers} onNavigate={openProjectView} onShare={()=>setModal('invite-member')} onBranding={()=>setModal('branding')}/>
