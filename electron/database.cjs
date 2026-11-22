@@ -52,6 +52,8 @@ const ENTITY_TABLES = {
     'resolution_strategy', 'resolution', 'linked_task_id'],
   communication_plans: ['audience', 'objective', 'content', 'channel', 'frequency', 'owner', 'next_date',
     'status', 'stakeholder_id'],
+  custom_fields: ['entity_type', 'label', 'field_type', 'options', 'is_required', 'rank'],
+  custom_field_values: ['field_id', 'entity_type', 'entity_id', 'value_text'],
 }
 
 class JalonisDatabase {
@@ -133,7 +135,15 @@ class JalonisDatabase {
       CREATE TABLE IF NOT EXISTS custom_fields (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         entity_type TEXT NOT NULL, label TEXT NOT NULL, field_type TEXT DEFAULT 'text', options TEXT,
-        created_at TEXT NOT NULL
+        is_required INTEGER DEFAULT 0, rank INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS custom_field_values (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        field_id TEXT NOT NULL REFERENCES custom_fields(id) ON DELETE CASCADE,
+        entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, value_text TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+        UNIQUE(field_id,entity_type,entity_id)
       );
       CREATE TABLE IF NOT EXISTS sprints (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -337,6 +347,10 @@ class JalonisDatabase {
     ensureColumn('comments', 'author_id', 'TEXT')
     ensureColumn('comments', 'mentioned_user_ids', "TEXT DEFAULT '[]'")
     ensureColumn('notifications', 'recipient_id', 'TEXT')
+    ensureColumn('custom_fields', 'is_required', 'INTEGER DEFAULT 0')
+    ensureColumn('custom_fields', 'rank', 'INTEGER DEFAULT 0')
+    ensureColumn('custom_fields', 'updated_at', 'TEXT')
+    this.db.exec("UPDATE custom_fields SET updated_at=created_at WHERE updated_at IS NULL")
     this.ensureLocalWorkspace()
     const palette = ['#4f46e5','#0f9f8f','#e46c45','#2878c7','#9b51c7','#cf4f83','#ca8a04','#475569']
     const colorless = this.db.prepare("SELECT id FROM tasks WHERE color IS NULL OR color = ''").all()

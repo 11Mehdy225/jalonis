@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Circle, Clock3, History, ImagePlus, Link2, ListChecks, MessageSquareText, Plus, Save, Trash2 } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Circle, Clock3, History, ImagePlus, Link2, ListChecks, MessageSquareText, Plus, Save, SlidersHorizontal, Trash2 } from 'lucide-react'
 import EntityDiscussion from '../collaboration/EntityDiscussion'
+import { readOptions } from './CustomFieldsView'
 import '../../styles/work-item-details.css'
 
 const TASK_STATUSES=['À faire','En cours','Bloqué','Terminé']
@@ -8,14 +9,18 @@ const STORY_STATUSES=['Backlog','À faire','En cours','En revue','Terminé']
 const PRIORITIES=['Basse','Moyenne','Haute','Critique']
 const stamp=value=>value?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value)):'—'
 
-export default function WorkItemDetails({item,type,showPredictiveLink=false,tasks=[],dependencies=[],items=[],sprints=[],members=[],attachments=[],comments=[],activities=[],checklist=[],currentUser,onUpdate,onCreateDependency,onDeleteDependency,onAttach,onComment,onAddChecklist,onUpdateChecklist,onDeleteChecklist}){
+export default function WorkItemDetails({item,type,showPredictiveLink=false,tasks=[],dependencies=[],items=[],sprints=[],members=[],attachments=[],comments=[],activities=[],checklist=[],customFields=[],customValues=[],currentUser,onUpdate,onCreateDependency,onDeleteDependency,onAttach,onComment,onAddChecklist,onUpdateChecklist,onDeleteChecklist,onSaveCustomValue}){
   const isTask=type==='tasks'
   const [form,setForm]=useState(item)
   const [newCheck,setNewCheck]=useState('')
   const [newDependency,setNewDependency]=useState({predecessor_task_id:'',dependency_type:'FS',lag_days:0})
   const [saved,setSaved]=useState(false)
+  const [customSaved,setCustomSaved]=useState(false)
+  const [customForm,setCustomForm]=useState({})
   const [error,setError]=useState('')
   useEffect(()=>setForm(item),[item])
+  const fields=customFields.filter(field=>field.entity_type===type).sort((a,b)=>Number(a.rank)-Number(b.rank))
+  useEffect(()=>setCustomForm(Object.fromEntries(fields.map(field=>[field.id,customValues.find(value=>value.field_id===field.id&&value.entity_type===type&&value.entity_id===item.id)?.value_text||'']))),[item.id,customFields,customValues,type])
   const files=attachments.filter(file=>file.entity_type===type&&file.entity_id===item.id)
   const checks=checklist.filter(row=>row.entity_type===type&&row.entity_id===item.id)
   const taskDependencies=dependencies.filter(row=>row.task_id===item.id)
@@ -26,6 +31,7 @@ export default function WorkItemDetails({item,type,showPredictiveLink=false,task
   const save=async event=>{event.preventDefault();if(!isTask&&form.status==='Terminé'&&form.item_type!=='Epic'&&(!form.acceptance_criteria||!form.definition_done)){setError('Renseignez les critères d’acceptation et la Definition of Done avant de terminer cet élément.');return}setError('');const {id,project_id,created_at,updated_at,...editable}=form;const person=people.find(row=>row.id===form.assignee_id);await onUpdate(item.id,{...editable,assignee:person?.name||form.assignee||null});setSaved(true);setTimeout(()=>setSaved(false),1600)}
   const addCheck=async event=>{event.preventDefault();const title=newCheck.trim();if(!title)return;await onAddChecklist({entity_type:type,entity_id:item.id,title,is_done:false,rank:checks.length+1});setNewCheck('')}
   const addDependency=async event=>{event.preventDefault();if(!newDependency.predecessor_task_id)return;const reaches=(from,target,seen=new Set())=>{if(from===target)return true;if(seen.has(from))return false;seen.add(from);return dependencies.filter(link=>link.task_id===from).some(link=>reaches(link.predecessor_task_id,target,seen))};if(reaches(newDependency.predecessor_task_id,item.id)){setError('Cette liaison créerait une boucle dans le planning.');return}setError('');try{await onCreateDependency({...newDependency,task_id:item.id,lag_days:Number(newDependency.lag_days)||0});setNewDependency({predecessor_task_id:'',dependency_type:'FS',lag_days:0})}catch(reason){setError(reason.message||'Impossible d’ajouter cette liaison.')}}
+  const saveCustom=async event=>{event.preventDefault();const missing=fields.find(field=>Boolean(Number(field.is_required))&&!String(customForm[field.id]||'').trim());if(missing){setError(`Le champ « ${missing.label} » est obligatoire.`);return}setError('');for(const field of fields)await onSaveCustomValue(field.id,type,item.id,customForm[field.id]??'');setCustomSaved(true);setTimeout(()=>setCustomSaved(false),1600)}
   return <div className="work-item-detail">
     <div className="work-item-summary"><div><span className={`story-type ${String(form.item_type||'tâche').toLowerCase().replace(' ','-')}`}>{isTask?'Activité':form.item_type||'Élément'}</span><h3>{form.title}</h3><p>{isTask?`WBS ${form.wbs_code||'—'}`:`${form.story_points||0} points · ${form.estimate_hours||0} h`}</p></div><div className="work-item-completion"><b>{completion}%</b><span>check-list</span></div></div>
     {error&&<div className="work-item-error"><AlertTriangle size={16}/>{error}</div>}
@@ -42,6 +48,7 @@ export default function WorkItemDetails({item,type,showPredictiveLink=false,task
         </div>
       </section>
     </form>
+    {fields.length>0&&<section className="custom-values-section"><div className="detail-section-head"><div><SlidersHorizontal size={16}/><span><b>Champs personnalisés</b><small>Informations propres à ce projet.</small></span></div></div><form className="form-grid" onSubmit={saveCustom}>{fields.map(field=><CustomValueField key={field.id} field={field} value={customForm[field.id]??''} onChange={value=>setCustomForm({...customForm,[field.id]:value})}/>)}<div className="form-actions span-2"><span className={customSaved?'save-state visible':'save-state'}>Valeurs enregistrées</span><button className="btn primary"><Save size={14}/>{customSaved?'Enregistré':'Enregistrer les champs'}</button></div></form></section>}
     {isTask&&<section className="dependency-editor"><div className="detail-section-head"><div><Link2 size={16}/><span><b>Dépendances multiples</b><small>FS fin-début · SS début-début · FF fin-fin · SF début-fin</small></span></div></div><div className="dependency-list">{taskDependencies.map(link=>{const predecessor=tasks.find(row=>row.id===link.predecessor_task_id);return <div key={link.id}><span><b>{predecessor?.wbs_code||'—'}</b>{predecessor?.title||'Activité supprimée'}</span><em>{link.dependency_type||'FS'}{Number(link.lag_days)?` ${Number(link.lag_days)>0?'+':''}${link.lag_days} j`:''}</em><button type="button" className="row-delete" onClick={()=>onDeleteDependency(link.id)}><Trash2 size={14}/></button></div>})}{!taskDependencies.length&&<p>Aucune liaison supplémentaire. La date saisie reste la contrainte de départ.</p>}</div><form className="dependency-add" onSubmit={addDependency}><select value={newDependency.predecessor_task_id} onChange={event=>setNewDependency({...newDependency,predecessor_task_id:event.target.value})}><option value="">Choisir un prédécesseur</option>{tasks.filter(row=>row.id!==item.id&&!taskDependencies.some(link=>link.predecessor_task_id===row.id)).map(row=><option key={row.id} value={row.id}>{row.wbs_code||'—'} · {row.title}</option>)}</select><select value={newDependency.dependency_type} onChange={event=>setNewDependency({...newDependency,dependency_type:event.target.value})}>{['FS','SS','FF','SF'].map(value=><option key={value}>{value}</option>)}</select><label><input type="number" value={newDependency.lag_days} onChange={event=>setNewDependency({...newDependency,lag_days:event.target.value})}/><span>jours</span></label><button disabled={!newDependency.predecessor_task_id}><Plus size={15}/>Ajouter</button></form></section>}
     <div className="work-item-columns">
       <section><div className="detail-section-head"><div><ListChecks size={16}/><span><b>Check-list</b><small>{checks.filter(row=>Boolean(Number(row.is_done))).length}/{checks.length} éléments terminés</small></span></div></div><div className="checklist-progress"><i><span style={{width:`${completion}%`}}/></i><b>{completion}%</b></div><div className="checklist-list">{checks.map(row=><div key={row.id}><button onClick={()=>onUpdateChecklist(row.id,{is_done:!Boolean(Number(row.is_done))})}>{Boolean(Number(row.is_done))?<CheckCircle2 size={18}/>:<Circle size={18}/>}</button><span className={Boolean(Number(row.is_done))?'done':''}>{row.title}</span><button className="row-delete" onClick={()=>onDeleteChecklist(row.id)}><Trash2 size={14}/></button></div>)}</div><form className="checklist-add" onSubmit={addCheck}><input value={newCheck} onChange={event=>setNewCheck(event.target.value)} placeholder="Ajouter un élément à vérifier…"/><button disabled={!newCheck.trim()}><Plus size={15}/>Ajouter</button></form></section>
@@ -50,4 +57,11 @@ export default function WorkItemDetails({item,type,showPredictiveLink=false,task
     <section><div className="detail-section-head"><div><MessageSquareText size={16}/><span><b>Discussion liée</b><small>Les décisions restent attachées à cet élément.</small></span></div></div><EntityDiscussion entity={item} entityType={type} comments={comments} members={members} currentUser={currentUser} onComment={onComment}/></section>
     <section><div className="detail-section-head"><div><History size={16}/><span><b>Historique</b><small>Créations, affectations et changements de statut.</small></span></div></div><div className="detail-history">{history.length?history.map(row=><article key={row.id}><span><Clock3 size={13}/></span><div><b>{row.title}</b><p>{row.description}</p><small>{row.actor_name} · {stamp(row.created_at)}</small></div></article>):<p className="detail-empty">Aucune modification enregistrée pour le moment.</p>}</div></section>
   </div>
+}
+
+function CustomValueField({field,value,onChange}){
+  const required=Boolean(Number(field.is_required)),label=<>{field.label}{required&&<em className="required-mark">Obligatoire</em>}</>
+  if(field.field_type==='select')return <label>{label}<select required={required} value={value} onChange={event=>onChange(event.target.value)}><option value="">Sélectionner</option>{readOptions(field.options).map(option=><option key={option}>{option}</option>)}</select></label>
+  if(field.field_type==='checkbox')return <label className="custom-value-checkbox"><input type="checkbox" checked={value==='true'} onChange={event=>onChange(String(event.target.checked))}/><span>{field.label}</span></label>
+  return <label>{label}<input required={required} type={field.field_type==='number'?'number':field.field_type==='date'?'date':'text'} value={value} onChange={event=>onChange(event.target.value)}/></label>
 }

@@ -9,7 +9,7 @@ const COLUMNS=['À faire','En cours','En revue','Terminé']
 const pointOptions=[0,1,2,3,5,8,13,21]
 const fmt=value=>value?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short'}).format(new Date(`${value}T12:00:00`)):'—'
 
-export default function ScrumView({project,sprints,items,tasks,attachments=[],comments=[],activities=[],checklist=[],snapshots=[],team,members=[],currentUser,activeTab,onTabChange,onAttach,onComment,onAddChecklist,onUpdateChecklist,onDeleteChecklist,onSnapshot,onCreate,onUpdate,onDelete,onUpdateProject}){
+export default function ScrumView({project,sprints,items,tasks,attachments=[],comments=[],activities=[],checklist=[],customFields=[],customValues=[],snapshots=[],team,members=[],currentUser,activeTab,onTabChange,onAttach,onComment,onAddChecklist,onUpdateChecklist,onDeleteChecklist,onSaveCustomValue,onSnapshot,onCreate,onUpdate,onDelete,onUpdateProject}){
   const [localTab,setLocalTab]=useState('board'),[modal,setModal]=useState(null),[selectedSprint,setSelectedSprint]=useState(null),[discussion,setDiscussion]=useState(null),[detail,setDetail]=useState(null)
   const [boardQuery,setBoardQuery]=useState(''),[assignee,setAssignee]=useState(''),[itemType,setItemType]=useState(''),[itemDefaults,setItemDefaults]=useState({}),[qualityBlock,setQualityBlock]=useState('')
   const tab=activeTab||localTab
@@ -46,7 +46,7 @@ export default function ScrumView({project,sprints,items,tasks,attachments=[],co
     {modal==='governance'&&<Modal title="Gouvernance Scrum" onClose={()=>setModal(null)}><GovernanceForm project={project} onSubmit={async data=>{await onUpdateProject(data);setModal(null)}} onCancel={()=>setModal(null)}/></Modal>}
     {modal==='close-sprint'&&<Modal title="Clôturer le sprint" onClose={()=>setModal(null)}><CloseSprintForm sprint={active} items={sprintItems} sprints={sprints} onSubmit={closeSprint} onCancel={()=>setModal(null)}/></Modal>}
     {discussion&&<Modal title="Discussion de l’élément" onClose={()=>setDiscussion(null)}><EntityDiscussion entity={discussion} entityType="backlog_items" comments={comments} members={members} currentUser={currentUser} onComment={onComment}/></Modal>}
-    {detail&&<Modal title="Fiche complète de l’élément" onClose={()=>setDetail(null)}><WorkItemDetails showPredictiveLink={project.methodology==='Hybride'} item={items.find(row=>row.id===detail.id)||detail} type="backlog_items" tasks={tasks} items={items} sprints={sprints} members={members} attachments={attachments} comments={comments} activities={activities} checklist={checklist} currentUser={currentUser} onUpdate={(id,data)=>onUpdate('backlog_items',id,data)} onAttach={()=>onAttach(detail.id)} onComment={onComment} onAddChecklist={onAddChecklist} onUpdateChecklist={onUpdateChecklist} onDeleteChecklist={onDeleteChecklist}/></Modal>}
+    {detail&&<Modal title="Fiche complète de l’élément" onClose={()=>setDetail(null)}><WorkItemDetails showPredictiveLink={project.methodology==='Hybride'} item={items.find(row=>row.id===detail.id)||detail} type="backlog_items" tasks={tasks} items={items} sprints={sprints} members={members} attachments={attachments} comments={comments} activities={activities} checklist={checklist} customFields={customFields} customValues={customValues} currentUser={currentUser} onUpdate={(id,data)=>onUpdate('backlog_items',id,data)} onAttach={()=>onAttach(detail.id)} onComment={onComment} onAddChecklist={onAddChecklist} onUpdateChecklist={onUpdateChecklist} onDeleteChecklist={onDeleteChecklist} onSaveCustomValue={onSaveCustomValue}/></Modal>}
   </div>
 }
 
