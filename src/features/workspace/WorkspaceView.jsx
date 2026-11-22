@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { BadgeCheck, BellRing, Building2, CalendarClock, Check, Clock3, Gauge, Mail, MessageCircle, ReceiptText, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
+import { BadgeCheck, BellRing, Building2, CalendarClock, Check, CircleCheck, Clock3, Gauge, Landmark, Mail, MessageCircle, ReceiptText, ShieldCheck, Trash2, UserPlus, Users, XCircle } from 'lucide-react'
 
 const ROLES = ['Administrateur', 'Chef de projet', 'Scrum Master', 'Product Owner', 'Membre', 'Observateur', 'Fournisseur externe']
 const PREFERENCE_DEFAULTS = { phone: '', notify_in_app: true, notify_email: true, notify_whatsapp: false, notify_assignments: true, notify_status_changes: true, notify_comments: true, daily_digest: true, quiet_start: '20:00', quiet_end: '07:00' }
 
-export default function WorkspaceView({ data, canManage=false, canInvite=false, onRename, onInvite, onRemove, onUpdateRole, onUpdatePreferences, onCheckout }) {
+export default function WorkspaceView({ data, canManage=false, canInvite=false, onRename, onInvite, onRemove, onUpdateRole, onUpdatePreferences, onCheckout, onManualPayment, onReviewPayment }) {
   const [name, setName] = useState(data?.workspace?.name || '')
   const [accountType, setAccountType] = useState(data?.workspace?.account_type || 'Personnel')
   const [saved, setSaved] = useState(false)
@@ -26,7 +26,8 @@ export default function WorkspaceView({ data, canManage=false, canInvite=false, 
       </form>
       <div className="workspace-kpis"><span><b>{data.members.length}</b>Membres</span><span><b>{active}</b>Actifs</span><span><b>{pending}</b>Invitations</span><span><b>{data.workspace.subscription_plan || 'Découverte'}</b>{data.workspace.subscription_status || 'Local'}</span></div>
     </section>
-    <SubscriptionOverview data={data} canManage={canManage} onCheckout={onCheckout}/>
+    <SubscriptionOverview data={data} canManage={canManage} onCheckout={onCheckout} onManualPayment={onManualPayment}/>
+    {data.is_platform_admin&&<ManualPaymentAdmin rows={data.platform_payment_requests||[]} onReview={onReviewPayment}/>}
     <section className="card members-card">
       <div className="members-head"><div><h3>Membres et accès</h3><p>Invitez les personnes qui pourront participer aux projets de cet espace.</p></div>{canInvite&&<button className="btn primary" onClick={onInvite}><UserPlus size={16}/>Inviter un membre</button>}</div>
       <div className="members-table">
@@ -45,9 +46,10 @@ export default function WorkspaceView({ data, canManage=false, canInvite=false, 
   </div>
 }
 
-function SubscriptionOverview({ data, canManage, onCheckout }) {
+function SubscriptionOverview({ data, canManage, onCheckout, onManualPayment }) {
   const [annual,setAnnual]=useState(false)
   const [loading,setLoading]=useState('')
+  const [manualPlan,setManualPlan]=useState(null)
   const subscription=data.subscription||{}
   const currentCode=subscription.plan_code||'discovery'
   const currentPlan=data.plans?.find(plan=>plan.code===currentCode)
@@ -59,11 +61,14 @@ function SubscriptionOverview({ data, canManage, onCheckout }) {
   const trialEnd=subscription.current_period_end||data.workspace.trial_ends_at
   const trialDays=trialEnd?Math.max(0,Math.ceil((new Date(trialEnd)-new Date())/86400000)):null
   const plans=(data.plans||[]).filter(plan=>plan.account_type===data.workspace.account_type||plan.code==='discovery')
-  const checkout=async plan=>{setLoading(plan.code);try{await onCheckout({plan_code:plan.code,billing_cycle:annual?'annual':'monthly',seats:Math.max(seats,Number(plan.min_seats)||1)})}finally{setLoading('')}}
+  const checkout=async plan=>{if(!data.automatic_billing_available){setManualPlan(plan);return}setLoading(plan.code);try{await onCheckout({plan_code:plan.code,billing_cycle:annual?'annual':'monthly',seats:Math.max(seats,Number(plan.min_seats)||1)})}finally{setLoading('')}}
+  const hasManualPrice=plan=>(data.manual_payment_methods||[]).some(method=>(data.manual_plan_prices||[]).some(price=>price.plan_code===plan.code&&price.billing_cycle===(annual?'annual':'monthly')&&price.currency===method.currency))
   return <section className="card subscription-card">
     <header className="subscription-head"><div><span className="subscription-icon"><BadgeCheck size={21}/></span><div><small>ABONNEMENT</small><h3>{currentPlan?.name||data.workspace.subscription_plan||'Découverte'}</h3><p>{subscription.status==='trialing'&&trialDays!==null?`Essai gratuit · ${trialDays} jour${trialDays>1?'s':''} restant${trialDays>1?'s':''}`:data.workspace.subscription_status||'Mode local'}</p></div></div><div className="billing-controls">{data.workspace.account_type==='Organisation'&&<label>Sièges<input type="number" min="1" value={seats} onChange={event=>setSeats(Math.max(1,Number(event.target.value)||1))}/></label>}<div className="billing-toggle"><button className={!annual?'active':''} onClick={()=>setAnnual(false)}>Mensuel</button><button className={annual?'active':''} onClick={()=>setAnnual(true)}>Annuel <em>−15 %</em></button></div></div></header>
     <div className="usage-grid"><UsageMeter icon={Users} label="Sièges actifs" value={billable} limit={seatLimit}/><UsageMeter icon={Gauge} label="Projets" value={projects} limit={projectLimit}/><div className="trial-meter"><CalendarClock size={18}/><span><small>Prochaine échéance</small><b>{trialEnd?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'long',year:'numeric'}).format(new Date(trialEnd)):'Aucune'}</b></span></div></div>
-    <div className="plan-grid">{plans.map(plan=>{const price=Number(annual?plan.annual_price_eur:plan.monthly_price_eur);const selected=plan.code===currentCode;const payable=!selected&&!['discovery','enterprise'].includes(plan.code);const minimum=Math.max(seats,Number(plan.min_seats)||1);return <article key={plan.code} className={selected?'current':''}><div><span>{selected?'OFFRE ACTUELLE':plan.account_type.toUpperCase()}</span><h4>{plan.name}</h4><p>{price===0?'Gratuit':<><b>{annual?(price/12).toFixed(2):price.toFixed(2)} €</b><small> / mois{plan.min_seats>1?' / siège':''}</small></>}</p>{payable&&minimum>1?<em className="plan-total">Total : {(price*minimum).toFixed(2)} € {annual?'par an':'par mois'}</em>:null}</div><ul><li><Check size={13}/>{Number(plan.features?.projects)<0?'Projets illimités':`${plan.features?.projects||2} projets`}</li><li><Check size={13}/>{formatStorage(plan.features?.storage_mb)}</li><li><Check size={13}/>{plan.features?.collaboration?'Collaboration en temps réel':'Pilotage individuel'}</li></ul><button disabled={!payable||!canManage||!data.billing_available||Boolean(loading)} onClick={()=>checkout(plan)}>{selected?'Plan actif':loading===plan.code?'Préparation…':plan.code==='enterprise'?'Nous contacter':data.billing_available?'Choisir cette offre':'Disponible en mode SaaS'}</button></article>})}</div>
+    <div className="plan-grid">{plans.map(plan=>{const price=Number(annual?plan.annual_price_eur:plan.monthly_price_eur);const selected=plan.code===currentCode;const payable=!selected&&!['discovery','enterprise'].includes(plan.code);const minimum=Math.max(seats,Number(plan.min_seats)||1);const available=data.automatic_billing_available||hasManualPrice(plan);return <article key={plan.code} className={selected?'current':''}><div><span>{selected?'OFFRE ACTUELLE':plan.account_type.toUpperCase()}</span><h4>{plan.name}</h4><p>{price===0?'Gratuit':<><b>{annual?(price/12).toFixed(2):price.toFixed(2)} €</b><small> / mois{plan.min_seats>1?' / siège':''}</small></>}</p>{payable&&minimum>1?<em className="plan-total">Total : {(price*minimum).toFixed(2)} € {annual?'par an':'par mois'}</em>:null}</div><ul><li><Check size={13}/>{Number(plan.features?.projects)<0?'Projets illimités':`${plan.features?.projects||2} projets`}</li><li><Check size={13}/>{formatStorage(plan.features?.storage_mb)}</li><li><Check size={13}/>{plan.features?.collaboration?'Collaboration en temps réel':'Pilotage individuel'}</li></ul><button disabled={!payable||!canManage||!available||Boolean(loading)} onClick={()=>checkout(plan)}>{selected?'Plan actif':loading===plan.code?'Préparation…':plan.code==='enterprise'?'Nous contacter':available?(data.automatic_billing_available?'Choisir cette offre':'Payer par dépôt'):'Tarif bientôt disponible'}</button></article>})}</div>
+    {manualPlan&&<ManualPaymentForm plan={manualPlan} annual={annual} seats={Math.max(seats,Number(manualPlan.min_seats)||1)} methods={data.manual_payment_methods||[]} prices={data.manual_plan_prices||[]} onCancel={()=>setManualPlan(null)} onSubmit={async form=>{setLoading(manualPlan.code);try{await onManualPayment({...form,plan_code:manualPlan.code,billing_cycle:annual?'annual':'monthly',seats:Math.max(seats,Number(manualPlan.min_seats)||1)});setManualPlan(null)}finally{setLoading('')}}}/>}
+    {(data.manual_payment_requests||[]).length>0&&<ManualPaymentHistory rows={data.manual_payment_requests}/>}
     {data.billing_transactions?.length>0&&<div className="billing-history"><div><ReceiptText size={17}/><span><b>Historique de facturation</b><small>Dernières tentatives et confirmations de paiement.</small></span></div><div>{data.billing_transactions.map(row=><article key={row.id}><span><b>{row.plan_code}</b><small>{new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(row.created_at))}</small></span><strong>{Number(row.amount).toFixed(2)} {row.currency}</strong><em className={`billing-status ${row.status}`}>{billingStatus(row.status)}</em></article>)}</div></div>}
     <footer><ShieldCheck size={15}/><span>Le changement d’offre sera activé uniquement après confirmation sécurisée du paiement. Aucune carte bancaire n’est stockée par Jalonis.</span></footer>
   </section>
@@ -77,6 +82,26 @@ function UsageMeter({icon:Icon,label,value,limit}){
 
 function formatStorage(megabytes){const value=Number(megabytes||250);return value>=1024?`${Math.round(value/1024)} Go de stockage`:`${value} Mo de stockage`}
 function billingStatus(status){return {pending:'En attente',successful:'Payé',failed:'Échoué',cancelled:'Annulé',refunded:'Remboursé'}[status]||status}
+
+function ManualPaymentForm({plan,annual,seats,methods,prices,onCancel,onSubmit}){
+  const cycle=annual?'annual':'monthly'
+  const eligible=methods.filter(method=>prices.some(price=>price.plan_code===plan.code&&price.billing_cycle===cycle&&price.currency===method.currency))
+  const [methodId,setMethodId]=useState(eligible[0]?.id||'')
+  const [form,setForm]=useState({payer_name:'',payment_reference:''})
+  const [saving,setSaving]=useState(false)
+  const method=eligible.find(item=>item.id===methodId)||eligible[0]
+  const price=prices.find(item=>item.plan_code===plan.code&&item.billing_cycle===cycle&&item.currency===method?.currency)
+  const total=Number(price?.unit_amount||0)*seats
+  const submit=async event=>{event.preventDefault();setSaving(true);try{await onSubmit({...form,payment_method_id:method.id})}finally{setSaving(false)}}
+  return <form className="manual-payment-form" onSubmit={submit}><header><Landmark size={20}/><div><b>Paiement par dépôt · {plan.name}</b><small>Effectuez le dépôt puis renseignez sa référence. L’activation intervient après vérification.</small></div></header><div className="manual-payment-grid"><label>Moyen de paiement<select value={methodId} onChange={event=>setMethodId(event.target.value)}>{eligible.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><div className="deposit-details"><span><small>Compte / numéro</small><b>{method?.account_reference}</b></span><span><small>Titulaire</small><b>{method?.account_name}</b></span><span><small>Montant exact</small><b>{formatMoney(total,method?.currency)}</b></span>{method?.instructions&&<p>{method.instructions}</p>}</div><label>Nom du payeur<input required maxLength="120" value={form.payer_name} onChange={event=>setForm({...form,payer_name:event.target.value})}/></label><label>Référence de la transaction<input required minLength="3" maxLength="120" value={form.payment_reference} onChange={event=>setForm({...form,payment_reference:event.target.value})} placeholder="Ex. identifiant Mobile Money"/></label></div><footer><button type="button" className="btn ghost" onClick={onCancel}>Annuler</button><button className="btn primary" disabled={saving}>{saving?'Transmission…':'J’ai effectué le paiement'}</button></footer></form>
+}
+
+function ManualPaymentHistory({rows}){return <div className="manual-payment-history"><div><ReceiptText size={17}/><span><b>Demandes de paiement</b><small>Suivi des dépôts soumis à validation.</small></span></div>{rows.map(row=><article key={row.id}><span><b>{row.plan_catalog?.name||row.plan_code}</b><small>{row.manual_payment_methods?.name||'Dépôt'} · {row.payment_reference}</small></span><strong>{formatMoney(row.amount,row.currency)}</strong><em className={`billing-status ${row.status}`}>{manualStatus(row.status)}</em></article>)}</div>}
+
+function ManualPaymentAdmin({rows,onReview}){const [notes,setNotes]=useState({}),[busy,setBusy]=useState('');const review=async(row,decision)=>{setBusy(row.id);try{await onReview({request_id:row.id,decision,note:notes[row.id]||''})}finally{setBusy('')}};return <section className="card manual-admin-card"><header><ShieldCheck size={20}/><div><h3>Validation des paiements</h3><p>{rows.length?`${rows.length} dépôt(s) attendent une vérification.`:'Aucun paiement en attente.'}</p></div></header>{rows.map(row=><article key={row.id}><div><b>{row.workspaces?.name||'Espace'} · {row.plan_catalog?.name||row.plan_code}</b><small>{row.payer_name} · {row.manual_payment_methods?.name} · référence {row.payment_reference}</small></div><strong>{formatMoney(row.amount,row.currency)}</strong><input placeholder="Note de contrôle" value={notes[row.id]||''} onChange={event=>setNotes({...notes,[row.id]:event.target.value})}/><button className="reject" disabled={busy===row.id} onClick={()=>review(row,'rejected')}><XCircle size={15}/>Refuser</button><button className="approve" disabled={busy===row.id} onClick={()=>review(row,'approved')}><CircleCheck size={15}/>Confirmer</button></article>)}</section>}
+
+function manualStatus(status){return {pending:'À vérifier',approved:'Activé',rejected:'Refusé',cancelled:'Annulé'}[status]||status}
+function formatMoney(amount,currency='XOF'){return new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:currency==='XOF'?0:2}).format(Number(amount||0))}
 
 function NotificationPreferences({ user, onSave }) {
   const [form, setForm] = useState(PREFERENCE_DEFAULTS)

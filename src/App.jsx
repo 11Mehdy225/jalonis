@@ -200,6 +200,15 @@ export default function App() {
     try{setError('');const result=await api.billing.createCheckout(data);if(!result?.checkout_url)throw new Error('Lien de paiement indisponible.');window.location.assign(result.checkout_url)}
     catch(reason){setError(reason.message||'Impossible de préparer le paiement.')}
   }
+  async function submitManualPayment(data){
+    if(!permissions.manageWorkspace)return deny('Seuls le propriétaire et les administrateurs peuvent gérer la facturation.')
+    try{setError('');const result=await api.billing.submitManual(data);setWorkspace(result.workspace);setNotice(result.message||'Demande de paiement transmise.')}
+    catch(reason){setError(reason.message||'Impossible de transmettre cette demande de paiement.');throw reason}
+  }
+  async function reviewManualPayment(data){
+    try{setError('');const result=await api.billing.reviewManual(data);setWorkspace(result.workspace);setNotice(data.decision==='approved'?'Paiement confirmé et abonnement activé.':'Demande de paiement refusée.')}
+    catch(reason){setError(reason.message||'Impossible de traiter cette demande.');throw reason}
+  }
   async function analyzeProject(question){return api.assistant.analyze(activeId,question)}
   async function inviteMember(data){
     if(!permissions.inviteMembers)return deny('Votre rôle ne permet pas d’inviter des membres.')
@@ -240,7 +249,7 @@ export default function App() {
         {!online&&<div className="offline-banner"><Database size={16}/><span><b>Connexion interrompue</b> Les changements cloud reprendront après le retour du réseau.</span></div>}
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
         {notice&&<div className="app-notice">{notice}<button onClick={()=>setNotice('')}>×</button></div>}
-        {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout}/></>
+        {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout} onManualPayment={submitManualPayment} onReviewPayment={reviewManualPayment}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Votre profil et la configuration de cette installation.</p></div></div><SettingsView currentUser={currentUser} onUpdateProfile={updateProfile}/></>
         : !active ? <Empty canCreate={permissions.createProject} onCreate={()=>setModal('project')}/> : <>
           <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} canManage={permissions.manageProject} canInvite={permissions.inviteMembers} onNavigate={openProjectView} onShare={()=>setModal('invite-member')} onBranding={()=>setModal('branding')}/>

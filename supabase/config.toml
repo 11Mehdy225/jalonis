@@ -10,6 +10,26 @@ enabled = true
 site_url = "https://jalonis.onrender.com"
 additional_redirect_urls = ["https://jalonis.onrender.com", "https://jalonis.onrender.com/**", "http://localhost:5173", "http://127.0.0.1:5173", "http://127.0.0.1:4173", "http://127.0.0.1:4174"]
 
+[auth.email.template.confirmation]
+subject = "Confirmez votre compte Jalonis"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.invite]
+subject = "Vous êtes invité(e) sur Jalonis"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.recovery]
+subject = "Réinitialisez votre mot de passe Jalonis"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "Votre lien de connexion Jalonis"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.email.template.email_change]
+subject = "Confirmez votre nouvelle adresse Jalonis"
+content_path = "./supabase/templates/email-change.html"
+
 [storage]
 enabled = true
 file_size_limit = "50MiB"
@@ -21,6 +41,12 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.create-billing-checkout]
+verify_jwt = true
+
+[functions.submit-manual-payment]
+verify_jwt = true
+
+[functions.review-manual-payment]
 verify_jwt = true
 
 [functions.project-assistant]

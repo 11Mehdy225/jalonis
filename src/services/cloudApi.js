@@ -9,6 +9,8 @@ const unwrap = ({ data, error }) => {
   return data
 }
 
+const optional = (request, fallback=[]) => request.then(({data,error}) => error ? fallback : (data ?? fallback))
+
 async function currentUser() {
   const { data, error } = await supabase.auth.getUser()
   if (error) throw error
@@ -55,15 +57,19 @@ async function selectWorkspace(id){
 
 async function workspaceState() {
   const id = await workspaceId()
-  const [workspace, memberships, invitations, user, subscription, plans, projectCount, billingTransactions] = await Promise.all([
+  const user=await currentUser()
+  const [workspace, memberships, invitations, subscription, plans, projectCount, billingTransactions, paymentMethods, manualPrices, manualRequests, platformAdmin] = await Promise.all([
     supabase.from('workspaces').select('*').eq('id', id).single().then(unwrap),
     supabase.from('workspace_members').select('*').eq('workspace_id', id).order('created_at').then(unwrap),
     supabase.from('workspace_invitations').select('*').eq('workspace_id', id).eq('status', 'En attente').gt('expires_at',new Date().toISOString()).order('created_at').then(unwrap),
-    currentUser(),
     supabase.from('subscriptions').select('*').eq('workspace_id', id).maybeSingle().then(unwrap),
     supabase.from('plan_catalog').select('*').eq('active', true).order('monthly_price_eur').then(unwrap),
     supabase.from('projects').select('id',{count:'exact',head:true}).eq('workspace_id',id).then(({count,error})=>{if(error)throw error;return count||0}),
     supabase.from('billing_transactions').select('*').eq('workspace_id',id).order('created_at',{ascending:false}).limit(8).then(unwrap),
+    optional(supabase.from('manual_payment_methods').select('*').eq('active',true).order('sort_order')),
+    optional(supabase.from('manual_plan_prices').select('*').eq('active',true)),
+    optional(supabase.from('manual_payment_requests').select('*,manual_payment_methods(name,channel),plan_catalog(name)').eq('workspace_id',id).order('created_at',{ascending:false}).limit(8)),
+    optional(supabase.from('platform_admins').select('user_id').eq('user_id',user.id).eq('active',true).maybeSingle(),null),
   ])
   const profileIds = memberships.map(item => item.user_id)
   const profiles = profileIds.length ? unwrap(await supabase.from('profiles').select('*').in('id', profileIds)) : []
@@ -85,7 +91,9 @@ async function workspaceState() {
     notify_whatsapp: 0,
     invitation: true,
   }))
-  return { workspace, subscription, plans, billing_transactions: billingTransactions, billing_available: true, usage: { projects: projectCount }, members, current_user: members.find(member => member.id === user.id) || null }
+  let platformRequests=[]
+  if(platformAdmin)platformRequests=await optional(supabase.from('manual_payment_requests').select('*,manual_payment_methods(name,channel),plan_catalog(name),workspaces(name)').eq('status','pending').order('created_at').limit(100))
+  return { workspace, subscription, plans, billing_transactions: billingTransactions, billing_available: true, automatic_billing_available: false, manual_payment_methods: paymentMethods, manual_plan_prices: manualPrices, manual_payment_requests: manualRequests, is_platform_admin: Boolean(platformAdmin), platform_payment_requests: platformRequests, usage: { projects: projectCount }, members, current_user: members.find(member => member.id === user.id) || null }
 }
 
 async function listProjects() {
@@ -151,6 +159,19 @@ export const cloudApi = {
       if(error){let message=result?.error||error.message||'Impossible de préparer le paiement';try{const details=await error.context?.json();message=details?.error||message}catch{}throw new Error(message)}
       if(result?.error)throw new Error(result.error)
       return result
+    },
+    submitManual: async data => {
+      const id=await workspaceId()
+      const {data:result,error}=await supabase.functions.invoke('submit-manual-payment',{body:{...data,workspace_id:id}})
+      if(error){let message=result?.error||error.message||'Impossible de transmettre le paiement';try{const details=await error.context?.json();message=details?.error||message}catch{}throw new Error(message)}
+      if(result?.error)throw new Error(result.error)
+      return {...result,workspace:await workspaceState()}
+    },
+    reviewManual: async data => {
+      const {data:result,error}=await supabase.functions.invoke('review-manual-payment',{body:data})
+      if(error){let message=result?.error||error.message||'Impossible de traiter le paiement';try{const details=await error.context?.json();message=details?.error||message}catch{}throw new Error(message)}
+      if(result?.error)throw new Error(result.error)
+      return {...result,workspace:await workspaceState()}
     },
   },
   realtime: {

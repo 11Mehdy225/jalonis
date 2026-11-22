@@ -71,6 +71,12 @@ Après application de la migration `202611220021_full_project_realtime.sql`, une
 
 La clé `SUPABASE_SERVICE_ROLE_KEY` est fournie automatiquement aux fonctions Supabase hébergées. Elle ne doit jamais être ajoutée aux variables Render ni au code de l’application.
 
+## Identité des e-mails Jalonis
+
+Les modèles versionnés dans `supabase/templates/` couvrent la confirmation de compte, l’invitation, la récupération du mot de passe, le lien de connexion et le changement d’adresse. Pour le projet Supabase hébergé, reporter ces modèles dans **Authentication → Emails → Templates**.
+
+Pour que l’expéditeur soit réellement affiché comme **Jalonis**, activer **Authentication → Emails → SMTP Settings** avec une boîte d’envoi dédiée. Configurer le nom d’expéditeur sur `Jalonis` et utiliser une adresse du domaine de l’entreprise. Les identifiants SMTP restent exclusivement dans Supabase et ne doivent jamais être ajoutés à GitHub ou à Render.
+
 ## 5. Activer la facturation
 
 La table `subscriptions`, le catalogue d’offres, l’essai de 14 jours et les limites de projets sont prêts. L’écran **Espace & accès** affiche l’offre, les sièges, les projets consommés, l’échéance et l’historique des paiements.
