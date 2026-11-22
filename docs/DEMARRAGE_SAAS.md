@@ -36,6 +36,8 @@ npm install
 npm run dev
 ```
 
+Après un déploiement, exécuter également `npm run test:production`. Ce contrôle en lecture seule vérifie le site public, Supabase Auth, le catalogue des offres et le refus des fonctions protégées lorsqu’aucune session n’est fournie. Il ne crée aucun compte ni aucune donnée.
+
 Créer un compte de validation, confirmer l’adresse e-mail, puis vérifier :
 
 1. la création automatique de l’espace personnel ou de l’organisation ;

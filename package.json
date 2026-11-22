@@ -19,6 +19,7 @@
     "supabase:push": "supabase db push",
     "supabase:functions": "supabase functions deploy",
     "supabase:check": "node scripts/check-supabase-config.mjs",
+    "test:production": "node scripts/check-production.mjs",
     "test:permissions": "node scripts/check-permissions.mjs",
     "test:isolation": "node scripts/check-workspace-isolation.cjs",
     "test": "npm run test:permissions && npm run test:isolation"
