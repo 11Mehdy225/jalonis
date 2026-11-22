@@ -16,5 +16,6 @@ import './styles/scrum.css'
 import './styles/suppliers.css'
 import './styles/project-shell.css'
 import './styles/collaboration.css'
+import './styles/mobile.css'
 
 createRoot(document.getElementById('root')).render(<React.StrictMode><ErrorBoundary><AuthGate><App /></AuthGate></ErrorBoundary></React.StrictMode>)

@@ -23,7 +23,7 @@ import ProjectAssistant from './features/assistant/ProjectAssistant'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { permissionsFor } from './services/permissions'
-import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond, Sparkles } from 'lucide-react'
+import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond, Sparkles, Menu, X } from 'lucide-react'
 
 const money = (n,currency='XOF') => new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0)
 const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)) : '—'
@@ -46,6 +46,7 @@ export default function App() {
   const [notice,setNotice]=useState('')
   const [agileTab,setAgileTab]=useState('board'), [dark,setDark]=useState(()=>localStorage.getItem('jalonis-theme')==='dark')
   const [notificationOpen,setNotificationOpen]=useState(false)
+  const [mobileNav,setMobileNav]=useState(false)
   const [online,setOnline]=useState(()=>navigator.onLine)
   const active=projects.find(p=>p.id===activeId)
 
@@ -225,7 +226,7 @@ export default function App() {
   function deny(message){setError(message);return null}
   async function updateMemberRole(id,role){if(!permissions.manageWorkspace)return deny('Seuls le propriétaire et les administrateurs peuvent modifier les rôles.');try{setError('');setWorkspace(await api.workspace.updateMemberRole(id,role))}catch(reason){setError(reason.message||'Impossible de modifier ce rôle')}}
   function toggleTheme(){setDark(value=>{const next=!value;localStorage.setItem('jalonis-theme',next?'dark':'light');return next})}
-  function openProjectView(nextView,nextAgileTab){if(nextAgileTab)setAgileTab(nextAgileTab);setView(nextView)}
+  function openProjectView(nextView,nextAgileTab){if(nextAgileTab)setAgileTab(nextAgileTab);setView(nextView);setMobileNav(false)}
   async function readNotification(id){await api.entities.update('notifications',id,{is_read:true});await loadEntities(activeId)}
   async function readAllNotifications(){await Promise.all(visibleNotifications.filter(item=>!Number(item.is_read)).map(item=>api.entities.update('notifications',item.id,{is_read:true})));await loadEntities(activeId)}
   const visibleNotifications=entities.notifications.filter(item=>!item.recipient_id||item.recipient_id===currentUser?.id)
@@ -234,17 +235,18 @@ export default function App() {
   const currentPlan=workspace?.plans?.find(plan=>plan.code===(workspace?.subscription?.plan_code||'discovery'))
   const advancedAssistant=Boolean(currentPlan?.features?.assistant)
 
-  return <div className={`app-shell${dark?' dark':''}`}>
-    <aside className="sidebar">
-      <div className="brand"><img src="./assets/jalonis-logo.png"/><div><strong>Jalonis</strong><span>Pilotage de projets</span></div></div>
+  return <div className={`app-shell${dark?' dark':''}${mobileNav?' mobile-nav-open':''}`}>
+    {mobileNav&&<button className="mobile-nav-backdrop" aria-label="Fermer le menu" onClick={()=>setMobileNav(false)}/>}
+    <aside className={`sidebar${mobileNav?' open':''}`}>
+      <div className="brand"><img src="./assets/jalonis-logo.png"/><div><strong>Jalonis</strong><span>Pilotage de projets</span></div><button className="mobile-nav-close" aria-label="Fermer le menu" onClick={()=>setMobileNav(false)}><X size={21}/></button></div>
       <div className="workspace-label">ESPACE DE TRAVAIL</div>
-      <button className="project-switcher" onClick={()=>setModal('workspace-switcher')} style={{'--project-color':active?.theme_color||'#4f46e5'}}>{active?.logo_url?<img className="project-avatar project-logo" src={active.logo_url} alt=""/>:<span className="project-avatar">{active?.name?.[0]||workspace?.workspace?.name?.[0]||'J'}</span>}<span><b>{workspace?.workspace?.name||'Mon espace Jalonis'}</b><small>{active?.name||'Aucun projet sélectionné'}</small></span><ChevronRight size={16}/></button>
-      <nav>{visibleNav.map(([id,label,Icon])=><button key={id} className={view===id?'active':''} onClick={()=>setView(id)}><Icon size={18}/><span>{label}</span>{id==='risks'&&stats.critical>0?<em>{stats.critical}</em>:null}</button>)}</nav>
-      <div className="sidebar-bottom"><button className={view==='workspace'?'active':''} onClick={()=>setView('workspace')}><Building2 size={18}/>Espace & accès</button><button onClick={()=>setModal('projects')}><FolderKanban size={18}/>Tous les projets</button><button onClick={()=>setView('settings')}><Settings size={18}/>Paramètres</button></div>
+      <button className="project-switcher" onClick={()=>{setModal('workspace-switcher');setMobileNav(false)}} style={{'--project-color':active?.theme_color||'#4f46e5'}}>{active?.logo_url?<img className="project-avatar project-logo" src={active.logo_url} alt=""/>:<span className="project-avatar">{active?.name?.[0]||workspace?.workspace?.name?.[0]||'J'}</span>}<span><b>{workspace?.workspace?.name||'Mon espace Jalonis'}</b><small>{active?.name||'Aucun projet sélectionné'}</small></span><ChevronRight size={16}/></button>
+      <nav>{visibleNav.map(([id,label,Icon])=><button key={id} className={view===id?'active':''} onClick={()=>{setView(id);setMobileNav(false)}}><Icon size={18}/><span>{label}</span>{id==='risks'&&stats.critical>0?<em>{stats.critical}</em>:null}</button>)}</nav>
+      <div className="sidebar-bottom"><button className={view==='workspace'?'active':''} onClick={()=>{setView('workspace');setMobileNav(false)}}><Building2 size={18}/>Espace & accès</button><button onClick={()=>{setModal('projects');setMobileNav(false)}}><FolderKanban size={18}/>Tous les projets</button><button onClick={()=>{setView('settings');setMobileNav(false)}}><Settings size={18}/>Paramètres</button></div>
       <div className="user-chip"><div className="avatar">{(currentUser?.full_name||'CP').split(' ').map(part=>part[0]).slice(0,2).join('')}</div><div><b>{currentUser?.full_name||'Chef de projet'}</b><small>{currentUser?.role||'Administrateur local'}</small></div><MoreHorizontal size={17}/></div>
     </aside>
     <main>
-      <header className="app-header"><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button>{permissions.createProject&&<button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Créer</button>}{notificationOpen&&<NotificationCenter notifications={visibleNotifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
+      <header className="app-header"><button className="icon-btn mobile-menu-btn" aria-label="Ouvrir le menu" onClick={()=>setMobileNav(true)}><Menu size={21}/></button><span className="mobile-header-brand"><img src="./assets/jalonis-logo.png" alt=""/>Jalonis</span><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button>{permissions.createProject&&<button className="btn primary header-create" onClick={()=>setModal('project')}><Plus size={17}/><span>Créer</span></button>}{notificationOpen&&<NotificationCenter notifications={visibleNotifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
       <section className={`content${active&&view!=='workspace'&&view!=='settings'?' project-content':''}`} style={active?{'--project-color':active.theme_color||'#4f46e5'}:undefined}>
         {!online&&<div className="offline-banner"><Database size={16}/><span><b>Connexion interrompue</b> Les changements cloud reprendront après le retour du réseau.</span></div>}
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}

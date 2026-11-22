@@ -1,0 +1,55 @@
+.mobile-menu-btn,.mobile-nav-close,.mobile-header-brand,.mobile-nav-backdrop{display:none}
+
+@media(max-width:760px){
+  html,body,#root{width:100%;max-width:100%;min-width:0;overflow-x:hidden}
+  body{min-width:0}
+  .app-shell{display:block;min-width:0;width:100%}
+  .app-shell>main{width:100%;min-width:0}
+  .sidebar{position:fixed;z-index:150;inset:0 auto 0 0;width:min(86vw,330px);height:100dvh;transform:translateX(-105%);transition:transform .22s ease;box-shadow:18px 0 50px #08102545;padding:20px 14px 16px;overflow-y:auto}
+  .sidebar.open{transform:translateX(0)}
+  .mobile-nav-backdrop{display:block;position:fixed;z-index:140;inset:0;width:100%;height:100%;border:0;background:#07102499;backdrop-filter:blur(2px)}
+  .mobile-nav-close{display:grid;place-items:center;margin-left:auto;width:42px;height:42px;border:0;border-radius:10px;background:#ffffff12;color:#fff}
+  .brand{padding:0 6px 20px}.brand strong{font-size:20px}.brand span{font-size:10px}
+  .sidebar nav button,.sidebar-bottom button{min-height:48px;font-size:14px}
+  .project-switcher{min-height:58px;margin-bottom:14px}.project-switcher b{font-size:14px}.project-switcher small{font-size:12px}
+  .sidebar-bottom{margin-top:16px}.user-chip{padding-bottom:max(0px,env(safe-area-inset-bottom))}
+
+  .app-header{position:sticky;z-index:90;top:0;height:64px;padding:0 12px;gap:8px;background:#fff}
+  .mobile-menu-btn{display:grid;flex:0 0 42px;width:42px;height:42px}
+  .mobile-header-brand{display:flex;align-items:center;gap:7px;margin-right:auto;font-size:17px;font-weight:700;color:#20283b}.mobile-header-brand img{width:28px;height:28px;object-fit:contain}
+  .app-shell.dark .mobile-header-brand{color:#f0f1f4}
+  .search{display:none}.icon-btn{width:42px;height:42px;flex:0 0 42px}.header-create{width:42px;height:42px;padding:0}.header-create span{display:none}
+  .content,.content.project-content{width:100%;max-width:none;padding:18px 14px calc(40px + env(safe-area-inset-bottom))}
+  .project-content>.page-title,.project-content>.kpi-grid,.project-content>.dashboard-grid,.project-content>.card,.project-content>.table-card,.project-content>.people-grid,.project-content>.meeting-list,.project-content>.planning-toolbar,.project-content>.calendar,.project-content>.gantt-wrap,.project-content>.supplier-view,.project-content>.scrum-view{margin-left:0;margin-right:0}
+
+  .page-title{align-items:flex-start;gap:12px;margin-bottom:18px}.page-title h1{font-size:24px}.page-title p{font-size:14px;line-height:1.45}.page-title>.btn{flex:0 0 44px;width:44px;padding:0;font-size:0}.page-title>.btn svg{width:20px;height:20px}
+  .eyebrow,.workspace-label{font-size:11px}.compact-title{margin-bottom:16px!important}
+  .card{padding:16px;border-radius:13px}.card p,.section-title p{font-size:13px;line-height:1.5}.card small{font-size:12px}
+  .btn{min-height:44px;height:44px;font-size:14px;padding:0 14px}.icon-btn{min-height:42px}
+  input,select,textarea,.form-grid input,.form-grid select,.form-grid textarea{font-size:16px!important}
+  .form-grid{grid-template-columns:1fr;gap:13px}.form-grid .span-2,.span-2{grid-column:1}.form-grid label{font-size:14px}.form-actions{flex-wrap:wrap}.form-actions .btn{flex:1}
+  .modal-backdrop{align-items:end;padding:0}.modal{width:100%;max-width:none;max-height:92dvh;border-radius:20px 20px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}.modal-head{margin-bottom:18px}.modal-head h2{font-size:21px}
+
+  .project-context{margin:0 -14px 18px}.project-context-main{min-height:0;padding:16px 14px 12px;align-items:flex-start}.project-context-main>div:first-child{min-width:0}.project-heading{min-width:0}.project-heading>div{min-width:0}.project-heading h1{font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.project-heading p{font-size:12px}.project-actions{align-self:center}.member-stack{display:none}.project-actions>.btn{width:44px;padding:0;font-size:0}.project-actions>.btn svg{width:18px;height:18px}.project-tabs{padding:0 8px;scrollbar-width:none}.project-tabs button{height:48px;padding:0 10px;font-size:13px}.project-breadcrumb{font-size:12px}
+
+  .kpi-grid,.dashboard-grid,.people-grid,.resource-kpis,.workload-grid,.supplier-kpis,.supplier-dashboard-grid,.supplier-card-grid,.report-kpis,.report-grid,.governance-kpis,.governance-overview,.custom-field-groups,.settings-layout,.usage-grid,.plan-grid{grid-template-columns:1fr!important;gap:12px}.dashboard-grid .span-2,.card.span-2{grid-column:1}.kpi{min-height:92px}.kpi-top,.kpi>small{font-size:12px}.kpi>strong{font-size:23px}
+  .trajectory{align-items:flex-start;gap:18px;overflow-x:auto}.donut{flex:0 0 112px}.phase-list{min-width:390px}.timeline-list>div{grid-template-columns:8px minmax(150px,1fr) auto}.timeline-list>div>.status{display:none}
+  .table-card,.register-table,.supplier-table-wrap,.backlog-table,.timesheet-card{overflow-x:auto;-webkit-overflow-scrolling:touch}.table-card table,.register-table table,.timesheet-card table{min-width:720px}.supplier-table{min-width:820px}
+  .planning-toolbar{align-items:flex-start;gap:10px;overflow-x:auto}.view-toggle{flex:0 0 auto}.view-toggle button{min-height:40px;font-size:12px}
+  .calendar-card{overflow:hidden}.calendar-card>.calendar-head,.calendar-card>.weekday-row,.calendar-card>.month-grid{width:100%;min-width:0}.calendar-head{height:auto;min-height:68px;padding:10px 12px}.calendar-head h3{font-size:16px}.weekday-row span{justify-content:center;padding-left:0;font-size:8px}.week-days>div{padding:6px 3px}.calendar-week{min-height:112px}.calendar-event{padding:0 3px}.calendar-event b{font-size:7px}
+  .schedule-insights{grid-template-columns:1fr!important}.gantt-wrap{overflow-x:auto}.gantt-toolbar,.gantt{min-width:860px}.gantt{grid-template-columns:330px 1fr}
+  .scrum-intro{flex-direction:column}.scrum-intro .product-goal{width:100%;min-height:116px}.scrum-primary-actions{display:grid;grid-template-columns:1fr 1fr}.scrum-primary-actions .btn{width:100%;height:auto;min-height:48px;text-align:center}.scrum-toolbar{align-items:flex-start;gap:10px;overflow-x:auto}.scrum-toolbar>div{flex:0 0 auto}.scrum-tabs button{min-height:40px;font-size:12px}.hybrid-banner{align-items:flex-start;gap:10px}.hybrid-banner p{font-size:12px}.method-boundary span,.method-boundary em{font-size:11px;line-height:1.45}.method-pill{display:none}.sprint-head{grid-template-columns:1fr!important;gap:12px}.sprint-dates{align-items:flex-start}.scrum-board{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px}.scrum-column{min-width:calc(100vw - 44px);scroll-snap-align:start}.story-card>b{font-size:14px}.story-card p{font-size:12px}.backlog-table{border-radius:12px}.backlog-head,.backlog-row{min-width:820px}
+  .supplier-tabs,.governance-tabs{overflow-x:auto;white-space:nowrap}.supplier-tabs button,.governance-tabs button{min-height:42px;font-size:13px}.procurement-flow>div{grid-template-columns:1fr}.procurement-list article,.document-grid article{min-width:650px}.supplier-register:has(.procurement-list),.supplier-register:has(.document-grid){overflow-x:auto}.evaluation-grid{grid-template-columns:1fr}
+  .workspace-summary{grid-template-columns:48px 1fr!important}.workspace-summary form>div{grid-template-columns:1fr!important}.workspace-kpis{grid-template-columns:1fr 1fr!important}.subscription-head{align-items:flex-start;flex-direction:column}.billing-controls{width:100%;justify-content:space-between}.plan-grid{padding:3px 14px 16px}.plan-grid article{min-height:0}.members-table{overflow-x:auto}.members-row{min-width:760px}.preference-grid{grid-template-columns:1fr}.preference-head{align-items:flex-start;flex-wrap:wrap}.preference-head .btn{width:100%}.quiet-hours,.whatsapp-consent{grid-template-columns:32px 1fr!important}.quiet-hours label,.whatsapp-consent input,.whatsapp-consent p{grid-column:2!important}.manual-payment-form{margin:0 14px 16px}.manual-payment-history{margin:0 14px 16px;overflow-x:auto}.manual-payment-history article{min-width:540px}
+  .collaboration-view{grid-template-columns:1fr;margin:0}.daily-brief{margin:0 0 14px;grid-template-columns:1fr}.daily-brief-signals{display:flex;overflow-x:auto}.daily-brief-signals button,.daily-brief-signals>div{min-width:120px}.comment-composer{grid-template-columns:35px 1fr;margin:12px}.comment-composer button{grid-column:2;justify-self:end;min-height:42px}
+  .notification-center{position:fixed;inset:64px 8px auto;width:auto;max-height:calc(100dvh - 76px)}
+  .report-hero,.backup-section{align-items:flex-start;flex-direction:column}.export-grid{grid-template-columns:1fr!important}.governance-drawer{width:100%;padding:18px 14px}.governance-form{grid-template-columns:1fr}.governance-form .span-2{grid-column:1}
+  .work-item-detail{padding:0 14px 18px}.work-item-columns,.detail-visuals{grid-template-columns:1fr}.detail-visuals>button{grid-column:1}.work-item-summary{align-items:flex-start}.work-item-completion{flex:0 0 62px;width:62px;height:62px}
+  .read-only-banner,.custom-fields-page{margin-left:0;margin-right:0}.offline-banner span{display:block}
+}
+
+@media(max-width:390px){
+  .mobile-header-brand{font-size:0}.mobile-header-brand img{width:30px;height:30px}
+  .workspace-kpis{grid-template-columns:1fr!important}.billing-controls{align-items:flex-start;flex-direction:column}.billing-toggle{width:100%}.billing-toggle button{flex:1}
+  .project-context-main{gap:10px}.project-mark{display:none}
+}
