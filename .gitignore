@@ -7,3 +7,4 @@ release/
 .env.local
 .env.*.local
 .supabase/
+supabase/.temp/

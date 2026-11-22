@@ -14,6 +14,11 @@
     "build:win": "npm run build:web && electron-builder --win --x64",
     "build:all": "npm run build:web && electron-builder --mac --arm64 --win --x64",
     "preview": "vite preview",
+    "supabase:login": "supabase login",
+    "supabase:link": "supabase link",
+    "supabase:push": "supabase db push",
+    "supabase:functions": "supabase functions deploy",
+    "supabase:check": "node scripts/check-supabase-config.mjs",
     "test:permissions": "node scripts/check-permissions.mjs",
     "test:isolation": "node scripts/check-workspace-isolation.cjs",
     "test": "npm run test:permissions && npm run test:isolation"
@@ -30,6 +35,7 @@
     "concurrently": "latest",
     "electron": "^44.0.0",
     "electron-builder": "26.18.0",
+    "supabase": "^3.2.0",
     "wait-on": "latest"
   },
   "overrides": {
