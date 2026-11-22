@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const root=process.cwd()
-const requiredFunctions=['create-workspace','invite-member','create-billing-checkout','flutterwave-webhook','process-email-queue','process-whatsapp-queue','project-assistant','whatsapp-webhook']
+const requiredFunctions=['create-workspace','invite-member','create-billing-checkout','create-jeko-checkout','flutterwave-webhook','jeko-webhook','submit-manual-payment','review-manual-payment','process-email-queue','process-whatsapp-queue','project-assistant','whatsapp-webhook']
 const failures=[]
 
 const envFile=path.join(root,'.env.local')
@@ -16,7 +16,7 @@ else{
 }
 
 const migrations=fs.readdirSync(path.join(root,'supabase','migrations')).filter(file=>file.endsWith('.sql')).sort()
-if(migrations.length!==22)failures.push(`22 migrations attendues, ${migrations.length} trouvée(s).`)
+if(migrations.length!==24)failures.push(`24 migrations attendues, ${migrations.length} trouvée(s).`)
 for(const name of requiredFunctions){
   if(!fs.existsSync(path.join(root,'supabase','functions',name,'index.ts')))failures.push(`Fonction manquante : ${name}.`)
 }

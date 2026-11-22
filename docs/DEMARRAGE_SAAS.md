@@ -106,6 +106,35 @@ https://VOTRE-PROJET.supabase.co/functions/v1/flutterwave-webhook
 
 La valeur **Secret Hash** saisie dans Flutterwave doit être strictement identique à `FLW_WEBHOOK_HASH`. Le webhook vérifie ensuite la transaction directement auprès de Flutterwave, compare la référence, le montant et la devise, puis active l’abonnement. Un simple retour du navigateur ne peut donc pas débloquer une offre payante.
 
+### Paiement Jèko et Wave
+
+Jalonis peut utiliser Jèko comme prestataire de paiement en ligne. Jèko ouvre alors le parcours Wave, Orange Money ou un autre Mobile Money configuré, puis confirme le résultat à Jalonis par un webhook signé. Les clés ne doivent jamais être ajoutées à Render ni au code du navigateur.
+
+Secrets à enregistrer dans Supabase :
+
+```text
+JEKO_API_KEY
+JEKO_API_KEY_ID
+JEKO_STORE_ID
+JEKO_WEBHOOK_SECRET
+SITE_URL=https://jalonis.onrender.com
+```
+
+Déploiement des fonctions :
+
+```bash
+supabase functions deploy create-jeko-checkout
+supabase functions deploy jeko-webhook --no-verify-jwt
+```
+
+Dans le tableau de bord Jèko, enregistrer ce webhook HTTPS :
+
+```text
+https://kevqvphmobkjzzkkbbqw.supabase.co/functions/v1/jeko-webhook
+```
+
+Créer ensuite les tarifs XOF dans `provider_plan_prices`, puis activer la ligne `jeko` dans `billing_provider_settings`. Cette activation doit rester la dernière étape : tant que les secrets, tarifs et webhook ne sont pas prêts, `active` reste à `false` et Jalonis conserve le paiement manuel.
+
 ## 6. Invitations et notifications
 
 La fonction `invite-member` vérifie le rôle de l’expéditeur, la limite de places, crée l’invitation puis déclenche l’e-mail sécurisé de Supabase. Le lien rattache le nouveau compte à l’organisation et lui demande de choisir son mot de passe.

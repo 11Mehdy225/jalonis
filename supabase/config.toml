@@ -49,6 +49,9 @@ verify_jwt = true
 [functions.review-manual-payment]
 verify_jwt = true
 
+[functions.create-jeko-checkout]
+verify_jwt = true
+
 [functions.project-assistant]
 verify_jwt = false
 
@@ -59,6 +62,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.flutterwave-webhook]
+verify_jwt = false
+
+[functions.jeko-webhook]
 verify_jwt = false
 
 [functions.whatsapp-webhook]

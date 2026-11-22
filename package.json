@@ -22,7 +22,9 @@
     "test:production": "node scripts/check-production.mjs",
     "test:permissions": "node scripts/check-permissions.mjs",
     "test:isolation": "node scripts/check-workspace-isolation.cjs",
-    "test": "npm run test:permissions && npm run test:isolation"
+    "test:collaboration": "node scripts/check-collaboration.mjs",
+    "test:billing": "node scripts/check-jeko-billing.mjs",
+    "test": "npm run test:permissions && npm run test:isolation && npm run test:collaboration && npm run test:billing && npm run supabase:check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.1",

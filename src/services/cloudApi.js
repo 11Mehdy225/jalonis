@@ -58,7 +58,7 @@ async function selectWorkspace(id){
 async function workspaceState() {
   const id = await workspaceId()
   const user=await currentUser()
-  const [workspace, memberships, invitations, subscription, plans, projectCount, billingTransactions, paymentMethods, manualPrices, manualRequests, platformAdmin] = await Promise.all([
+  const [workspace, memberships, invitations, subscription, plans, projectCount, billingTransactions, paymentMethods, manualPrices, manualRequests, platformAdmin, onlineProvider, providerPrices] = await Promise.all([
     supabase.from('workspaces').select('*').eq('id', id).single().then(unwrap),
     supabase.from('workspace_members').select('*').eq('workspace_id', id).order('created_at').then(unwrap),
     supabase.from('workspace_invitations').select('*').eq('workspace_id', id).eq('status', 'En attente').gt('expires_at',new Date().toISOString()).order('created_at').then(unwrap),
@@ -70,6 +70,8 @@ async function workspaceState() {
     optional(supabase.from('manual_plan_prices').select('*').eq('active',true)),
     optional(supabase.from('manual_payment_requests').select('*,manual_payment_methods(name,channel),plan_catalog(name)').eq('workspace_id',id).order('created_at',{ascending:false}).limit(8)),
     optional(supabase.from('platform_admins').select('user_id').eq('user_id',user.id).eq('active',true).maybeSingle(),null),
+    optional(supabase.from('billing_provider_settings').select('provider,display_name,payment_method,currency').eq('active',true).maybeSingle(),null),
+    optional(supabase.from('provider_plan_prices').select('*').eq('active',true)),
   ])
   const profileIds = memberships.map(item => item.user_id)
   const profiles = profileIds.length ? unwrap(await supabase.from('profiles').select('*').in('id', profileIds)) : []
@@ -93,7 +95,7 @@ async function workspaceState() {
   }))
   let platformRequests=[]
   if(platformAdmin)platformRequests=await optional(supabase.from('manual_payment_requests').select('*,manual_payment_methods(name,channel),plan_catalog(name),workspaces(name)').eq('status','pending').order('created_at').limit(100))
-  return { workspace, subscription, plans, billing_transactions: billingTransactions, billing_available: true, automatic_billing_available: false, manual_payment_methods: paymentMethods, manual_plan_prices: manualPrices, manual_payment_requests: manualRequests, is_platform_admin: Boolean(platformAdmin), platform_payment_requests: platformRequests, usage: { projects: projectCount }, members, current_user: members.find(member => member.id === user.id) || null }
+  return { workspace, subscription, plans, billing_transactions: billingTransactions, billing_available: true, automatic_billing_available: Boolean(onlineProvider), billing_provider: onlineProvider, provider_plan_prices: providerPrices.filter(price=>price.provider===onlineProvider?.provider), manual_payment_methods: paymentMethods, manual_plan_prices: manualPrices, manual_payment_requests: manualRequests, is_platform_admin: Boolean(platformAdmin), platform_payment_requests: platformRequests, usage: { projects: projectCount }, members, current_user: members.find(member => member.id === user.id) || null }
 }
 
 async function listProjects() {
@@ -155,7 +157,9 @@ export const cloudApi = {
   billing: {
     createCheckout: async data => {
       const id=await workspaceId()
-      const {data:result,error}=await supabase.functions.invoke('create-billing-checkout',{body:{...data,workspace_id:id}})
+      const provider=String(data.provider||'jeko')
+      const functionName=provider==='flutterwave'?'create-billing-checkout':'create-jeko-checkout'
+      const {data:result,error}=await supabase.functions.invoke(functionName,{body:{...data,workspace_id:id}})
       if(error){let message=result?.error||error.message||'Impossible de préparer le paiement';try{const details=await error.context?.json();message=details?.error||message}catch{}throw new Error(message)}
       if(result?.error)throw new Error(result.error)
       return result
