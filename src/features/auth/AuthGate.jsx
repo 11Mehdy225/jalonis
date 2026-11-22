@@ -15,8 +15,13 @@ export default function AuthGate({ children }) {
   const desktop = Boolean(window.jalonis)
   const [session, setSession] = useState(desktop ? { desktop: true } : null)
   const [checking, setChecking] = useState(!desktop && isCloudConfigured)
-  const [preview, setPreview] = useState(() => new URLSearchParams(window.location.search).get('preview') === '1')
+  const preview = new URLSearchParams(window.location.search).get('preview') === '1'
   const [authOpen, setAuthOpen] = useState(false)
+  const openPreview = () => {
+    const url=new URL(window.location.href)
+    url.searchParams.set('preview','1')
+    window.location.assign(url.toString())
+  }
 
   useEffect(() => {
     if (desktop || !isCloudConfigured) return undefined
@@ -27,8 +32,8 @@ export default function AuthGate({ children }) {
 
   if (desktop || session || preview) return children
   if (checking) return <div className="auth-loading"><Sparkles size={30}/><b>Ouverture de votre espace Jalonis…</b></div>
-  if (authOpen) return <AuthScreen cloudReady={isCloudConfigured} onBack={() => setAuthOpen(false)}/>
-  return <WelcomeScreen onConnect={() => setAuthOpen(true)} onPreview={() => setPreview(true)}/>
+  if (authOpen) return <AuthScreen cloudReady={isCloudConfigured} onBack={() => setAuthOpen(false)} onPreview={openPreview}/>
+  return <WelcomeScreen onConnect={() => setAuthOpen(true)} onPreview={openPreview}/>
 }
 
 function WelcomeScreen({ onConnect, onPreview }) {
@@ -63,7 +68,7 @@ function WelcomeScreen({ onConnect, onPreview }) {
   </main>
 }
 
-function AuthScreen({ cloudReady, onBack }) {
+function AuthScreen({ cloudReady, onBack, onPreview }) {
   const [mode, setMode] = useState('login')
   const [form, setForm] = useState({ accountType: 'Personnel' })
   const [error, setError] = useState('')
@@ -83,5 +88,5 @@ function AuthScreen({ cloudReady, onBack }) {
       }
     } catch (reason) { setError(reason.message || 'Connexion impossible') }
   }
-  return <main className="auth-page"><section className="auth-presentation"><img className="auth-conductor-fresco" src="./assets/jalonis-team-conductor.png" alt=""/><button className="auth-back" onClick={onBack}><ArrowLeft size={16}/> Accueil</button><img className="auth-logo" src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><span>JALONIS CLOUD</span><h1>Une vision.<br/>Toute l’équipe en mouvement.</h1><p>Coordonnez les expertises, gardez le rythme et conduisez chaque projet jusqu’à sa livraison.</p><ul><li><CheckCircle2/>PMP, Scrum et fournisseurs</li><li><CheckCircle2/>Application web et Desktop</li><li><CheckCircle2/>Données isolées par organisation</li></ul></section><section className="auth-panel"><div className="auth-card"><div className="auth-card-heading"><span>BIENVENUE</span><h2>{mode==='login'?'Retrouvez votre espace':'Commencez avec Jalonis'}</h2><p>{mode==='login'?'Connectez-vous pour reprendre vos projets.':'Créez votre espace de travail sécurisé.'}</p></div>{!cloudReady&&<div className="cloud-pending"><Sparkles size={16}/><span><b>Connexion bientôt disponible</b>La base sécurisée est en cours de configuration.</span></div>}<div className="auth-switch"><button className={mode==='login'?'active':''} onClick={()=>setMode('login')}>Connexion</button><button className={mode==='signup'?'active':''} onClick={()=>setMode('signup')}>Créer un compte</button></div><form onSubmit={submit}>{mode==='signup'&&<><label>Nom complet<input required name="fullName" value={form.fullName||''} onChange={change}/></label><label>Type de compte<select name="accountType" value={form.accountType} onChange={change}><option>Personnel</option><option>Organisation</option></select></label>{form.accountType==='Organisation'&&<label>Nom de l’organisation<input required name="workspaceName" value={form.workspaceName||''} onChange={change}/></label>}</>}<label>Adresse e-mail<input required type="email" name="email" value={form.email||''} onChange={change}/></label><label>Mot de passe<input required minLength="8" type="password" name="password" value={form.password||''} onChange={change}/></label>{error&&<p className="auth-error">{error}</p>}{message&&<p className="auth-success">{message}</p>}<button className="auth-submit"><LockKeyhole size={16}/>{mode==='login'?'Se connecter':'Créer mon espace'}</button></form></div></section></main>
+  return <main className="auth-page"><section className="auth-presentation"><img className="auth-conductor-fresco" src="./assets/jalonis-team-conductor.png" alt=""/><button className="auth-back" onClick={onBack}><ArrowLeft size={16}/> Accueil</button><img className="auth-logo" src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><span>JALONIS CLOUD</span><h1>Une vision.<br/>Toute l’équipe en mouvement.</h1><p>Coordonnez les expertises, gardez le rythme et conduisez chaque projet jusqu’à sa livraison.</p><ul><li><CheckCircle2/>PMP, Scrum et fournisseurs</li><li><CheckCircle2/>Application web et Desktop</li><li><CheckCircle2/>Données isolées par organisation</li></ul></section><section className="auth-panel"><div className="auth-card"><div className="auth-card-heading"><span>BIENVENUE</span><h2>{mode==='login'?'Retrouvez votre espace':'Commencez avec Jalonis'}</h2><p>{mode==='login'?'Connectez-vous pour reprendre vos projets.':'Créez votre espace de travail sécurisé.'}</p></div>{!cloudReady&&<div className="cloud-pending"><Sparkles size={16}/><span><b>Connexion bientôt disponible</b>La base sécurisée est en cours de configuration.</span></div>}<div className="auth-switch"><button className={mode==='login'?'active':''} onClick={()=>setMode('login')}>Connexion</button><button className={mode==='signup'?'active':''} onClick={()=>setMode('signup')}>Créer un compte</button></div><form onSubmit={submit}>{mode==='signup'&&<><label>Nom complet<input required name="fullName" value={form.fullName||''} onChange={change}/></label><label>Type de compte<select name="accountType" value={form.accountType} onChange={change}><option>Personnel</option><option>Organisation</option></select></label>{form.accountType==='Organisation'&&<label>Nom de l’organisation<input required name="workspaceName" value={form.workspaceName||''} onChange={change}/></label>}</>}<label>Adresse e-mail<input required type="email" name="email" value={form.email||''} onChange={change}/></label><label>Mot de passe<input required minLength="8" type="password" name="password" value={form.password||''} onChange={change}/></label>{error&&<p className="auth-error">{error}</p>}{message&&<p className="auth-success">{message}</p>}<button className="auth-submit"><LockKeyhole size={16}/>{mode==='login'?'Se connecter':'Créer mon espace'}</button></form><div className="auth-preview-divider"><span>ou</span></div><button type="button" className="auth-preview-button" onClick={onPreview}>Continuer sans compte en mode aperçu</button></div></section></main>
 }

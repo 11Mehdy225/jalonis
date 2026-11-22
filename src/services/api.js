@@ -40,7 +40,9 @@ const previewApi = {
   system: { info: async () => ({ dataPath: 'Mode navigateur', version: '0.1.0' }) },
 }
 
-export const api = window.jalonis || (isCloudConfigured ? cloudApi : previewApi)
+const isPreviewMode = !window.jalonis && new URLSearchParams(window.location.search).get('preview') === '1'
+
+export const api = window.jalonis || (isPreviewMode || !isCloudConfigured ? previewApi : cloudApi)
 import { cloudApi } from './cloudApi'
 import { isCloudConfigured } from './supabase'
 
