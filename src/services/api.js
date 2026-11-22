@@ -14,6 +14,7 @@ const previewApi = {
     get: async () => browserWorkspace,
     update: async (data) => { Object.assign(browserWorkspace.workspace, data); return browserWorkspace },
     invite: async (data) => { browserWorkspace.members.push({ ...data, id: crypto.randomUUID(), membership_id: crypto.randomUUID(), membership_status: 'Invitation en attente' }); return browserWorkspace },
+    updateMemberRole: async (id, role) => { const member=browserWorkspace.members.find(item=>item.membership_id===id);if(member&&member.role!=='Propriétaire')member.role=role;return browserWorkspace },
     removeMember: async (id) => { browserWorkspace.members = browserWorkspace.members.filter(member => member.membership_id !== id); return browserWorkspace },
     updatePreferences: async data => { Object.assign(browserUser, data); return browserWorkspace },
   },

@@ -38,6 +38,7 @@ app.whenReady().then(() => {
   ipcMain.handle('workspace:get', () => database.getWorkspace())
   ipcMain.handle('workspace:update', (_, data) => database.updateWorkspace(data))
   ipcMain.handle('workspace-members:create', (_, data) => database.createWorkspaceMember(data))
+  ipcMain.handle('workspace-members:update-role', (_, membershipId, role) => database.updateWorkspaceMemberRole(membershipId, role))
   ipcMain.handle('workspace-members:remove', (_, membershipId) => database.removeWorkspaceMember(membershipId))
   ipcMain.handle('workspace-preferences:update', (_, data) => database.updateCurrentUserPreferences(data))
   ipcMain.handle('entities:list', (_, type, projectId) => database.listEntities(type, projectId).map(item => type === 'attachments' ? { ...item, url: dataUrl(item.stored_path) } : item))

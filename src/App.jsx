@@ -20,6 +20,7 @@ import StakeholderManagement from './features/stakeholders/StakeholderManagement
 import ReportCenter from './features/reports/ReportCenter'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
+import { permissionsFor } from './services/permissions'
 import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond } from 'lucide-react'
 
 const money = (n,currency='XOF') => new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0)
@@ -57,8 +58,9 @@ export default function App() {
     return {progress,critical,total,done:isScrum?scrumItems.filter(item=>item.status==='Terminé').length:entities.tasks.filter(t=>t.status==='Terminé').length}
   },[entities,active?.methodology])
 
-  async function createProject(data){ const item=await api.projects.create(data); setModal(null); await loadProjects(false); setActiveId(item.id); setView('dashboard') }
+  async function createProject(data){if(!permissions.createProject)return deny('Votre rôle ne permet pas de créer un projet.');const item=await api.projects.create(data);setModal(null);await loadProjects(false);setActiveId(item.id);setView('dashboard')}
   async function importProjectArchive(backup){
+    if(!permissions.createProject)return deny('Votre rôle ne permet pas d’importer un projet.')
     const source=backup.project||{}
     const projectData=Object.fromEntries(Object.entries(source).filter(([key])=>!['id','workspace_id','created_at','updated_at','logo_path','logo_url','task_count','progress','open_risks'].includes(key)))
     projectData.name=`${source.name||'Projet restauré'} (copie)`
@@ -92,6 +94,7 @@ export default function App() {
     if(notify&&inAppEnabled&&eventEnabled)await api.entities.create('notifications',{project_id:projectId,recipient_id:recipientId||workspace?.current_user?.id,event_type:eventType,entity_type:entityType,entity_id:entityId,title,body:description,is_read:false})
   }
   async function addEntity(type,data){
+    if(type==='comments'?!permissions.comment:!permissions.editProject)return deny(type==='comments'?'Votre rôle ne permet pas de publier un message.':'Votre rôle dispose uniquement d’un accès en lecture.')
     const payload=type==='comments'?{...data,author_id:data.author_id||workspace?.current_user?.id}:data
     const item=await api.entities.create(type,{...payload,project_id:activeId})
     if(!['activities','notifications','attachments','checklist_items','sprint_snapshots'].includes(type)){
@@ -109,12 +112,14 @@ export default function App() {
     setModal(null); await loadEntities(activeId); await loadProjects(false); return item
   }
   async function removeEntity(type,id){
+    if(!permissions.deleteProjectContent)return deny('Seuls les responsables du projet peuvent supprimer cet élément.')
     const previous=entities[type]?.find(item=>item.id===id)
     await api.entities.remove(type,id)
     if(previous&&!['activities','notifications','comments','attachments','checklist_items','sprint_snapshots'].includes(type))await recordEvent({eventType:`${type}.deleted`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} supprimé`,description:previous.title||previous.name||'',notify:false})
     await loadEntities(activeId); await loadProjects(false)
   }
   async function updateEntity(type,id,data){
+    if(!permissions.editProject)return deny('Votre rôle dispose uniquement d’un accès en lecture.')
     const previous=entities[type]?.find(item=>item.id===id)
     const item=await api.entities.update(type,id,data)
     const name=item?.title||item?.name||ENTITY_LABELS[type]||'Élément'
@@ -141,20 +146,25 @@ export default function App() {
     await api.entities.create('sprint_snapshots',{project_id:activeId,sprint_id:sprintId,snapshot_date:new Date().toISOString().slice(0,10),total_points:total,remaining_points:Math.max(0,total-done),completed_points:done,item_count:sprintItems.length,completed_count:completed.length})
     if(reload)await loadEntities(activeId)
   }
-  async function updateCharter(data){ await api.projects.update(activeId,data); await recordEvent({eventType:'project.updated',entityType:'projects',entityId:activeId,title:'Charte du projet mise à jour',description:data.name||active?.name,notify:false}); await loadEntities(activeId); await loadProjects(false) }
-  async function attachMedia(entityType,entityId){await api.media.attach({project_id:activeId,entity_type:entityType,entity_id:entityId});await loadEntities(activeId)}
-  async function updateBranding(data){await api.projects.update(activeId,{theme_color:data.theme_color});if(data.upload_logo)await api.projects.uploadLogo(activeId);setModal(null);await loadProjects(false)}
-  async function renameWorkspace(data){ setWorkspace(await api.workspace.update(data)) }
+  async function updateCharter(data){if(!permissions.manageProject)return deny('Votre rôle ne permet pas de modifier la charte.');await api.projects.update(activeId,data);await recordEvent({eventType:'project.updated',entityType:'projects',entityId:activeId,title:'Charte du projet mise à jour',description:data.name||active?.name,notify:false});await loadEntities(activeId);await loadProjects(false)}
+  async function attachMedia(entityType,entityId){if(!permissions.editProject)return deny('Votre rôle dispose uniquement d’un accès en lecture.');await api.media.attach({project_id:activeId,entity_type:entityType,entity_id:entityId});await loadEntities(activeId)}
+  async function updateBranding(data){if(!permissions.manageProject)return deny('Votre rôle ne permet pas de personnaliser ce projet.');await api.projects.update(activeId,{theme_color:data.theme_color});if(data.upload_logo)await api.projects.uploadLogo(activeId);setModal(null);await loadProjects(false)}
+  async function renameWorkspace(data){if(!permissions.manageWorkspace)return deny('Seuls le propriétaire et les administrateurs peuvent modifier cet espace.');setWorkspace(await api.workspace.update(data))}
   async function updateNotificationPreferences(data){ setWorkspace(await api.workspace.updatePreferences(data)) }
   async function inviteMember(data){
+    if(!permissions.inviteMembers)return deny('Votre rôle ne permet pas d’inviter des membres.')
     try { setError(''); setWorkspace(await api.workspace.invite(data)); setModal(null) }
     catch (reason) { setError(reason.message || "Impossible de créer l’invitation") }
   }
   async function removeMember(id){
+    if(!permissions.manageWorkspace)return deny('Seuls le propriétaire et les administrateurs peuvent retirer un membre.')
     try { setError(''); setWorkspace(await api.workspace.removeMember(id)) }
     catch (reason) { setError(reason.message || "Impossible de retirer ce membre") }
   }
   const currentUser=workspace?.current_user
+  const permissions=permissionsFor(currentUser?.role)
+  function deny(message){setError(message);return null}
+  async function updateMemberRole(id,role){if(!permissions.manageWorkspace)return deny('Seuls le propriétaire et les administrateurs peuvent modifier les rôles.');try{setError('');setWorkspace(await api.workspace.updateMemberRole(id,role))}catch(reason){setError(reason.message||'Impossible de modifier ce rôle')}}
   function toggleTheme(){setDark(value=>{const next=!value;localStorage.setItem('jalonis-theme',next?'dark':'light');return next})}
   function openProjectView(nextView,nextAgileTab){if(nextAgileTab)setAgileTab(nextAgileTab);setView(nextView)}
   async function readNotification(id){await api.entities.update('notifications',id,{is_read:true});await loadEntities(activeId)}
@@ -173,14 +183,15 @@ export default function App() {
       <div className="user-chip"><div className="avatar">{(currentUser?.full_name||'CP').split(' ').map(part=>part[0]).slice(0,2).join('')}</div><div><b>{currentUser?.full_name||'Chef de projet'}</b><small>{currentUser?.role||'Administrateur local'}</small></div><MoreHorizontal size={17}/></div>
     </aside>
     <main>
-      <header className="app-header"><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Créer</button>{notificationOpen&&<NotificationCenter notifications={visibleNotifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
+      <header className="app-header"><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button>{permissions.createProject&&<button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Créer</button>}{notificationOpen&&<NotificationCenter notifications={visibleNotifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
       <section className={`content${active&&view!=='workspace'&&view!=='settings'?' project-content':''}`} style={active?{'--project-color':active.theme_color||'#4f46e5'}:undefined}>
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
-        {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les futurs canaux de notification.</p></div></div><WorkspaceView data={workspace} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdatePreferences={updateNotificationPreferences}/></>
+        {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les futurs canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Configuration de cette installation de Jalonis.</p></div></div><SettingsView/></>
-        : !active ? <Empty onCreate={()=>setModal('project')}/> : <>
-          <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} onNavigate={openProjectView} onShare={()=>setModal('invite-member')} onBranding={()=>setModal('branding')}/>
-          {view!=='scrum'&&<div className="page-title compact-title"><div><span className="eyebrow">{active.code||'PROJET'}</span><h1>{view==='dashboard'?'Vue d’ensemble':view==='activity'?'Activité du projet':NAV.find(n=>n[0]===view)?.[1]||'Paramètres'}</h1><p>{view==='dashboard'?'Les signaux essentiels pour prendre les bonnes décisions.':view==='activity'?'Messages, notifications et historique des changements.':active.name}</p></div>{['tasks','risks','team','meetings'].includes(view)&&<button className="btn primary" onClick={()=>setModal(view)}><Plus size={17}/>Ajouter</button>}</div>}
+        : !active ? <Empty canCreate={permissions.createProject} onCreate={()=>setModal('project')}/> : <>
+          <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} canManage={permissions.manageProject} canInvite={permissions.inviteMembers} onNavigate={openProjectView} onShare={()=>setModal('invite-member')} onBranding={()=>setModal('branding')}/>
+          {permissions.readOnly&&<div className="read-only-banner"><ShieldAlert size={15}/><span><b>Mode lecture seule</b> Votre rôle « {currentUser?.role} » permet de consulter le projet sans le modifier.</span></div>}
+          {view!=='scrum'&&<div className="page-title compact-title"><div><span className="eyebrow">{active.code||'PROJET'}</span><h1>{view==='dashboard'?'Vue d’ensemble':view==='activity'?'Activité du projet':NAV.find(n=>n[0]===view)?.[1]||'Paramètres'}</h1><p>{view==='dashboard'?'Les signaux essentiels pour prendre les bonnes décisions.':view==='activity'?'Messages, notifications et historique des changements.':active.name}</p></div>{permissions.editProject&&['tasks','risks','team','meetings'].includes(view)&&<button className="btn primary" onClick={()=>setModal(view)}><Plus size={17}/>Ajouter</button>}</div>}
           {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView} setAgileTab={setAgileTab}/>}
           {view==='charter'&&<Charter project={active} onSave={updateCharter}/>} 
           {view==='tasks'&&<Tasks methodology={active.methodology} rows={entities.tasks} dependencies={entities.task_dependencies} calendars={entities.work_calendars} items={entities.backlog_items} sprints={entities.sprints} team={entities.team} members={workspace?.members||[]} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} currentUser={currentUser} query={query} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onCreateDependency={data=>addEntity('task_dependencies',data)} onDeleteDependency={id=>removeEntity('task_dependencies',id)} onSaveCalendar={async data=>{const current=entities.work_calendars[0];return current?updateEntity('work_calendars',current.id,data):addEntity('work_calendars',data)}} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
@@ -198,7 +209,7 @@ export default function App() {
       </section>
     </main>
     {modal==='project'&&<Modal title="Créer un projet" onClose={()=>setModal(null)}><ProjectForm onSubmit={createProject} onCancel={()=>setModal(null)}/></Modal>}
-    {modal==='projects'&&<Modal title="Portefeuille de projets" onClose={()=>setModal(null)}><div className="project-list">{projects.map(p=><button key={p.id} style={{'--project-color':p.theme_color||'#4f46e5'}} onClick={()=>{setActiveId(p.id);setModal(null);setView('dashboard')}}>{p.logo_url?<img className="portfolio-logo" src={p.logo_url} alt=""/>:<span className="portfolio-color">{p.name?.[0]||'P'}</span>}<span><b>{p.name}</b><small>{p.code||'Sans code'} · {p.status}</small></span><strong>{p.progress||0}%</strong><ChevronRight size={17}/></button>)}</div><div className="form-actions"><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Nouveau projet</button></div></Modal>}
+    {modal==='projects'&&<Modal title="Portefeuille de projets" onClose={()=>setModal(null)}><div className="project-list">{projects.map(p=><button key={p.id} style={{'--project-color':p.theme_color||'#4f46e5'}} onClick={()=>{setActiveId(p.id);setModal(null);setView('dashboard')}}>{p.logo_url?<img className="portfolio-logo" src={p.logo_url} alt=""/>:<span className="portfolio-color">{p.name?.[0]||'P'}</span>}<span><b>{p.name}</b><small>{p.code||'Sans code'} · {p.status}</small></span><strong>{p.progress||0}%</strong><ChevronRight size={17}/></button>)}</div>{permissions.createProject&&<div className="form-actions"><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Nouveau projet</button></div>}</Modal>}
     {['tasks','risks','team','meetings'].includes(modal)&&<Modal title={configs[modal].title} onClose={()=>setModal(null)}><EntityForm type={modal} tasks={entities.tasks} members={workspace?.members||[]} onSubmit={d=>addEntity(modal,d)} onCancel={()=>setModal(null)}/></Modal>}
     {modal==='invite-member'&&<Modal title="Inviter un membre" onClose={()=>setModal(null)}><InviteMemberForm onSubmit={inviteMember} onCancel={()=>setModal(null)}/></Modal>}
     {modal==='branding'&&<Modal title="Identité du projet" onClose={()=>setModal(null)}><ProjectBrandingForm project={active} onSubmit={updateBranding} onCancel={()=>setModal(null)}/></Modal>}
@@ -210,12 +221,12 @@ const PROJECT_TABS=[
   ['suppliers',null,'Fournisseurs',Truck],['finance',null,'Budget',CircleDollarSign],['reports',null,'Rapports',FileDown],['governance',null,'Gouvernance',Gavel],['stakeholders',null,'Parties prenantes',Building2],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
 ]
 
-function ProjectHeader({active,view,agileTab,members,onNavigate,onShare,onBranding}){
+function ProjectHeader({active,view,agileTab,members,canManage,canInvite,onNavigate,onShare,onBranding}){
   const tabs=PROJECT_TABS.filter(([target])=>moduleAllowed(active.methodology,target))
   return <div className="project-context">
     <div className="project-context-main">
       <div><span className="project-breadcrumb">Projets <ChevronRight size={13}/> {active.code||'Projet actif'}</span><div className="project-heading">{active.logo_url?<img className="project-mark project-logo" src={active.logo_url} alt={`Logo ${active.name}`}/>:<span className="project-mark">{active.name?.[0]||'J'}</span>}<div><h1>{active.name}</h1><p>{active.methodology||'Hybride'} · {active.status||'En cours'}</p></div></div></div>
-      <div className="project-actions"><div className="member-stack">{members.slice(0,4).map((member,index)=><span key={member.id||index} title={member.full_name}>{(member.full_name||'M').split(' ').map(part=>part[0]).slice(0,2).join('')}</span>)}{members.length>4&&<em>+{members.length-4}</em>}</div><button className="btn ghost" onClick={onBranding}><Palette size={15}/>Personnaliser</button><button className="btn ghost" onClick={onShare}><Share2 size={15}/>Partager</button></div>
+      <div className="project-actions"><div className="member-stack">{members.slice(0,4).map((member,index)=><span key={member.id||index} title={member.full_name}>{(member.full_name||'M').split(' ').map(part=>part[0]).slice(0,2).join('')}</span>)}{members.length>4&&<em>+{members.length-4}</em>}</div>{canManage&&<button className="btn ghost" onClick={onBranding}><Palette size={15}/>Personnaliser</button>}{canInvite&&<button className="btn ghost" onClick={onShare}><Share2 size={15}/>Partager</button>}</div>
     </div>
     <nav className="project-tabs">{tabs.map(([target,subtab,label,Icon])=>{const selected=view===target&&(!subtab||agileTab===subtab);return <button key={`${target}-${subtab||''}`} className={selected?'active':''} onClick={()=>onNavigate(target,subtab)}><Icon size={15}/>{label}</button>})}<button className="project-tab-more"><MoreHorizontal size={16}/></button></nav>
   </div>
@@ -223,7 +234,7 @@ function ProjectHeader({active,view,agileTab,members,onNavigate,onShare,onBrandi
 
 function ProjectBrandingForm({project,onSubmit,onCancel}){const [color,setColor]=useState(project.theme_color||'#4f46e5'),[uploadLogo,setUploadLogo]=useState(false);return <form onSubmit={event=>{event.preventDefault();onSubmit({theme_color:color,upload_logo:uploadLogo})}}><div className="branding-preview" style={{'--project-color':color}}>{project.logo_url?<img src={project.logo_url} alt=""/>:<span>{project.name?.[0]||'P'}</span>}<div><h3>{project.name}</h3><p>Aperçu de l’identité du projet</p></div></div><div className="form-grid"><label>Couleur principale<span className="color-field"><input type="color" value={color} onChange={event=>setColor(event.target.value)}/><b>{color}</b></span></label><label className="logo-choice"><input type="checkbox" checked={uploadLogo} onChange={event=>setUploadLogo(event.target.checked)}/><span><b>Choisir un nouveau logo</b><small>PNG, JPG ou WebP au moment d’enregistrer</small></span></label></div><div className="form-actions"><button type="button" className="btn ghost" onClick={onCancel}>Annuler</button><button className="btn primary">Enregistrer l’identité</button></div></form>}
 
-function Empty({onCreate}){return <div className="empty"><img src="./assets/jalonis-logo.png"/><h1>Bienvenue dans Jalonis</h1><p>Créez votre premier projet et pilotez son cycle de vie au même endroit.</p><button className="btn primary" onClick={onCreate}><Plus size={17}/>Créer un projet</button></div>}
+function Empty({onCreate,canCreate=true}){return <div className="empty"><img src="./assets/jalonis-logo.png"/><h1>Bienvenue dans Jalonis</h1><p>{canCreate?'Créez votre premier projet et pilotez son cycle de vie au même endroit.':'Aucun projet ne vous a encore été rendu accessible.'}</p>{canCreate&&<button className="btn primary" onClick={onCreate}><Plus size={17}/>Créer un projet</button>}</div>}
 
 function Dashboard({active,entities,stats,setView,setAgileTab}){
   const isScrum=active.methodology==='Scrum',workItems=isScrum?entities.backlog_items.filter(item=>item.item_type!=='Epic'):entities.tasks

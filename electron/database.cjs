@@ -411,6 +411,16 @@ class JalonisDatabase {
     return this.getWorkspace()
   }
 
+  updateWorkspaceMemberRole(membershipId, role) {
+    const allowed=['Administrateur','Chef de projet','Scrum Master','Product Owner','Membre','Observateur','Fournisseur externe']
+    if(!allowed.includes(role))throw new Error('Rôle non autorisé')
+    const membership=this.db.prepare('SELECT * FROM workspace_members WHERE id=?').get(membershipId)
+    if(!membership)return this.getWorkspace()
+    if(membership.role==='Propriétaire')throw new Error('Le rôle du propriétaire ne peut pas être modifié')
+    this.db.prepare('UPDATE workspace_members SET role=?,updated_at=? WHERE id=?').run(role,new Date().toISOString(),membershipId)
+    return this.getWorkspace()
+  }
+
   updateCurrentUserPreferences(data) {
     const state = this.getWorkspace(); const user = state.current_user
     if (!user) throw new Error('Utilisateur local introuvable')

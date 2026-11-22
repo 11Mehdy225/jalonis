@@ -137,6 +137,11 @@ export const cloudApi = {
       }
       return workspaceState()
     },
+    updateMemberRole: async (membershipId, role) => {
+      if (String(membershipId).startsWith('invitation-')) unwrap(await supabase.from('workspace_invitations').update({ role }).eq('id', String(membershipId).replace('invitation-', '')))
+      else unwrap(await supabase.from('workspace_members').update({ role }).eq('id', membershipId).neq('role', 'Propriétaire'))
+      return workspaceState()
+    },
     updatePreferences: async data => {
       const user = await currentUser()
       const allowed = ['notify_email','notify_whatsapp','notify_in_app','notify_assignments','notify_status_changes','notify_comments','daily_digest','quiet_start','quiet_end']

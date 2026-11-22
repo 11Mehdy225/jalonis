@@ -4,7 +4,7 @@ import { BellRing, Building2, Clock3, Mail, MessageCircle, ShieldCheck, Trash2, 
 const ROLES = ['Administrateur', 'Chef de projet', 'Scrum Master', 'Product Owner', 'Membre', 'Observateur', 'Fournisseur externe']
 const PREFERENCE_DEFAULTS = { notify_in_app: true, notify_email: true, notify_whatsapp: false, notify_assignments: true, notify_status_changes: true, notify_comments: true, daily_digest: true, quiet_start: '20:00', quiet_end: '07:00' }
 
-export default function WorkspaceView({ data, onRename, onInvite, onRemove, onUpdatePreferences }) {
+export default function WorkspaceView({ data, canManage=false, canInvite=false, onRename, onInvite, onRemove, onUpdateRole, onUpdatePreferences }) {
   const [name, setName] = useState(data?.workspace?.name || '')
   const [accountType, setAccountType] = useState(data?.workspace?.account_type || 'Personnel')
   const [saved, setSaved] = useState(false)
@@ -21,26 +21,26 @@ export default function WorkspaceView({ data, onRename, onInvite, onRemove, onUp
       <div className="workspace-mark"><Building2 size={24}/></div>
       <form onSubmit={saveName}>
         <label>Nom de l’espace de travail</label>
-        <div><input value={name} onChange={event => setName(event.target.value)} required/><select value={accountType} onChange={event => setAccountType(event.target.value)}><option>Personnel</option><option>Organisation</option></select><button className="btn primary">Enregistrer</button></div>
+        <div><input disabled={!canManage} value={name} onChange={event => setName(event.target.value)} required/><select disabled={!canManage} value={accountType} onChange={event => setAccountType(event.target.value)}><option>Personnel</option><option>Organisation</option></select>{canManage&&<button className="btn primary">Enregistrer</button>}</div>
         <small>{saved ? 'Nom enregistré' : 'Cet espace regroupe les projets et les membres de votre organisation.'}</small>
       </form>
       <div className="workspace-kpis"><span><b>{data.members.length}</b>Membres</span><span><b>{active}</b>Actifs</span><span><b>{pending}</b>Invitations</span><span><b>{data.workspace.subscription_plan || 'Découverte'}</b>{data.workspace.subscription_status || 'Local'}</span></div>
     </section>
     <section className="card members-card">
-      <div className="members-head"><div><h3>Membres et accès</h3><p>Invitez les personnes qui pourront participer aux projets de cet espace.</p></div><button className="btn primary" onClick={onInvite}><UserPlus size={16}/>Inviter un membre</button></div>
+      <div className="members-head"><div><h3>Membres et accès</h3><p>Invitez les personnes qui pourront participer aux projets de cet espace.</p></div>{canInvite&&<button className="btn primary" onClick={onInvite}><UserPlus size={16}/>Inviter un membre</button>}</div>
       <div className="members-table">
         <div className="members-row header"><span>Membre</span><span>Rôle</span><span>Notifications</span><span>Accès</span><span></span></div>
         {data.members.map((member, index) => <div className="members-row" key={member.membership_id}>
           <span className="member-identity"><i className={`person-avatar c${index % 4}`}>{initials(member.full_name)}</i><span><b>{member.full_name}</b><small>{member.email}</small></span></span>
-          <span><b>{member.role}</b><small>{member.job_title || 'Fonction non renseignée'}</small></span>
+          <span>{canManage&&member.role!=='Propriétaire'?<select className="member-role-select" value={member.role} onChange={event=>onUpdateRole(member.membership_id,event.target.value)}>{ROLES.map(role=><option key={role}>{role}</option>)}</select>:<b>{member.role}</b>}<small>{member.job_title || 'Fonction non renseignée'}</small></span>
           <span className="notification-icons"><i className={member.notify_email ? 'enabled' : ''} title="E-mail"><Mail size={15}/></i><i className={member.notify_whatsapp ? 'enabled whatsapp' : ''} title="WhatsApp"><MessageCircle size={15}/></i></span>
           <span><em className={`access-status ${member.membership_status === 'Actif' ? 'active' : ''}`}>{member.membership_status}</em></span>
-          <span>{member.role !== 'Propriétaire' && <button className="row-delete" title="Retirer de l’espace" onClick={() => onRemove(member.membership_id)}><Trash2 size={16}/></button>}</span>
+          <span>{canManage&&member.role !== 'Propriétaire' && <button className="row-delete" title="Retirer de l’espace" onClick={() => onRemove(member.membership_id)}><Trash2 size={16}/></button>}</span>
         </div>)}
       </div>
     </section>
     <NotificationPreferences user={data.current_user} onSave={onUpdatePreferences}/>
-    <section className="workspace-note"><ShieldCheck size={18}/><div><b>Fondation collaborative activée</b><p>Les membres et leurs rôles sont enregistrés localement. La prochaine étape connectera cette structure au serveur web et aux invitations réelles.</p></div></section>
+    <section className="workspace-note"><ShieldCheck size={18}/><div><b>Accès contrôlés par rôle</b><p>Chaque membre dispose uniquement des actions autorisées par son rôle. Les observateurs et fournisseurs externes restent en lecture seule.</p></div></section>
   </div>
 }
 

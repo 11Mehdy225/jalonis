@@ -22,6 +22,7 @@
 .members-row.header { background: #fafbfc; color: #8990a0; text-transform: uppercase; font-size: 8px; font-weight: 700; }
 .members-row > span { display: flex; flex-direction: column; gap: 3px; }
 .members-row small { color: #9198a8; font-size: 9px; }
+.member-role-select{max-width:170px;border:1px solid #dfe3eb;border-radius:7px;padding:7px 8px;background:#fff;color:#323b50;font-size:9px;font-weight:700;outline:0}.member-role-select:focus{border-color:#7069e7;box-shadow:0 0 0 3px #efeeff}.read-only-banner{display:flex;align-items:center;gap:8px;margin:0 30px 14px;padding:10px 12px;border:1px solid #dedbf9;border-radius:9px;background:#f5f4ff;color:#5c55c8;font-size:10px}.read-only-banner span{display:flex;gap:5px}.app-shell.dark .member-role-select{background:#272a31;border-color:#3b3f49;color:#e6e8ed}.app-shell.dark .read-only-banner{background:#29283d;border-color:#3b395a;color:#b9b5ff}
 .member-identity { flex-direction: row !important; align-items: center; gap: 10px !important; }
 .member-identity .person-avatar { width: 36px; height: 36px; border-radius: 10px; margin: 0; font-size: 11px; flex: none; }
 .notification-icons { flex-direction: row !important; gap: 6px !important; }
