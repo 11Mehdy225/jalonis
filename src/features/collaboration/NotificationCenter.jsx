@@ -1,7 +1,8 @@
-import { Bell, CheckCheck, CircleAlert, MessageSquareText, UserRoundCheck, Workflow, X } from 'lucide-react'
+import { AtSign, Bell, CheckCheck, CircleAlert, MessageSquareText, UserRoundCheck, Workflow, X } from 'lucide-react'
 
 const iconFor = type => {
   if (type === 'comment.created') return MessageSquareText
+  if (type === 'mention.created') return AtSign
   if (type === 'assignment.changed') return UserRoundCheck
   if (type === 'risk.critical') return CircleAlert
   return Workflow

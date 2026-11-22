@@ -1,6 +1,6 @@
 const { DatabaseSync } = require('node:sqlite')
 const crypto = require('node:crypto')
-const sqlValue = value => typeof value === 'boolean' ? Number(value) : value
+const sqlValue = value => typeof value === 'boolean' ? Number(value) : value && typeof value === 'object' ? JSON.stringify(value) : value
 
 const ENTITY_TABLES = {
   tasks: ['title', 'status', 'priority', 'assignee', 'assignee_id', 'start_date', 'due_date', 'progress', 'notes', 'color',
@@ -31,9 +31,9 @@ const ENTITY_TABLES = {
     'delivery_score', 'cost_score', 'compliance_score', 'communication_score', 'overall_score', 'comments'],
   supplier_documents: ['supplier_id', 'procurement_id', 'contract_id', 'document_type', 'title', 'file_name',
     'stored_path', 'issue_date', 'expiry_date', 'status', 'notes'],
-  comments: ['entity_type', 'entity_id', 'author_name', 'body'],
+  comments: ['entity_type', 'entity_id', 'author_id', 'author_name', 'body', 'mentioned_user_ids'],
   activities: ['event_type', 'entity_type', 'entity_id', 'title', 'description', 'actor_name'],
-  notifications: ['event_type', 'entity_type', 'entity_id', 'title', 'body', 'is_read'],
+  notifications: ['recipient_id', 'event_type', 'entity_type', 'entity_id', 'title', 'body', 'is_read'],
   checklist_items: ['entity_type', 'entity_id', 'title', 'is_done', 'rank'],
   sprint_snapshots: ['sprint_id', 'snapshot_date', 'total_points', 'remaining_points', 'completed_points', 'item_count', 'completed_count'],
   time_entries: ['member_id', 'member_name', 'task_id', 'entry_date', 'hours', 'billable', 'description', 'status'],
@@ -202,12 +202,12 @@ class JalonisDatabase {
       CREATE TABLE IF NOT EXISTS comments (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         entity_type TEXT NOT NULL DEFAULT 'project', entity_id TEXT NOT NULL,
-        author_name TEXT NOT NULL DEFAULT 'Chef de projet', body TEXT NOT NULL,
+        author_id TEXT, author_name TEXT NOT NULL DEFAULT 'Chef de projet', body TEXT NOT NULL, mentioned_user_ids TEXT DEFAULT '[]',
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS activities (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-        event_type TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT,
+        recipient_id TEXT, event_type TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT,
         title TEXT NOT NULL, description TEXT, actor_name TEXT NOT NULL DEFAULT 'Chef de projet',
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
@@ -334,6 +334,9 @@ class JalonisDatabase {
     ensureColumn('users', 'daily_digest', 'INTEGER DEFAULT 1')
     ensureColumn('users', 'quiet_start', "TEXT DEFAULT '20:00'")
     ensureColumn('users', 'quiet_end', "TEXT DEFAULT '07:00'")
+    ensureColumn('comments', 'author_id', 'TEXT')
+    ensureColumn('comments', 'mentioned_user_ids', "TEXT DEFAULT '[]'")
+    ensureColumn('notifications', 'recipient_id', 'TEXT')
     this.ensureLocalWorkspace()
     const palette = ['#4f46e5','#0f9f8f','#e46c45','#2878c7','#9b51c7','#cf4f83','#ca8a04','#475569']
     const colorless = this.db.prepare("SELECT id FROM tasks WHERE color IS NULL OR color = ''").all()

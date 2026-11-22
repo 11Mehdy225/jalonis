@@ -101,6 +101,14 @@ async function selectImages(multiple=true) {
 }
 
 export const cloudApi = {
+  realtime: {
+    subscribeProject: (projectId, onChange) => {
+      const channel=supabase.channel(`project-${projectId}-${crypto.randomUUID()}`)
+      ;['comments','activities','notifications'].forEach(table=>channel.on('postgres_changes',{event:'*',schema:'public',table,filter:`project_id=eq.${projectId}`},payload=>onChange?.({table,payload})))
+      channel.subscribe()
+      return () => { supabase.removeChannel(channel) }
+    },
+  },
   workspace: {
     get: workspaceState,
     update: async data => {

@@ -47,6 +47,7 @@ export default function App() {
   async function loadWorkspace(){ setWorkspace(await api.workspace.get()) }
   useEffect(()=>{loadProjects();loadWorkspace()},[])
   useEffect(()=>{loadEntities(activeId)},[activeId])
+  useEffect(()=>{if(!activeId||!api.realtime?.subscribeProject)return;let timer;const unsubscribe=api.realtime.subscribeProject(activeId,()=>{clearTimeout(timer);timer=setTimeout(()=>loadEntities(activeId),120)});return()=>{clearTimeout(timer);unsubscribe?.()}},[activeId])
   useEffect(()=>{if(!active)return;if(active.methodology==='Scrum'&&view==='tasks'){setView('scrum');setAgileTab('backlog')}if(active.methodology==='Prédictif'&&view==='scrum')setView('tasks')},[active?.methodology,view])
 
   const stats=useMemo(()=>{
@@ -80,7 +81,7 @@ export default function App() {
     await loadProjects(false);setActiveId(restored.id);setView('dashboard');await loadEntities(restored.id)
     return restored
   }
-  async function recordEvent({projectId=activeId,eventType,entityType,entityId,title,description,notify=true}){
+  async function recordEvent({projectId=activeId,eventType,entityType,entityId,title,description,notify=true,recipientId}){
     if(!projectId)return
     const actorName=workspace?.current_user?.full_name||'Chef de projet'
     await api.entities.create('activities',{project_id:projectId,event_type:eventType,entity_type:entityType,entity_id:entityId,title,description,actor_name:actorName})
@@ -88,13 +89,22 @@ export default function App() {
     const preferenceKey=eventType==='assignment.changed'?'notify_assignments':eventType==='comment.created'?'notify_comments':['status.changed','task.completed'].includes(eventType)?'notify_status_changes':null
     const inAppEnabled=preferences.notify_in_app===undefined||Boolean(Number(preferences.notify_in_app))
     const eventEnabled=!preferenceKey||preferences[preferenceKey]===undefined||Boolean(Number(preferences[preferenceKey]))
-    if(notify&&inAppEnabled&&eventEnabled)await api.entities.create('notifications',{project_id:projectId,event_type:eventType,entity_type:entityType,entity_id:entityId,title,body:description,is_read:false})
+    if(notify&&inAppEnabled&&eventEnabled)await api.entities.create('notifications',{project_id:projectId,recipient_id:recipientId||workspace?.current_user?.id,event_type:eventType,entity_type:entityType,entity_id:entityId,title,body:description,is_read:false})
   }
   async function addEntity(type,data){
-    const item=await api.entities.create(type,{...data,project_id:activeId})
+    const payload=type==='comments'?{...data,author_id:data.author_id||workspace?.current_user?.id}:data
+    const item=await api.entities.create(type,{...payload,project_id:activeId})
     if(!['activities','notifications','attachments','checklist_items','sprint_snapshots'].includes(type)){
       const isComment=type==='comments', label=ENTITY_LABELS[type]||'Élément', name=item.title||item.name||item.body?.slice(0,55)||label
-      await recordEvent({eventType:isComment?'comment.created':`${type}.created`,entityType:type,entityId:item.id,title:isComment?'Nouveau message dans le projet':`${label} créé`,description:isComment?`${item.author_name||'Un membre'} : ${item.body}`:name,notify:isComment||['tasks','risks','backlog_items'].includes(type)})
+      await recordEvent({eventType:isComment?'comment.created':`${type}.created`,entityType:isComment?(item.entity_type||'project'):type,entityId:isComment?(item.entity_id||item.id):item.id,title:isComment?'Nouveau message dans le projet':`${label} créé`,description:isComment?`${item.author_name||'Un membre'} : ${item.body}`:name,notify:!isComment&&['tasks','risks','backlog_items'].includes(type)})
+      if(isComment){
+        const mentioned=Array.isArray(item.mentioned_user_ids)?item.mentioned_user_ids:(()=>{try{return JSON.parse(item.mentioned_user_ids||'[]')}catch{return []}})()
+        const recipients=(workspace?.members||[]).filter(member=>member.id&&member.id!==workspace?.current_user?.id&&!member.invitation&&member.membership_status!=='Invitation en attente'&&(member.notify_in_app===undefined||Boolean(Number(member.notify_in_app)))&&(member.notify_comments===undefined||Boolean(Number(member.notify_comments))))
+        for(const member of recipients){
+          const isMentioned=mentioned.includes(member.id)
+          await api.entities.create('notifications',{project_id:activeId,recipient_id:member.id,event_type:isMentioned?'mention.created':'comment.created',entity_type:item.entity_type||'project',entity_id:item.entity_id||item.id,title:isMentioned?`${item.author_name||'Un membre'} vous a mentionné`:'Nouveau message dans le projet',body:item.body,is_read:false})
+        }
+      }
     }
     setModal(null); await loadEntities(activeId); await loadProjects(false); return item
   }
@@ -148,8 +158,9 @@ export default function App() {
   function toggleTheme(){setDark(value=>{const next=!value;localStorage.setItem('jalonis-theme',next?'dark':'light');return next})}
   function openProjectView(nextView,nextAgileTab){if(nextAgileTab)setAgileTab(nextAgileTab);setView(nextView)}
   async function readNotification(id){await api.entities.update('notifications',id,{is_read:true});await loadEntities(activeId)}
-  async function readAllNotifications(){await Promise.all(entities.notifications.filter(item=>!Number(item.is_read)).map(item=>api.entities.update('notifications',item.id,{is_read:true})));await loadEntities(activeId)}
-  const unreadNotifications=entities.notifications.filter(item=>!Number(item.is_read)).length
+  async function readAllNotifications(){await Promise.all(visibleNotifications.filter(item=>!Number(item.is_read)).map(item=>api.entities.update('notifications',item.id,{is_read:true})));await loadEntities(activeId)}
+  const visibleNotifications=entities.notifications.filter(item=>!item.recipient_id||item.recipient_id===currentUser?.id)
+  const unreadNotifications=visibleNotifications.filter(item=>!Number(item.is_read)).length
   const visibleNav=active?NAV.filter(([id])=>moduleAllowed(active.methodology,id)):NAV
 
   return <div className={`app-shell${dark?' dark':''}`}>
@@ -162,7 +173,7 @@ export default function App() {
       <div className="user-chip"><div className="avatar">{(currentUser?.full_name||'CP').split(' ').map(part=>part[0]).slice(0,2).join('')}</div><div><b>{currentUser?.full_name||'Chef de projet'}</b><small>{currentUser?.role||'Administrateur local'}</small></div><MoreHorizontal size={17}/></div>
     </aside>
     <main>
-      <header className="app-header"><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Créer</button>{notificationOpen&&<NotificationCenter notifications={entities.notifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
+      <header className="app-header"><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Créer</button>{notificationOpen&&<NotificationCenter notifications={visibleNotifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
       <section className={`content${active&&view!=='workspace'&&view!=='settings'?' project-content':''}`} style={active?{'--project-color':active.theme_color||'#4f46e5'}:undefined}>
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
         {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les futurs canaux de notification.</p></div></div><WorkspaceView data={workspace} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdatePreferences={updateNotificationPreferences}/></>
@@ -182,7 +193,7 @@ export default function App() {
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>} 
           {view==='team'&&<ResourceManagement members={entities.team} tasks={entities.tasks} entries={entities.time_entries} query={query} onCreateEntry={data=>addEntity('time_entries',data)} onUpdateEntry={(id,data)=>updateEntity('time_entries',id,data)} onDeleteEntry={id=>removeEntity('time_entries',id)} onDeleteMember={id=>removeEntity('team',id)}/>}
           {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('meetings',id)}/>} 
-          {view==='activity'&&<ActivityView project={active} comments={entities.comments} activities={entities.activities} currentUser={currentUser} onComment={data=>addEntity('comments',data)}/>}
+          {view==='activity'&&<ActivityView project={active} comments={entities.comments} activities={entities.activities} members={workspace?.members||[]} currentUser={currentUser} onComment={data=>addEntity('comments',data)}/>}
         </>}
       </section>
     </main>
@@ -266,7 +277,7 @@ function Tasks({methodology,rows,dependencies=[],calendars=[],items,sprints,team
           ? <PlanningSettings calendar={calendars[0]} onSave={onSaveCalendar}/>
           : <Table rows={rows} query={query} onDelete={onDelete} onRowClick={setSelected} empty="Ajoutez la première activité du planning." columns={[{key:'wbs_code',label:'WBS'},{key:'title',label:'Activité',render:(v,r)=><b className="task-title-cell">{r.is_milestone&&<Diamond size={11} fill="currentColor"/>}{v}</b>},{key:'visuals',label:'Rendus',render:(_,r)=><VisualCell files={attachments.filter(file=>file.entity_type==='tasks'&&file.entity_id===r.id)} onAttach={()=>onAttach(r.id)}/>},{key:'comments',label:'Messages',render:(_,r)=>{const count=comments.filter(item=>item.entity_type==='tasks'&&item.entity_id===r.id).length;return <button className="comment-link" onClick={event=>{event.stopPropagation();setDiscussion(r)}}><MessageSquareText size={13}/>{count}</button>}},{key:'status',label:'Statut',render:status},{key:'priority',label:'Priorité'},{key:'assignee',label:'Responsable'},{key:'due_date',label:'Échéance',render:date},{key:'progress',label:'Avancement',render:v=><div className="progress-cell"><i><span style={{width:`${v||0}%`}}/></i><b>{v||0}%</b></div>}]}/>
     }
-    {discussion&&<Modal title="Discussion de l’activité" onClose={()=>setDiscussion(null)}><EntityDiscussion entity={discussion} entityType="tasks" comments={comments} currentUser={currentUser} onComment={onComment}/></Modal>}
+    {discussion&&<Modal title="Discussion de l’activité" onClose={()=>setDiscussion(null)}><EntityDiscussion entity={discussion} entityType="tasks" comments={comments} members={members} currentUser={currentUser} onComment={onComment}/></Modal>}
     {selected&&<Modal title="Fiche complète de l’activité" onClose={()=>setSelected(null)}><WorkItemDetails item={rows.find(row=>row.id===selected.id)||selected} type="tasks" tasks={rows} dependencies={dependencies} items={items} sprints={sprints} members={members} attachments={attachments} comments={comments} activities={activities} checklist={checklist} currentUser={currentUser} onUpdate={onUpdate} onCreateDependency={onCreateDependency} onDeleteDependency={onDeleteDependency} onAttach={()=>onAttach(selected.id)} onComment={onComment} onAddChecklist={onAddChecklist} onUpdateChecklist={onUpdateChecklist} onDeleteChecklist={onDeleteChecklist}/></Modal>}
   </>
 }

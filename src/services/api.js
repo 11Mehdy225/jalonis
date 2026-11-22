@@ -9,6 +9,7 @@ const chooseImages = multiple => new Promise(resolve => {
 const asDataUrl = file => new Promise((resolve,reject) => { const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file) })
 
 const previewApi = {
+  realtime: { subscribeProject: () => () => {} },
   workspace: {
     get: async () => browserWorkspace,
     update: async (data) => { Object.assign(browserWorkspace.workspace, data); return browserWorkspace },
