@@ -3,7 +3,7 @@
 ## Cibles d’exécution
 
 - Web : React/Vite, Supabase Auth, PostgreSQL et Storage.
-- Desktop : Electron avec mode local SQLite ou futur mode connecté Supabase.
+- Desktop : Electron avec choix au premier lancement entre le mode local SQLite et le mode connecté Supabase.
 - Base partagée : le même modèle métier est conservé pour limiter les divergences entre le web et le Desktop.
 
 La migration `supabase/migrations/202611190001_initial_saas.sql` constitue la source de vérité du schéma cloud. Toutes les tables partagées sont protégées par des politiques de sécurité basées sur l’appartenance à un espace de travail.

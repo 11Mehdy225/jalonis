@@ -16,7 +16,7 @@ npm run dev
 
 Renseignez `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` dans `.env.local`, puis appliquez la migration située dans `supabase/migrations/` depuis le tableau de bord SQL Supabase ou la CLI Supabase.
 
-Sans variables Supabase, la version web affiche un mode aperçu temporaire. Aucune donnée de cet aperçu n’est envoyée sur Internet.
+La construction de production est interrompue si les variables Supabase sont absentes, afin de ne jamais publier par erreur une page de connexion inactive. Le mode aperçu reste accessible sur le site correctement configuré et n’envoie aucune donnée vers Supabase.
 
 Pour produire les fichiers web :
 

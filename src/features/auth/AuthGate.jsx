@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, CheckCircle2, LockKeyhole, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, Cloud, HardDrive, LockKeyhole, Sparkles } from 'lucide-react'
 import { cloudAuth, isCloudConfigured } from '../../services/supabase'
 import '../../styles/auth.css'
 
@@ -13,31 +13,41 @@ const journey = [
 
 export default function AuthGate({ children }) {
   const desktop = Boolean(window.jalonis)
-  const [session, setSession] = useState(desktop ? { desktop: true } : null)
-  const [checking, setChecking] = useState(!desktop && isCloudConfigured)
+  const desktopMode=desktop?localStorage.getItem('jalonis-desktop-mode'):null
+  const localDesktop=desktop&&desktopMode==='local'
+  const cloudDesktop=desktop&&desktopMode==='cloud'
+  const [session, setSession] = useState(localDesktop ? { desktop: true } : null)
+  const [checking, setChecking] = useState(!localDesktop && isCloudConfigured)
   const preview = new URLSearchParams(window.location.search).get('preview') === '1'
-  const [authOpen, setAuthOpen] = useState(false)
+  const [authOpen, setAuthOpen] = useState(cloudDesktop)
   const [inviteSetup,setInviteSetup]=useState(()=>new URLSearchParams(window.location.search).get('invited')==='1')
   const [resetSetup,setResetSetup]=useState(()=>new URLSearchParams(window.location.search).get('reset')==='1')
   const openPreview = () => {
+    if(desktop){localStorage.setItem('jalonis-desktop-mode','local');window.location.reload();return}
     const url=new URL(window.location.href)
     url.searchParams.set('preview','1')
     window.location.assign(url.toString())
   }
 
   useEffect(() => {
-    if (desktop || !isCloudConfigured) return undefined
+    if (localDesktop || !isCloudConfigured) return undefined
     cloudAuth.session().then(value => { setSession(value); setChecking(false) })
     const { data } = cloudAuth.onChange((value,event) => { setSession(value);if(event==='PASSWORD_RECOVERY')setResetSetup(true);setChecking(false) })
     return () => data.subscription.unsubscribe()
-  }, [desktop])
+  }, [localDesktop])
 
+  if(desktop&&!desktopMode)return <DesktopModeScreen/>
   if(session&&inviteSetup)return <InvitationPasswordScreen onComplete={()=>{const url=new URL(window.location.href);url.searchParams.delete('invited');window.history.replaceState({},'',url);setInviteSetup(false)}}/>
   if(session&&resetSetup)return <ResetPasswordScreen onComplete={()=>{const url=new URL(window.location.href);url.searchParams.delete('reset');window.history.replaceState({},'',url);setResetSetup(false)}}/>
-  if (desktop || session || preview) return children
+  if (localDesktop || session || preview) return children
   if (checking) return <div className="auth-loading"><Sparkles size={30}/><b>Ouverture de votre espace Jalonis…</b></div>
-  if (authOpen) return <AuthScreen cloudReady={isCloudConfigured} onBack={() => setAuthOpen(false)} onPreview={openPreview}/>
+  if (authOpen) return <AuthScreen cloudReady={isCloudConfigured} onBack={()=>{if(cloudDesktop){localStorage.removeItem('jalonis-desktop-mode');window.location.reload()}else setAuthOpen(false)}} onPreview={openPreview} desktop={cloudDesktop}/>
   return <WelcomeScreen onConnect={() => setAuthOpen(true)} onPreview={openPreview}/>
+}
+
+function DesktopModeScreen(){
+  const choose=mode=>{localStorage.setItem('jalonis-desktop-mode',mode);window.location.reload()}
+  return <main className="desktop-mode-page"><section className="desktop-mode-card"><img src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><span>APPLICATION DESKTOP</span><h1>Comment souhaitez-vous travailler ?</h1><p>Vous pourrez changer de mode plus tard depuis les paramètres.</p><div className="desktop-mode-options"><button onClick={()=>choose('cloud')}><i><Cloud/></i><b>Jalonis Cloud</b><small>Retrouver les comptes, projets et équipes du site web sur Mac ou Windows.</small><em>Recommandé pour le travail en équipe</em></button><button onClick={()=>choose('local')}><i><HardDrive/></i><b>Stockage local</b><small>Conserver des projets uniquement sur cet ordinateur, sans compte ni connexion.</small><em>Disponible hors ligne</em></button></div></section></main>
 }
 
 function InvitationPasswordScreen({onComplete}){
@@ -84,7 +94,7 @@ function WelcomeScreen({ onConnect, onPreview }) {
   </main>
 }
 
-function AuthScreen({ cloudReady, onBack, onPreview }) {
+function AuthScreen({ cloudReady, onBack, onPreview, desktop=false }) {
   const [mode, setMode] = useState('login')
   const [form, setForm] = useState({ accountType: 'Personnel' })
   const [error, setError] = useState('')
@@ -112,7 +122,7 @@ function AuthScreen({ cloudReady, onBack, onPreview }) {
     <section className="auth-panel"><div className="auth-card"><div className="auth-card-heading"><span>BIENVENUE</span><h2>{heading}</h2><p>{description}</p></div>{!cloudReady&&<div className="cloud-pending"><Sparkles size={16}/><span><b>Connexion bientôt disponible</b>La base sécurisée est en cours de configuration.</span></div>}
       {mode==='forgot'?<button className="auth-mode-back" onClick={()=>{setMode('login');setMessage('');setError('')}}><ArrowLeft size={14}/>Retour à la connexion</button>:<div className="auth-switch"><button className={mode==='login'?'active':''} onClick={()=>setMode('login')}>Connexion</button><button className={mode==='signup'?'active':''} onClick={()=>setMode('signup')}>Créer un compte</button></div>}
       <form onSubmit={submit}>{mode==='signup'&&<><label>Nom complet<input required name="fullName" value={form.fullName||''} onChange={change}/></label><label>Type de compte<select name="accountType" value={form.accountType} onChange={change}><option>Personnel</option><option>Organisation</option></select></label>{form.accountType==='Organisation'&&<label>Nom de l’organisation<input required name="workspaceName" value={form.workspaceName||''} onChange={change}/></label>}</>}<label>Adresse e-mail<input required type="email" name="email" value={form.email||''} onChange={change}/></label>{mode!=='forgot'&&<label>Mot de passe<input required minLength="8" type="password" name="password" value={form.password||''} onChange={change}/></label>}{mode==='login'&&<button type="button" className="forgot-password" onClick={()=>{setMode('forgot');setError('');setMessage('')}}>Mot de passe oublié ?</button>}{error&&<p className="auth-error">{error}</p>}{message&&<p className="auth-success">{message}</p>}<button className="auth-submit"><LockKeyhole size={16}/>{mode==='login'?'Se connecter':mode==='forgot'?'Envoyer le lien':'Créer mon espace'}</button></form>
-      <div className="auth-preview-divider"><span>ou</span></div><button type="button" className="auth-preview-button" onClick={onPreview}>Continuer sans compte en mode aperçu</button>
+      <div className="auth-preview-divider"><span>ou</span></div><button type="button" className="auth-preview-button" onClick={onPreview}>{desktop?'Utiliser le stockage local sur cet ordinateur':'Continuer sans compte en mode aperçu'}</button>
     </div></section>
   </main>
 }

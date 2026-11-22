@@ -59,8 +59,9 @@ const previewApi = {
 }
 
 const isPreviewMode = !window.jalonis && new URLSearchParams(window.location.search).get('preview') === '1'
+export const isDesktopCloud = Boolean(window.jalonis) && localStorage.getItem('jalonis-desktop-mode') === 'cloud'
 
-export const api = window.jalonis || (isPreviewMode || !isCloudConfigured ? previewApi : cloudApi)
+export const api = window.jalonis && !isDesktopCloud ? window.jalonis : (isPreviewMode || !isCloudConfigured ? previewApi : cloudApi)
 import { cloudApi } from './cloudApi'
 import { isCloudConfigured } from './supabase'
 
