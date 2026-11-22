@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { CircleDollarSign, Landmark, Plus, ReceiptText, TrendingDown, TrendingUp, Trash2, WalletCards } from 'lucide-react'
+import Modal from '../../shared/Modal'
 import '../../styles/finance.css'
+import '../../styles/cost-entry.css'
 
 const categories = ['Ressources humaines','Prestations','Matériel','Logiciels','Déplacements','Formation','Communication','Imprévus','Autre']
 const statuses = ['Prévu','Engagé','Payé','Annulé']
@@ -9,6 +11,7 @@ const amount = value => Number(value) || 0
 
 export default function FinancialView({project,costs,team,tasks,timeEntries,suppliers,onCreate,onDelete,onUpdateProject}){
   const [form,setForm]=useState(emptyForm)
+  const [costFormOpen,setCostFormOpen]=useState(false)
   const [editingBudget,setEditingBudget]=useState(false)
   const [budget,setBudget]=useState(project.budget||'')
   const [currency,setCurrency]=useState(project.currency||'XOF')
@@ -36,7 +39,7 @@ export default function FinancialView({project,costs,team,tasks,timeEntries,supp
     return Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b)).slice(-8)
   },[costs])
   const maxMonth=Math.max(1,...months.map(([,value])=>value))
-  const submit=async event=>{event.preventDefault();await onCreate(form);setForm(emptyForm)}
+  const submit=async event=>{event.preventDefault();await onCreate(form);setForm(emptyForm);setCostFormOpen(false)}
   const saveBudget=async event=>{event.preventDefault();await onUpdateProject({budget:amount(budget),currency});setEditingBudget(false)}
   return <div className="finance-view">
     <div className="finance-kpis">
@@ -68,33 +71,34 @@ export default function FinancialView({project,costs,team,tasks,timeEntries,supp
     </div>
 
     <div className="finance-grid lower">
-      <section className="card cost-form-card">
-        <div className="finance-title"><div><h3>Ajouter un coût</h3><p>Reliez une dépense à une tâche ou à un fournisseur.</p></div><Plus size={20}/></div>
-        <form onSubmit={submit} className="cost-form">
-          <label className="span-2">Libellé<input required autoFocus value={form.description} onChange={event=>setForm({...form,description:event.target.value})} placeholder="Ex. Hébergement de production"/></label>
-          <label>Catégorie<select value={form.category} onChange={event=>setForm({...form,category:event.target.value})}>{categories.map(item=><option key={item}>{item}</option>)}</select></label>
-          <label>Type<select value={form.cost_type} onChange={event=>setForm({...form,cost_type:event.target.value})}><option>Ponctuel</option><option>Récurrent</option><option>Provision</option></select></label>
-          <label>Montant prévu<input type="number" min="0" value={form.planned_amount} onChange={event=>setForm({...form,planned_amount:event.target.value})}/></label>
-          <label>Montant engagé<input type="number" min="0" value={form.committed_amount} onChange={event=>setForm({...form,committed_amount:event.target.value})}/></label>
-          <label>Montant réel<input type="number" min="0" value={form.actual_amount} onChange={event=>setForm({...form,actual_amount:event.target.value})}/></label>
-          <label>Date<input type="date" value={form.entry_date} onChange={event=>setForm({...form,entry_date:event.target.value})}/></label>
-          <label>Statut<select value={form.status} onChange={event=>setForm({...form,status:event.target.value})}>{statuses.map(item=><option key={item}>{item}</option>)}</select></label>
-          <label>Fournisseur<select value={form.supplier_id} onChange={event=>setForm({...form,supplier_id:event.target.value})}><option value="">Aucun</option>{suppliers.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label className="span-2">Tâche liée<select value={form.task_id} onChange={event=>setForm({...form,task_id:event.target.value})}><option value="">Aucune</option>{tasks.map(item=><option key={item.id} value={item.id}>{item.wbs_code?`${item.wbs_code} · `:''}{item.title}</option>)}</select></label>
-          <label className="span-2">Notes<textarea value={form.notes} onChange={event=>setForm({...form,notes:event.target.value})}/></label>
-          <button className="btn primary span-2"><Plus size={16}/>Ajouter le coût</button>
-        </form>
-      </section>
+      <CategoryBreakdown costs={costs} format={format}/>
       <section className="card cashflow-card"><h3>Décaissements mensuels</h3><p>Montants réellement payés selon la date des lignes de coûts.</p>{months.length?<div className="cashflow-chart">{months.map(([month,value])=><div key={month}><span title={format(value)} style={{height:`${Math.max(5,value/maxMonth*100)}%`}}/><b>{new Intl.DateTimeFormat('fr-FR',{month:'short'}).format(new Date(`${month}-02`))}</b><small>{format(value)}</small></div>)}</div>:<div className="finance-empty">Les décaissements apparaîtront ici après la première saisie.</div>}</section>
     </div>
 
     <section className="card cost-table-card">
-      <div className="finance-title"><div><h3>Registre des coûts</h3><p>{costs.length} ligne(s) suivie(s) pour ce projet.</p></div></div>
+      <div className="finance-title"><div><h3>Registre des coûts</h3><p>{costs.length} ligne(s) suivie(s) pour ce projet.</p></div><button className="btn primary cost-add-trigger" onClick={()=>setCostFormOpen(true)}><Plus size={15}/>Ajouter un coût</button></div>
       <div className="cost-table-wrap"><table><thead><tr><th>Libellé</th><th>Catégorie</th><th>Échéance</th><th>Prévu</th><th>Engagé</th><th>Réel</th><th>Statut</th><th></th></tr></thead><tbody>{costs.map(row=><tr key={row.id}><td><b>{row.description}</b><small>{suppliers.find(item=>item.id===row.supplier_id)?.name||tasks.find(item=>item.id===row.task_id)?.title||row.cost_type}</small></td><td>{row.category||'—'}</td><td>{row.entry_date?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(row.entry_date)):'—'}</td><td>{format(row.planned_amount)}</td><td>{format(row.committed_amount)}</td><td><strong>{format(row.actual_amount)}</strong></td><td><span className={`cost-status ${String(row.status).toLowerCase()}`}>{row.status}</span></td><td><button className="row-delete" title="Supprimer" onClick={()=>onDelete(row.id)}><Trash2 size={15}/></button></td></tr>)}</tbody></table></div>
       {!costs.length&&<div className="finance-empty">Aucun coût saisi. Le budget de référence reste disponible pour démarrer.</div>}
     </section>
+    {costFormOpen&&<Modal title="Ajouter un coût" onClose={()=>setCostFormOpen(false)}><CostForm form={form} setForm={setForm} currency={project.currency||'XOF'} tasks={tasks} suppliers={suppliers} onSubmit={submit} onCancel={()=>setCostFormOpen(false)}/></Modal>}
   </div>
 }
 
 function FinanceKpi({icon:Icon,label,value,note,tone}){return <div className="card finance-kpi"><span className={`finance-kpi-icon ${tone}`}><Icon size={20}/></span><div><small>{label}</small><b>{value}</b><span>{note}</span></div></div>}
 function BudgetBar({label,value,max,text,alert}) {return <div className="budget-bar"><span>{label}</span><i><em className={alert?'alert':''} style={{width:`${Math.min(100,amount(value)/max*100)}%`}}/></i><b>{text}</b></div>}
+
+function CategoryBreakdown({costs,format}){
+  const rows=Object.entries(costs.reduce((grouped,row)=>{const key=row.category||'Autre';grouped[key]=(grouped[key]||0)+amount(row.actual_amount||row.committed_amount||row.planned_amount);return grouped},{})).sort((a,b)=>b[1]-a[1]).slice(0,6)
+  const total=rows.reduce((sum,[,value])=>sum+value,0)||1
+  return <section className="card category-breakdown"><h3>Répartition par catégorie</h3><p>Poids des dépenses prévues, engagées ou réalisées.</p><div>{rows.map(([label,value])=><article key={label}><span><b>{label}</b><small>{format(value)}</small></span><i><em style={{width:`${value/total*100}%`}}/></i><strong>{Math.round(value/total*100)}%</strong></article>)}{!rows.length&&<div className="finance-empty">La répartition apparaîtra après la première saisie.</div>}</div></section>
+}
+
+function CostForm({form,setForm,currency,tasks,suppliers,onSubmit,onCancel}){
+  const change=(key,value)=>setForm({...form,[key]:value})
+  return <form onSubmit={onSubmit} className="cost-entry-form">
+    <section className="cost-form-section"><div className="cost-section-title"><span>01</span><div><b>Nature de la dépense</b><small>Identifiez clairement ce qui est acheté ou engagé.</small></div></div><div className="cost-fields"><label className="wide">Libellé<input required autoFocus value={form.description} onChange={event=>change('description',event.target.value)} placeholder="Ex. Hébergement de production"/></label><label>Catégorie<select value={form.category} onChange={event=>change('category',event.target.value)}>{categories.map(item=><option key={item}>{item}</option>)}</select></label><label>Type<select value={form.cost_type} onChange={event=>change('cost_type',event.target.value)}><option>Ponctuel</option><option>Récurrent</option><option>Provision</option></select></label><label>Date de référence<input type="date" value={form.entry_date} onChange={event=>change('entry_date',event.target.value)}/></label><label>Statut<select value={form.status} onChange={event=>change('status',event.target.value)}>{statuses.map(item=><option key={item}>{item}</option>)}</select></label></div></section>
+    <section className="cost-form-section"><div className="cost-section-title"><span>02</span><div><b>Montants</b><small>Suivez le passage du budget prévu au paiement réel.</small></div></div><div className="amount-fields">{[['planned_amount','Prévu'],['committed_amount','Engagé'],['actual_amount','Réel']].map(([key,label])=><label key={key}><span>{label}</span><div><input type="number" min="0" step="any" value={form[key]} onChange={event=>change(key,event.target.value)} placeholder="0"/><em>{currency}</em></div></label>)}</div></section>
+    <section className="cost-form-section"><div className="cost-section-title"><span>03</span><div><b>Rattachements</b><small>Reliez la dépense au travail et au fournisseur concernés.</small></div></div><div className="cost-fields"><label>Fournisseur<select value={form.supplier_id} onChange={event=>change('supplier_id',event.target.value)}><option value="">Aucun fournisseur</option>{suppliers.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Activité liée<select value={form.task_id} onChange={event=>change('task_id',event.target.value)}><option value="">Aucune activité</option>{tasks.map(item=><option key={item.id} value={item.id}>{item.wbs_code?`${item.wbs_code} · `:''}{item.title}</option>)}</select></label><label className="wide">Notes<textarea value={form.notes} onChange={event=>change('notes',event.target.value)} placeholder="Contexte, conditions ou référence de la dépense…"/></label></div></section>
+    <div className="cost-form-actions"><button type="button" className="btn ghost" onClick={onCancel}>Annuler</button><button className="btn primary"><Plus size={15}/>Enregistrer le coût</button></div>
+  </form>
+}
