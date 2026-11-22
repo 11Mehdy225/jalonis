@@ -19,17 +19,18 @@ import GovernanceView from './features/governance/GovernanceView'
 import StakeholderManagement from './features/stakeholders/StakeholderManagement'
 import ReportCenter from './features/reports/ReportCenter'
 import CustomFieldsView from './features/projects/CustomFieldsView'
+import ProjectAssistant from './features/assistant/ProjectAssistant'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { permissionsFor } from './services/permissions'
-import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond } from 'lucide-react'
+import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond, Sparkles } from 'lucide-react'
 
 const money = (n,currency='XOF') => new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0)
 const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)) : '—'
 
 const NAV = [
   ['dashboard','Vue d’ensemble',LayoutDashboard],['charter','Charte du projet',FileText],['tasks','Planning prédictif',CalendarRange],['scrum','Scrum & Sprints',Columns3],
-  ['team','Équipe',Users],['stakeholders','Parties prenantes & RACI',Building2],['suppliers','Fournisseurs & Achats',Truck],['finance','Budget & Coûts',CircleDollarSign],['reports','Rapports & Exports',FileDown],['governance','Gouvernance',Gavel],['custom-fields','Champs personnalisés',List],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
+  ['assistant','Assistant de pilotage',Sparkles],['team','Équipe',Users],['stakeholders','Parties prenantes & RACI',Building2],['suppliers','Fournisseurs & Achats',Truck],['finance','Budget & Coûts',CircleDollarSign],['reports','Rapports & Exports',FileDown],['governance','Gouvernance',Gavel],['custom-fields','Champs personnalisés',List],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
 ]
 const moduleAllowed=(methodology,view)=>methodology==='Scrum'?view!=='tasks':methodology==='Prédictif'?view!=='scrum':true
 
@@ -173,6 +174,7 @@ export default function App() {
     try{setError('');const result=await api.billing.createCheckout(data);if(!result?.checkout_url)throw new Error('Lien de paiement indisponible.');window.location.assign(result.checkout_url)}
     catch(reason){setError(reason.message||'Impossible de préparer le paiement.')}
   }
+  async function analyzeProject(question){return api.assistant.analyze(activeId,question)}
   async function inviteMember(data){
     if(!permissions.inviteMembers)return deny('Votre rôle ne permet pas d’inviter des membres.')
     try { setError('');const next=await api.workspace.invite(data);setWorkspace(next);setNotice(next?.invite_result?.message||'Invitation créée.');setModal(null) }
@@ -194,6 +196,8 @@ export default function App() {
   const visibleNotifications=entities.notifications.filter(item=>!item.recipient_id||item.recipient_id===currentUser?.id)
   const unreadNotifications=visibleNotifications.filter(item=>!Number(item.is_read)).length
   const visibleNav=active?NAV.filter(([id])=>moduleAllowed(active.methodology,id)):NAV
+  const currentPlan=workspace?.plans?.find(plan=>plan.code===(workspace?.subscription?.plan_code||'discovery'))
+  const advancedAssistant=Boolean(currentPlan?.features?.assistant)
 
   return <div className={`app-shell${dark?' dark':''}`}>
     <aside className="sidebar">
@@ -216,6 +220,7 @@ export default function App() {
           {permissions.readOnly&&<div className="read-only-banner"><ShieldAlert size={15}/><span><b>Mode lecture seule</b> Votre rôle « {currentUser?.role} » permet de consulter le projet sans le modifier.</span></div>}
           {view!=='scrum'&&<div className="page-title compact-title"><div><span className="eyebrow">{active.code||'PROJET'}</span><h1>{view==='dashboard'?'Vue d’ensemble':view==='activity'?'Activité du projet':NAV.find(n=>n[0]===view)?.[1]||'Paramètres'}</h1><p>{view==='dashboard'?'Les signaux essentiels pour prendre les bonnes décisions.':view==='activity'?'Messages, notifications et historique des changements.':active.name}</p></div>{permissions.editProject&&['tasks','risks','team','meetings'].includes(view)&&<button className="btn primary" onClick={()=>setModal(view)}><Plus size={17}/>Ajouter</button>}</div>}
           {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView} setAgileTab={setAgileTab}/>}
+          {view==='assistant'&&<ProjectAssistant project={active} entities={entities} advancedAvailable={advancedAssistant} onAnalyze={analyzeProject} onNavigate={target=>{if(target==='scrum')setAgileTab('backlog');setView(target)}}/>}
           {view==='charter'&&<Charter project={active} onSave={updateCharter}/>} 
           {view==='tasks'&&<Tasks methodology={active.methodology} rows={entities.tasks} dependencies={entities.task_dependencies} calendars={entities.work_calendars} items={entities.backlog_items} sprints={entities.sprints} team={entities.team} members={workspace?.members||[]} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} customFields={entities.custom_fields} customValues={entities.custom_field_values} currentUser={currentUser} query={query} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onSaveCustomValue={saveCustomValue} onCreateDependency={data=>addEntity('task_dependencies',data)} onDeleteDependency={id=>removeEntity('task_dependencies',id)} onSaveCalendar={async data=>{const current=entities.work_calendars[0];return current?updateEntity('work_calendars',current.id,data):addEntity('work_calendars',data)}} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
           {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} customFields={entities.custom_fields} customValues={entities.custom_field_values} snapshots={entities.sprint_snapshots} team={entities.team} members={workspace?.members||[]} currentUser={currentUser} activeTab={agileTab} onTabChange={setAgileTab} onAttach={id=>attachMedia('backlog_items',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onSaveCustomValue={saveCustomValue} onSnapshot={createSprintSnapshot} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>}
@@ -241,7 +246,7 @@ export default function App() {
 }
 
 const PROJECT_TABS=[
-  ['dashboard',null,'Résumé',LayoutDashboard],['tasks',null,'Planning prédictif',ChartNoAxesGantt],['scrum','board','Tableau Scrum',Columns3],['scrum','backlog','Backlog',ClipboardList],
+  ['dashboard',null,'Résumé',LayoutDashboard],['assistant',null,'Assistant',Sparkles],['tasks',null,'Planning prédictif',ChartNoAxesGantt],['scrum','board','Tableau Scrum',Columns3],['scrum','backlog','Backlog',ClipboardList],
   ['suppliers',null,'Fournisseurs',Truck],['finance',null,'Budget',CircleDollarSign],['reports',null,'Rapports',FileDown],['governance',null,'Gouvernance',Gavel],['stakeholders',null,'Parties prenantes',Building2],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
 ]
 

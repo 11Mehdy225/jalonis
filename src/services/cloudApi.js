@@ -107,6 +107,14 @@ async function selectImages(multiple=true) {
 }
 
 export const cloudApi = {
+  assistant: {
+    analyze: async (projectId, question) => {
+      const {data,error}=await supabase.functions.invoke('project-assistant',{body:{project_id:projectId,question}})
+      if(error){let message=data?.error||error.message||"Impossible d’analyser le projet";try{const details=await error.context?.json();message=details?.error||message}catch{}throw new Error(message)}
+      if(data?.error)throw new Error(data.error)
+      return data
+    },
+  },
   billing: {
     createCheckout: async data => {
       const id=await workspaceId()

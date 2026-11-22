@@ -148,3 +148,22 @@ https://VOTRE-PROJET.supabase.co/functions/v1/process-whatsapp-queue
 ```
 
 Ajouter l’en-tête `x-jalonis-cron-secret` déjà utilisé pour les e-mails. La fonction respecte les préférences, les heures silencieuses et le fuseau horaire, déduplique les rappels et retente les échecs temporaires. Sans ces clés Meta, le canal reste inactif et n’empêche pas le reste de Jalonis de fonctionner.
+
+## 7. Assistant de pilotage
+
+L’écran **Assistant** comporte deux niveaux :
+
+- une analyse locale disponible sans service externe, calculée à partir des retards, blocages, risques, responsables et coûts ;
+- une analyse approfondie réservée à l’offre Business, exécutée par une fonction serveur et limitée par un quota mensuel.
+
+La clé du fournisseur d’IA reste exclusivement dans les secrets Supabase. Elle ne doit jamais être copiée dans Render, dans le navigateur ou dans le dépôt GitHub.
+
+```bash
+supabase functions deploy project-assistant --no-verify-jwt
+supabase secrets set OPENAI_API_KEY=sk-...
+supabase secrets set OPENAI_ASSISTANT_MODEL=gpt-5-mini
+```
+
+Le modèle peut être remplacé par un modèle disponible dans le compte utilisé. Lorsqu’un chef de projet demande une analyse, Jalonis envoie uniquement un contexte structuré du projet : charte, dates, tâches ou backlog, risques, réunions, problèmes, décisions et données de coûts. Les commentaires libres, coordonnées des membres et documents joints ne sont pas envoyés. La requête utilise `store: false` et la réponse est enregistrée dans l’espace Jalonis pour conserver une trace des analyses réalisées.
+
+L’offre Business autorise actuellement 100 analyses approfondies par espace et par mois. L’édition Entreprise utilise un quota contractuel. Les recommandations restent indicatives et doivent être validées par le chef de projet.

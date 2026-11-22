@@ -26,7 +26,7 @@ Ordre de réalisation :
 5. notifications par e-mail ;
 6. Daily Scrum et synthèses ;
 7. rappels WhatsApp avec consentement ;
-8. assistance intelligente et détection des risques.
+8. assistance intelligente et détection des risques — signaux locaux explicables et analyse serveur intégrés.
 
 ## Principes de sécurité
 
