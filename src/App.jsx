@@ -20,15 +20,16 @@ import StakeholderManagement from './features/stakeholders/StakeholderManagement
 import ReportCenter from './features/reports/ReportCenter'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
-import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown } from 'lucide-react'
+import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond } from 'lucide-react'
 
 const money = (n,currency='XOF') => new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0)
 const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)) : '—'
 
 const NAV = [
-  ['dashboard','Vue d’ensemble',LayoutDashboard],['charter','Charte du projet',FileText],['tasks','Planning',CalendarRange],['scrum','Agile & Sprints',Columns3],
+  ['dashboard','Vue d’ensemble',LayoutDashboard],['charter','Charte du projet',FileText],['tasks','Planning prédictif',CalendarRange],['scrum','Scrum & Sprints',Columns3],
   ['team','Équipe',Users],['stakeholders','Parties prenantes & RACI',Building2],['suppliers','Fournisseurs & Achats',Truck],['finance','Budget & Coûts',CircleDollarSign],['reports','Rapports & Exports',FileDown],['governance','Gouvernance',Gavel],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
 ]
+const moduleAllowed=(methodology,view)=>methodology==='Scrum'?view!=='tasks':methodology==='Prédictif'?view!=='scrum':true
 
 const ENTITY_TYPES=['tasks','task_dependencies','work_calendars','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries','cost_entries','change_requests','issues','decisions','stakeholders','raci_assignments','conflicts','communication_plans']
 const ENTITY_LABELS={tasks:'Tâche',task_dependencies:'Dépendance',work_calendars:'Calendrier de travail',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message',time_entries:'Temps saisi',cost_entries:'Coût',change_requests:'Demande de changement',issues:'Problème',decisions:'Décision',stakeholders:'Partie prenante',raci_assignments:'Attribution RACI',conflicts:'Conflit',communication_plans:'Communication'}
@@ -46,12 +47,14 @@ export default function App() {
   async function loadWorkspace(){ setWorkspace(await api.workspace.get()) }
   useEffect(()=>{loadProjects();loadWorkspace()},[])
   useEffect(()=>{loadEntities(activeId)},[activeId])
+  useEffect(()=>{if(!active)return;if(active.methodology==='Scrum'&&view==='tasks'){setView('scrum');setAgileTab('backlog')}if(active.methodology==='Prédictif'&&view==='scrum')setView('tasks')},[active?.methodology,view])
 
   const stats=useMemo(()=>{
-    const progress=entities.tasks.length?Math.round(entities.tasks.reduce((s,t)=>s+Number(t.progress||0),0)/entities.tasks.length):0
+    const scrumItems=entities.backlog_items.filter(item=>item.item_type!=='Epic'),isScrum=active?.methodology==='Scrum',total=isScrum?scrumItems.length:entities.tasks.length
+    const progress=isScrum?(total?Math.round(scrumItems.filter(item=>item.status==='Terminé').length/total*100):0):(total?Math.round(entities.tasks.reduce((s,t)=>s+Number(t.progress||0),0)/total):0)
     const critical=entities.risks.filter(r=>Number(r.probability)*Number(r.impact)>=15&&r.status!=='Fermé').length
-    return {progress,critical,done:entities.tasks.filter(t=>t.status==='Terminé').length}
-  },[entities])
+    return {progress,critical,total,done:isScrum?scrumItems.filter(item=>item.status==='Terminé').length:entities.tasks.filter(t=>t.status==='Terminé').length}
+  },[entities,active?.methodology])
 
   async function createProject(data){ const item=await api.projects.create(data); setModal(null); await loadProjects(false); setActiveId(item.id); setView('dashboard') }
   async function importProjectArchive(backup){
@@ -147,13 +150,14 @@ export default function App() {
   async function readNotification(id){await api.entities.update('notifications',id,{is_read:true});await loadEntities(activeId)}
   async function readAllNotifications(){await Promise.all(entities.notifications.filter(item=>!Number(item.is_read)).map(item=>api.entities.update('notifications',item.id,{is_read:true})));await loadEntities(activeId)}
   const unreadNotifications=entities.notifications.filter(item=>!Number(item.is_read)).length
+  const visibleNav=active?NAV.filter(([id])=>moduleAllowed(active.methodology,id)):NAV
 
   return <div className={`app-shell${dark?' dark':''}`}>
     <aside className="sidebar">
       <div className="brand"><img src="./assets/jalonis-logo.png"/><div><strong>Jalonis</strong><span>Pilotage de projets</span></div></div>
       <div className="workspace-label">ESPACE DE TRAVAIL</div>
       <button className="project-switcher" onClick={()=>setModal('projects')} style={{'--project-color':active?.theme_color||'#4f46e5'}}>{active?.logo_url?<img className="project-avatar project-logo" src={active.logo_url} alt=""/>:<span className="project-avatar">{active?.name?.[0]||workspace?.workspace?.name?.[0]||'J'}</span>}<span><b>{workspace?.workspace?.name||'Mon espace Jalonis'}</b><small>{active?.name||'Aucun projet sélectionné'}</small></span><ChevronRight size={16}/></button>
-      <nav>{NAV.map(([id,label,Icon])=><button key={id} className={view===id?'active':''} onClick={()=>setView(id)}><Icon size={18}/><span>{label}</span>{id==='risks'&&stats.critical>0?<em>{stats.critical}</em>:null}</button>)}</nav>
+      <nav>{visibleNav.map(([id,label,Icon])=><button key={id} className={view===id?'active':''} onClick={()=>setView(id)}><Icon size={18}/><span>{label}</span>{id==='risks'&&stats.critical>0?<em>{stats.critical}</em>:null}</button>)}</nav>
       <div className="sidebar-bottom"><button className={view==='workspace'?'active':''} onClick={()=>setView('workspace')}><Building2 size={18}/>Espace & accès</button><button onClick={()=>setModal('projects')}><FolderKanban size={18}/>Tous les projets</button><button onClick={()=>setView('settings')}><Settings size={18}/>Paramètres</button></div>
       <div className="user-chip"><div className="avatar">{(currentUser?.full_name||'CP').split(' ').map(part=>part[0]).slice(0,2).join('')}</div><div><b>{currentUser?.full_name||'Chef de projet'}</b><small>{currentUser?.role||'Administrateur local'}</small></div><MoreHorizontal size={17}/></div>
     </aside>
@@ -166,9 +170,9 @@ export default function App() {
         : !active ? <Empty onCreate={()=>setModal('project')}/> : <>
           <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} onNavigate={openProjectView} onShare={()=>setModal('invite-member')} onBranding={()=>setModal('branding')}/>
           {view!=='scrum'&&<div className="page-title compact-title"><div><span className="eyebrow">{active.code||'PROJET'}</span><h1>{view==='dashboard'?'Vue d’ensemble':view==='activity'?'Activité du projet':NAV.find(n=>n[0]===view)?.[1]||'Paramètres'}</h1><p>{view==='dashboard'?'Les signaux essentiels pour prendre les bonnes décisions.':view==='activity'?'Messages, notifications et historique des changements.':active.name}</p></div>{['tasks','risks','team','meetings'].includes(view)&&<button className="btn primary" onClick={()=>setModal(view)}><Plus size={17}/>Ajouter</button>}</div>}
-          {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView}/>} 
+          {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView} setAgileTab={setAgileTab}/>}
           {view==='charter'&&<Charter project={active} onSave={updateCharter}/>} 
-          {view==='tasks'&&<Tasks rows={entities.tasks} dependencies={entities.task_dependencies} calendars={entities.work_calendars} items={entities.backlog_items} sprints={entities.sprints} team={entities.team} members={workspace?.members||[]} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} currentUser={currentUser} query={query} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onCreateDependency={data=>addEntity('task_dependencies',data)} onDeleteDependency={id=>removeEntity('task_dependencies',id)} onSaveCalendar={async data=>{const current=entities.work_calendars[0];return current?updateEntity('work_calendars',current.id,data):addEntity('work_calendars',data)}} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
+          {view==='tasks'&&<Tasks methodology={active.methodology} rows={entities.tasks} dependencies={entities.task_dependencies} calendars={entities.work_calendars} items={entities.backlog_items} sprints={entities.sprints} team={entities.team} members={workspace?.members||[]} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} currentUser={currentUser} query={query} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onCreateDependency={data=>addEntity('task_dependencies',data)} onDeleteDependency={id=>removeEntity('task_dependencies',id)} onSaveCalendar={async data=>{const current=entities.work_calendars[0];return current?updateEntity('work_calendars',current.id,data):addEntity('work_calendars',data)}} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
           {view==='scrum'&&<ScrumView project={active} sprints={entities.sprints} items={entities.backlog_items} tasks={entities.tasks} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} snapshots={entities.sprint_snapshots} team={entities.team} members={workspace?.members||[]} currentUser={currentUser} activeTab={agileTab} onTabChange={setAgileTab} onAttach={id=>attachMedia('backlog_items',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onSnapshot={createSprintSnapshot} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}/>}
           {view==='suppliers'&&<SupplierManagement projectId={activeId} data={entities} tasks={entities.tasks} risks={entities.risks} onCreate={addEntity} onDelete={removeEntity} onReload={()=>loadEntities(activeId)}/>} 
           {view==='finance'&&<FinancialView project={active} costs={entities.cost_entries} team={entities.team} tasks={entities.tasks} timeEntries={entities.time_entries} suppliers={entities.suppliers} onCreate={data=>addEntity('cost_entries',data)} onDelete={id=>removeEntity('cost_entries',id)} onUpdateProject={updateCharter}/>}
@@ -191,17 +195,18 @@ export default function App() {
 }
 
 const PROJECT_TABS=[
-  ['dashboard',null,'Résumé',LayoutDashboard],['tasks',null,'Planning',ChartNoAxesGantt],['scrum','board','Tableau',Columns3],['scrum','backlog','Backlog',ClipboardList],
+  ['dashboard',null,'Résumé',LayoutDashboard],['tasks',null,'Planning prédictif',ChartNoAxesGantt],['scrum','board','Tableau Scrum',Columns3],['scrum','backlog','Backlog',ClipboardList],
   ['suppliers',null,'Fournisseurs',Truck],['finance',null,'Budget',CircleDollarSign],['reports',null,'Rapports',FileDown],['governance',null,'Gouvernance',Gavel],['stakeholders',null,'Parties prenantes',Building2],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
 ]
 
 function ProjectHeader({active,view,agileTab,members,onNavigate,onShare,onBranding}){
+  const tabs=PROJECT_TABS.filter(([target])=>moduleAllowed(active.methodology,target))
   return <div className="project-context">
     <div className="project-context-main">
       <div><span className="project-breadcrumb">Projets <ChevronRight size={13}/> {active.code||'Projet actif'}</span><div className="project-heading">{active.logo_url?<img className="project-mark project-logo" src={active.logo_url} alt={`Logo ${active.name}`}/>:<span className="project-mark">{active.name?.[0]||'J'}</span>}<div><h1>{active.name}</h1><p>{active.methodology||'Hybride'} · {active.status||'En cours'}</p></div></div></div>
       <div className="project-actions"><div className="member-stack">{members.slice(0,4).map((member,index)=><span key={member.id||index} title={member.full_name}>{(member.full_name||'M').split(' ').map(part=>part[0]).slice(0,2).join('')}</span>)}{members.length>4&&<em>+{members.length-4}</em>}</div><button className="btn ghost" onClick={onBranding}><Palette size={15}/>Personnaliser</button><button className="btn ghost" onClick={onShare}><Share2 size={15}/>Partager</button></div>
     </div>
-    <nav className="project-tabs">{PROJECT_TABS.map(([target,subtab,label,Icon])=>{const selected=view===target&&(!subtab||agileTab===subtab);return <button key={`${target}-${subtab||''}`} className={selected?'active':''} onClick={()=>onNavigate(target,subtab)}><Icon size={15}/>{label}</button>})}<button className="project-tab-more"><MoreHorizontal size={16}/></button></nav>
+    <nav className="project-tabs">{tabs.map(([target,subtab,label,Icon])=>{const selected=view===target&&(!subtab||agileTab===subtab);return <button key={`${target}-${subtab||''}`} className={selected?'active':''} onClick={()=>onNavigate(target,subtab)}><Icon size={15}/>{label}</button>})}<button className="project-tab-more"><MoreHorizontal size={16}/></button></nav>
   </div>
 }
 
@@ -209,20 +214,22 @@ function ProjectBrandingForm({project,onSubmit,onCancel}){const [color,setColor]
 
 function Empty({onCreate}){return <div className="empty"><img src="./assets/jalonis-logo.png"/><h1>Bienvenue dans Jalonis</h1><p>Créez votre premier projet et pilotez son cycle de vie au même endroit.</p><button className="btn primary" onClick={onCreate}><Plus size={17}/>Créer un projet</button></div>}
 
-function Dashboard({active,entities,stats,setView}){
-  const upcoming=[...entities.tasks].filter(t=>t.status!=='Terminé').sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||'')).slice(0,4)
+function Dashboard({active,entities,stats,setView,setAgileTab}){
+  const isScrum=active.methodology==='Scrum',workItems=isScrum?entities.backlog_items.filter(item=>item.item_type!=='Epic'):entities.tasks
+  const upcoming=[...workItems].filter(item=>item.status!=='Terminé'&&item.due_date).sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||'')).slice(0,4)
+  const openDelivery=()=>{if(isScrum){setAgileTab('backlog');setView('scrum')}else setView('tasks')}
   return <>
-    <DailyBrief entities={entities} onOpenTasks={()=>setView('tasks')} onOpenRisks={()=>setView('risks')}/>
+    <DailyBrief entities={entities} onOpenTasks={openDelivery} onOpenRisks={()=>setView('risks')}/>
     <div className="kpi-grid">
-      <Kpi icon={Target} label="Avancement global" value={`${stats.progress}%`} note={`${stats.done}/${entities.tasks.length} activités terminées`} color="indigo" progress={stats.progress}/>
+      <Kpi icon={Target} label="Avancement global" value={`${stats.progress}%`} note={`${stats.done}/${stats.total} ${isScrum?'éléments terminés':'activités terminées'}`} color="indigo" progress={stats.progress}/>
       <Kpi icon={Clock3} label="Échéance cible" value={date(active.end_date)} note={active.status} color="blue"/>
       <Kpi icon={CircleDollarSign} label="Budget de référence" value={money(active.budget,active.currency||'XOF')} note={`${entities.cost_entries.length} ligne(s) de coûts suivie(s)`} color="teal"/>
       <Kpi icon={ShieldAlert} label="Risques critiques" value={stats.critical} note={`${entities.risks.filter(r=>r.status!=='Fermé').length} risques ouverts`} color="orange"/>
     </div>
     <div className="dashboard-grid">
-      <section className="card span-2"><CardHead title="Trajectoire du projet" action="Ouvrir le planning" onClick={()=>setView('tasks')}/><div className="trajectory"><div className="donut" style={{'--progress':`${stats.progress*3.6}deg`}}><span><b>{stats.progress}%</b><small>réalisé</small></span></div><div className="phase-list">{['Initialisation','Planification','Exécution','Clôture'].map((p,i)=><div key={p} className={i<2?'complete':i===2?'current':''}><span>{i<2?<CheckCircle2 size={17}/>:i+1}</span><div><b>{p}</b><small>{i<2?'Validée':i===2?'Phase actuelle':'À venir'}</small></div></div>)}</div></div></section>
+      <section className="card span-2"><CardHead title={isScrum?'Flux de livraison Scrum':'Trajectoire du projet'} action={isScrum?'Ouvrir le backlog':'Ouvrir le planning'} onClick={openDelivery}/><div className="trajectory"><div className="donut" style={{'--progress':`${stats.progress*3.6}deg`}}><span><b>{stats.progress}%</b><small>réalisé</small></span></div><div className="phase-list">{(isScrum?['Product Backlog','Sprint','Review','Incrément']:['Initialisation','Planification','Exécution','Clôture']).map((p,i)=><div key={p} className={i<2?'complete':i===2?'current':''}><span>{i<2?<CheckCircle2 size={17}/>:i+1}</span><div><b>{p}</b><small>{i<2?'Validée':i===2?'Phase actuelle':'À venir'}</small></div></div>)}</div></div></section>
       <section className="card"><CardHead title="Santé du projet"/><div className="health-panel"><div className={`health-big ${active.health}`}>{active.health==='good'?'Bonne':active.health==='warning'?'À surveiller':'Critique'}</div>{[['Périmètre','good'],['Délais','warning'],['Budget','good'],['Équipe','good']].map(([l,s])=><div className="health-row" key={l}><span>{l}</span><b className={s}>{s==='good'?'Maîtrisé':'Attention'}</b></div>)}</div></section>
-      <section className="card span-2"><CardHead title="Prochaines échéances" action="Tout afficher" onClick={()=>setView('tasks')}/>{upcoming.length?<div className="timeline-list">{upcoming.map(t=><div key={t.id}><span className={`priority-dot ${t.priority?.toLowerCase()}`}></span><div><b>{t.title}</b><small>{t.assignee||'Non assigné'}</small></div><strong>{date(t.due_date)}</strong><span className="pill">{t.status}</span></div>)}</div>:<EmptyRow text="Aucune échéance planifiée"/>}</section>
+      <section className="card span-2"><CardHead title={isScrum?'Éléments avec date cible':'Prochaines échéances'} action="Tout afficher" onClick={openDelivery}/>{upcoming.length?<div className="timeline-list">{upcoming.map(t=><div key={t.id}><span className={`priority-dot ${t.priority?.toLowerCase()}`}></span><div><b>{t.title}</b><small>{t.assignee||'Non assigné'}</small></div><strong>{date(t.due_date)}</strong><span className="pill">{t.status}</span></div>)}</div>:<EmptyRow text={isScrum?'Aucune date cible dans le backlog':'Aucune échéance planifiée'}/>}</section>
       <section className="card"><CardHead title="Attention requise" action="Risques" onClick={()=>setView('risks')}/><div className="attention">{entities.risks.filter(r=>r.status!=='Fermé').slice(0,3).map(r=><div key={r.id}><span>{Number(r.probability)*Number(r.impact)}</span><div><b>{r.title}</b><small>{r.owner||'Sans responsable'} · {r.category}</small></div></div>)}{!entities.risks.length&&<EmptyRow text="Aucun risque ouvert"/>}</div></section>
     </div>
   </>
@@ -243,12 +250,13 @@ function Charter({project,onSave}){
 const match=(row,q)=>!q||Object.values(row).some(v=>String(v||'').toLowerCase().includes(q.toLowerCase()))
 function Table({columns,rows,query,onDelete,onRowClick,empty}){return <div className="card table-card"><table><thead><tr>{columns.map(c=><th key={c.key}>{c.label}</th>)}<th></th></tr></thead><tbody>{rows.filter(r=>match(r,query)).map(row=><tr key={row.id} className={onRowClick?'clickable-row':''} onClick={()=>onRowClick?.(row)}>{columns.map(c=><td key={c.key}>{c.render?c.render(row[c.key],row):row[c.key]||'—'}</td>)}<td><button className="row-delete" title="Supprimer" onClick={event=>{event.stopPropagation();onDelete(row.id)}}><Trash2 size={16}/></button></td></tr>)}</tbody></table>{!rows.length&&<EmptyRow text={empty}/>}</div>}
 const status=v=><span className={`status ${String(v).toLowerCase().replaceAll(' ','-')}`}>{v||'—'}</span>
-function Tasks({rows,dependencies=[],calendars=[],items,sprints,team,members,attachments=[],comments=[],activities=[],checklist=[],currentUser,query,onAttach,onComment,onAddChecklist,onUpdateChecklist,onDeleteChecklist,onCreateDependency,onDeleteDependency,onSaveCalendar,onDelete,onUpdate}){
+function Tasks({methodology,rows,dependencies=[],calendars=[],items,sprints,team,members,attachments=[],comments=[],activities=[],checklist=[],currentUser,query,onAttach,onComment,onAddChecklist,onUpdateChecklist,onDeleteChecklist,onCreateDependency,onDeleteDependency,onSaveCalendar,onDelete,onUpdate}){
   const [mode,setMode]=useState('calendar')
   const [discussion,setDiscussion]=useState(null)
   const [selected,setSelected]=useState(null)
   const setBaseline=async()=>{await Promise.all(rows.filter(t=>t.start_date&&t.due_date).map(t=>onUpdate(t.id,{baseline_start:t.start_date,baseline_end:t.due_date}))) }
   return <>
+    <div className="method-boundary predictive"><ChartNoAxesGantt size={17}/><div><b>Planning prédictif</b><span>WBS, jalons, calendrier ouvré, dépendances FS/SS/FF/SF et chemin critique.</span></div>{methodology==='Hybride'&&<em>Mode hybride · les User Stories peuvent être reliées aux activités, sans mélanger les deux méthodes.</em>}</div>
     <div className="planning-toolbar"><div className="view-toggle"><button className={mode==='calendar'?'active':''} onClick={()=>setMode('calendar')}><CalendarDays size={15}/>Calendrier</button><button className={mode==='gantt'?'active':''} onClick={()=>setMode('gantt')}><CalendarRange size={15}/>Gantt</button><button className={mode==='list'?'active':''} onClick={()=>setMode('list')}><List size={15}/>Liste</button><button className={mode==='settings'?'active':''} onClick={()=>setMode('settings')}><Settings size={15}/>Temps de travail</button></div><span>Calendrier, dépendances et trajectoire critique synchronisés.</span></div>
     {mode === 'calendar'
       ? <MonthCalendar rows={rows.filter(r=>match(r,query))}/>
@@ -256,7 +264,7 @@ function Tasks({rows,dependencies=[],calendars=[],items,sprints,team,members,att
         ? <GanttView rows={rows.filter(r=>match(r,query))} dependencies={dependencies} calendar={calendars[0]} team={team} onSetBaseline={setBaseline}/>
         : mode === 'settings'
           ? <PlanningSettings calendar={calendars[0]} onSave={onSaveCalendar}/>
-          : <Table rows={rows} query={query} onDelete={onDelete} onRowClick={setSelected} empty="Ajoutez la première activité du planning." columns={[{key:'wbs_code',label:'WBS'},{key:'title',label:'Activité',render:(v,r)=><b>{r.is_milestone?'◆ ':''}{v}</b>},{key:'visuals',label:'Rendus',render:(_,r)=><VisualCell files={attachments.filter(file=>file.entity_type==='tasks'&&file.entity_id===r.id)} onAttach={()=>onAttach(r.id)}/>},{key:'comments',label:'Messages',render:(_,r)=>{const count=comments.filter(item=>item.entity_type==='tasks'&&item.entity_id===r.id).length;return <button className="comment-link" onClick={event=>{event.stopPropagation();setDiscussion(r)}}><MessageSquareText size={13}/>{count}</button>}},{key:'status',label:'Statut',render:status},{key:'priority',label:'Priorité'},{key:'assignee',label:'Responsable'},{key:'due_date',label:'Échéance',render:date},{key:'progress',label:'Avancement',render:v=><div className="progress-cell"><i><span style={{width:`${v||0}%`}}/></i><b>{v||0}%</b></div>}]}/>
+          : <Table rows={rows} query={query} onDelete={onDelete} onRowClick={setSelected} empty="Ajoutez la première activité du planning." columns={[{key:'wbs_code',label:'WBS'},{key:'title',label:'Activité',render:(v,r)=><b className="task-title-cell">{r.is_milestone&&<Diamond size={11} fill="currentColor"/>}{v}</b>},{key:'visuals',label:'Rendus',render:(_,r)=><VisualCell files={attachments.filter(file=>file.entity_type==='tasks'&&file.entity_id===r.id)} onAttach={()=>onAttach(r.id)}/>},{key:'comments',label:'Messages',render:(_,r)=>{const count=comments.filter(item=>item.entity_type==='tasks'&&item.entity_id===r.id).length;return <button className="comment-link" onClick={event=>{event.stopPropagation();setDiscussion(r)}}><MessageSquareText size={13}/>{count}</button>}},{key:'status',label:'Statut',render:status},{key:'priority',label:'Priorité'},{key:'assignee',label:'Responsable'},{key:'due_date',label:'Échéance',render:date},{key:'progress',label:'Avancement',render:v=><div className="progress-cell"><i><span style={{width:`${v||0}%`}}/></i><b>{v||0}%</b></div>}]}/>
     }
     {discussion&&<Modal title="Discussion de l’activité" onClose={()=>setDiscussion(null)}><EntityDiscussion entity={discussion} entityType="tasks" comments={comments} currentUser={currentUser} onComment={onComment}/></Modal>}
     {selected&&<Modal title="Fiche complète de l’activité" onClose={()=>setSelected(null)}><WorkItemDetails item={rows.find(row=>row.id===selected.id)||selected} type="tasks" tasks={rows} dependencies={dependencies} items={items} sprints={sprints} members={members} attachments={attachments} comments={comments} activities={activities} checklist={checklist} currentUser={currentUser} onUpdate={onUpdate} onCreateDependency={onCreateDependency} onDeleteDependency={onDeleteDependency} onAttach={()=>onAttach(selected.id)} onComment={onComment} onAddChecklist={onAddChecklist} onUpdateChecklist={onUpdateChecklist} onDeleteChecklist={onDeleteChecklist}/></Modal>}
