@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('jalonis', {
     list: () => ipcRenderer.invoke('workspaces:list'),
     select: (id) => ipcRenderer.invoke('workspaces:select', id),
     create: (data) => ipcRenderer.invoke('workspaces:create', data),
+    updateProfile: (data) => ipcRenderer.invoke('workspace-profile:update', data),
     update: (data) => ipcRenderer.invoke('workspace:update', data),
     invite: (data) => ipcRenderer.invoke('workspace-members:create', data),
     updateMemberRole: (membershipId, role) => ipcRenderer.invoke('workspace-members:update-role', membershipId, role),

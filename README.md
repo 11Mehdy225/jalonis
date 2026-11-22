@@ -2,7 +2,7 @@
 
 Application macOS et Windows locale de pilotage de projet, pensée pour relier les dimensions techniques, financières et humaines du cycle de vie d’un projet.
 
-La version 0.5 ajoute une véritable cible web SaaS : authentification Supabase, espaces Personnel ou Organisation, base PostgreSQL isolée par organisation, stockage sécurisé, abonnements préparés et interface commune avec les applications Desktop.
+La version 0.17 prépare la cible SaaS complète : authentification Supabase, récupération de mot de passe, espaces Personnel ou Organisation, collaboration en temps réel, base PostgreSQL isolée par organisation, stockage sécurisé, abonnements et interface commune avec les applications Desktop.
 
 ## Version web
 

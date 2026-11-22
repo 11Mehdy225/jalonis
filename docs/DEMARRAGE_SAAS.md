@@ -6,7 +6,7 @@ Créer un projet Supabase dans la région la plus proche des futurs clients. Con
 
 Dans l’éditeur SQL Supabase, appliquer dans l’ordre tous les fichiers du dossier `supabase/migrations`.
 
-Cette migration crée :
+Ces migrations créent :
 
 - les profils utilisateurs ;
 - les espaces Personnel et Organisation ;
@@ -15,7 +15,8 @@ Cette migration crée :
 - les projets et tous les objets PMP, Scrum et fournisseurs ;
 - les commentaires, Daily Scrum et journaux d’audit ;
 - les politiques de sécurité ligne par ligne ;
-- le stockage privé `workspace-files`.
+- le stockage privé `workspace-files` ;
+- la diffusion en temps réel de tous les registres d’un projet.
 
 ## 2. Configurer l’application web
 
@@ -43,13 +44,16 @@ Créer un compte de validation, confirmer l’adresse e-mail, puis vérifier :
 4. l’isolation avec un second compte ;
 5. l’invitation d’un membre ;
 6. l’ajout et l’ouverture d’un document fournisseur ;
-7. l’accès depuis le web et l’application Desktop connectée.
+7. la récupération d’un mot de passe depuis la page de connexion ;
+8. la mise à jour du profil utilisateur ;
+9. la synchronisation d’une modification entre deux navigateurs ;
+10. l’accès depuis le web et l’application Desktop connectée.
 
 ## 4. Déployer
 
 Vercel et Netlify sont préconfigurés. Dans l’hébergeur choisi, ajouter les deux variables `VITE_SUPABASE_*`, puis déployer la branche `main`.
 
-Ajouter l’URL publique dans Supabase : Authentication → URL Configuration → Site URL et Redirect URLs.
+Ajouter l’URL publique dans Supabase : Authentication → URL Configuration → Site URL et Redirect URLs. Ajouter l’URL du site ainsi que sa variante de récupération, par exemple `https://jalonis.onrender.com/?reset=1`. Le même réglage permet aux liens de confirmation, d’invitation et de mot de passe oublié de revenir dans Jalonis.
 
 Déployer ensuite les fonctions de création d’espace et d’invitation, puis définir l’URL publique utilisée dans les e-mails :
 
@@ -60,6 +64,8 @@ supabase secrets set SITE_URL=https://jalonis.onrender.com
 ```
 
 Un compte peut posséder jusqu’à cinq espaces et un seul espace Personnel. La sélection active est mémorisée sur l’appareil, mais chaque changement est revérifié côté serveur. Les projets, membres, fichiers, abonnement et facturation restent rattachés à leur espace respectif.
+
+Après application de la migration `202611220021_full_project_realtime.sql`, une modification de tâche, backlog, sprint, coût, risque, fournisseur, commentaire ou autre registre apparaît automatiquement chez les membres connectés au même projet. Il n’est pas nécessaire d’activer les tables une seconde fois dans le tableau Realtime.
 
 La clé `SUPABASE_SERVICE_ROLE_KEY` est fournie automatiquement aux fonctions Supabase hébergées. Elle ne doit jamais être ajoutée aux variables Render ni au code de l’application.
 

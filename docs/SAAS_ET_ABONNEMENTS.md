@@ -96,8 +96,8 @@ Les droits fonctionnels seront calculés côté serveur à partir de l’offre a
 
 1. comptes connectés et authentification ;
 2. organisations, sélection multi-espace, invitations et rôles — intégrés ;
-3. base PostgreSQL et synchronisation web/Desktop ;
-4. collaboration en temps réel ;
+3. base PostgreSQL et synchronisation web/Desktop — connecteurs et schéma intégrés, activation avec les clés Supabase ;
+4. collaboration en temps réel — diffusion de tous les registres intégrée ;
 5. essais gratuits, plans et limites ;
 6. paiement et portail de facturation — socle Flutterwave intégré, activation en attente des clés ;
 7. e-mails transactionnels — file, préférences, résumé quotidien et anti-doublon intégrés ;

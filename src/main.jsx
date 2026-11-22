@@ -2,6 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import AuthGate from './features/auth/AuthGate'
+import ErrorBoundary from './shared/ErrorBoundary'
 import './styles/styles.css'
 import './styles/sidebar-scroll.css'
 import './styles/calendar.css'
@@ -16,4 +17,4 @@ import './styles/suppliers.css'
 import './styles/project-shell.css'
 import './styles/collaboration.css'
 
-createRoot(document.getElementById('root')).render(<React.StrictMode><AuthGate><App /></AuthGate></React.StrictMode>)
+createRoot(document.getElementById('root')).render(<React.StrictMode><ErrorBoundary><AuthGate><App /></AuthGate></ErrorBoundary></React.StrictMode>)

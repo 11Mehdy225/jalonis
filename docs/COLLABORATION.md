@@ -1,6 +1,6 @@
 # Collaboration Jalonis
 
-## Version 0.3 — fondation locale
+## Version 0.17 — collaboration locale et cloud
 
 Cette version introduit la structure nécessaire au futur mode équipe :
 
@@ -12,11 +12,11 @@ Cette version introduit la structure nécessaire au futur mode équipe :
 - l’affectation d’une tâche à un compte membre.
 - plusieurs espaces isolés, avec changement d’organisation depuis l’application.
 
-Les données restent stockées sur l’ordinateur. Créer une invitation prépare le compte, mais n’envoie pas encore d’e-mail.
+En mode Desktop local, les données restent stockées sur l’ordinateur et une invitation prépare le compte sans envoyer d’e-mail. En mode SaaS, Supabase isole chaque espace, envoie les invitations et synchronise tous les registres du projet en temps réel.
 
-## Prochaine étape — mode équipe connecté
+## Activation du mode équipe connecté
 
-Le même modèle sera porté sur un serveur PostgreSQL avec authentification et contrôle des accès. L’application web et l’application installable utiliseront alors la même interface et le même service de données.
+Le modèle PostgreSQL, l’authentification et les contrôles d’accès sont prêts. L’activation consiste à appliquer les migrations, renseigner les deux variables publiques Supabase et déployer les fonctions décrites dans `DEMARRAGE_SAAS.md`.
 
 Ordre de réalisation :
 

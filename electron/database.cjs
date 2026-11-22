@@ -482,6 +482,15 @@ class JalonisDatabase {
     return this.getWorkspace()
   }
 
+  updateCurrentUserProfile(data) {
+    const state=this.getWorkspace(),user=state.current_user
+    if(!user)throw new Error('Utilisateur local introuvable')
+    const fullName=String(data.full_name||'').trim()
+    if(fullName.length<2||fullName.length>80)throw new Error('Le nom doit contenir entre 2 et 80 caractères')
+    this.db.prepare('UPDATE users SET full_name=?,phone=?,job_title=?,timezone=?,updated_at=? WHERE id=?').run(fullName,String(data.phone||'').trim(),String(data.job_title||'').trim(),data.timezone||'Africa/Abidjan',new Date().toISOString(),user.id)
+    return this.getWorkspace()
+  }
+
   listProjects() {
     const workspace=this.ensureLocalWorkspace()
     return this.db.prepare(`SELECT p.*,

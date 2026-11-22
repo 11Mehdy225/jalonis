@@ -39,6 +39,7 @@ app.whenReady().then(() => {
   ipcMain.handle('workspaces:list', () => database.listWorkspaces())
   ipcMain.handle('workspaces:select', (_, id) => database.selectWorkspace(id))
   ipcMain.handle('workspaces:create', (_, data) => database.createWorkspace(data))
+  ipcMain.handle('workspace-profile:update', (_, data) => database.updateCurrentUserProfile(data))
   ipcMain.handle('workspace:update', (_, data) => database.updateWorkspace(data))
   ipcMain.handle('workspace-members:create', (_, data) => database.createWorkspaceMember(data))
   ipcMain.handle('workspace-members:update-role', (_, membershipId, role) => database.updateWorkspaceMemberRole(membershipId, role))

@@ -2,6 +2,7 @@
   "name": "jalonis",
   "version": "0.17.1",
   "private": true,
+  "type": "module",
   "description": "Jalonis — pilotage de projet SaaS et local pour le web, macOS et Windows",
   "author": "Jalonis",
   "main": "electron/main.cjs",
@@ -12,7 +13,10 @@
     "build:mac": "npm run build:web && electron-builder --mac --arm64",
     "build:win": "npm run build:web && electron-builder --win --x64",
     "build:all": "npm run build:web && electron-builder --mac --arm64 --win --x64",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:permissions": "node scripts/check-permissions.mjs",
+    "test:isolation": "node scripts/check-workspace-isolation.cjs",
+    "test": "npm run test:permissions && npm run test:isolation"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.1",
@@ -25,8 +29,11 @@
   "devDependencies": {
     "concurrently": "latest",
     "electron": "^44.0.0",
-    "electron-builder": "latest",
+    "electron-builder": "26.18.0",
     "wait-on": "latest"
+  },
+  "overrides": {
+    "minimatch": "11.0.9"
   },
   "build": {
     "appId": "com.jalonis.desktop",

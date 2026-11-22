@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 
 let cachedWorkspaceId = null
 let cachedUserId = null
+const realtimeProjectTables=['tasks','task_dependencies','work_calendars','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries','cost_entries','change_requests','issues','decisions','stakeholders','raci_assignments','conflicts','communication_plans','custom_fields','custom_field_values']
 
 const unwrap = ({ data, error }) => {
   if (error) throw error
@@ -155,7 +156,8 @@ export const cloudApi = {
   realtime: {
     subscribeProject: (projectId, onChange) => {
       const channel=supabase.channel(`project-${projectId}-${crypto.randomUUID()}`)
-      ;['comments','activities','notifications'].forEach(table=>channel.on('postgres_changes',{event:'*',schema:'public',table,filter:`project_id=eq.${projectId}`},payload=>onChange?.({table,payload})))
+      realtimeProjectTables.forEach(table=>channel.on('postgres_changes',{event:'*',schema:'public',table,filter:`project_id=eq.${projectId}`},payload=>onChange?.({table,payload})))
+      channel.on('postgres_changes',{event:'UPDATE',schema:'public',table:'projects',filter:`id=eq.${projectId}`},payload=>onChange?.({table:'projects',payload}))
       channel.subscribe()
       return () => { supabase.removeChannel(channel) }
     },
@@ -169,6 +171,12 @@ export const cloudApi = {
       if(error){let message=result?.error||error.message||"Impossible de créer cet espace";try{const details=await error.context?.json();message=details?.error||message}catch{}throw new Error(message)}
       if(result?.error)throw new Error(result.error)
       return selectWorkspace(result.workspace_id)
+    },
+    updateProfile: async data => {
+      const user=await currentUser(),allowed=['full_name','phone','job_title','timezone']
+      const profile=Object.fromEntries(Object.entries(data).filter(([key])=>allowed.includes(key)))
+      unwrap(await supabase.from('profiles').update(profile).eq('id',user.id))
+      return workspaceState()
     },
     update: async data => {
       const id = await workspaceId()

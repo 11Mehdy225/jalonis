@@ -35,6 +35,12 @@ export const cloudAuth = {
     if (error) throw error
     return data
   },
+  resetPassword: async email => {
+    const redirectTo=new URL(window.location.href);redirectTo.search='';redirectTo.searchParams.set('reset','1')
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email,{redirectTo:redirectTo.toString()})
+    if (error) throw error
+    return data
+  },
   acceptInvitations: async () => {
     const { data, error } = await supabase.rpc('accept_my_invitations')
     if (error) throw error

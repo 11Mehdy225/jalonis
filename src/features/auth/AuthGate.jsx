@@ -18,6 +18,7 @@ export default function AuthGate({ children }) {
   const preview = new URLSearchParams(window.location.search).get('preview') === '1'
   const [authOpen, setAuthOpen] = useState(false)
   const [inviteSetup,setInviteSetup]=useState(()=>new URLSearchParams(window.location.search).get('invited')==='1')
+  const [resetSetup,setResetSetup]=useState(()=>new URLSearchParams(window.location.search).get('reset')==='1')
   const openPreview = () => {
     const url=new URL(window.location.href)
     url.searchParams.set('preview','1')
@@ -27,11 +28,12 @@ export default function AuthGate({ children }) {
   useEffect(() => {
     if (desktop || !isCloudConfigured) return undefined
     cloudAuth.session().then(value => { setSession(value); setChecking(false) })
-    const { data } = cloudAuth.onChange(value => { setSession(value); setChecking(false) })
+    const { data } = cloudAuth.onChange((value,event) => { setSession(value);if(event==='PASSWORD_RECOVERY')setResetSetup(true);setChecking(false) })
     return () => data.subscription.unsubscribe()
   }, [desktop])
 
   if(session&&inviteSetup)return <InvitationPasswordScreen onComplete={()=>{const url=new URL(window.location.href);url.searchParams.delete('invited');window.history.replaceState({},'',url);setInviteSetup(false)}}/>
+  if(session&&resetSetup)return <ResetPasswordScreen onComplete={()=>{const url=new URL(window.location.href);url.searchParams.delete('reset');window.history.replaceState({},'',url);setResetSetup(false)}}/>
   if (desktop || session || preview) return children
   if (checking) return <div className="auth-loading"><Sparkles size={30}/><b>Ouverture de votre espace Jalonis…</b></div>
   if (authOpen) return <AuthScreen cloudReady={isCloudConfigured} onBack={() => setAuthOpen(false)} onPreview={openPreview}/>
@@ -42,6 +44,12 @@ function InvitationPasswordScreen({onComplete}){
   const [password,setPassword]=useState(''),[confirmation,setConfirmation]=useState(''),[error,setError]=useState(''),[saving,setSaving]=useState(false)
   const submit=async event=>{event.preventDefault();setError('');if(password.length<8)return setError('Le mot de passe doit contenir au moins 8 caractères.');if(password!==confirmation)return setError('Les deux mots de passe ne correspondent pas.');try{setSaving(true);await cloudAuth.acceptInvitations();await cloudAuth.updatePassword(password);onComplete()}catch(reason){setError(reason.message||'Impossible de finaliser cette invitation.')}finally{setSaving(false)}}
   return <main className="invite-password-page"><section className="invite-password-card"><img src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><span>INVITATION ACCEPTÉE</span><h1>Bienvenue dans votre équipe</h1><p>Choisissez votre mot de passe pour sécuriser votre compte et ouvrir l’espace auquel vous avez été invité.</p><form onSubmit={submit}><label>Nouveau mot de passe<input autoFocus required minLength="8" type="password" value={password} onChange={event=>setPassword(event.target.value)}/></label><label>Confirmer le mot de passe<input required minLength="8" type="password" value={confirmation} onChange={event=>setConfirmation(event.target.value)}/></label>{error&&<p className="auth-error">{error}</p>}<button className="auth-submit" disabled={saving}><LockKeyhole size={16}/>{saving?'Sécurisation…':'Ouvrir mon espace'}</button></form></section></main>
+}
+
+function ResetPasswordScreen({onComplete}){
+  const [password,setPassword]=useState(''),[confirmation,setConfirmation]=useState(''),[error,setError]=useState(''),[saving,setSaving]=useState(false)
+  const submit=async event=>{event.preventDefault();setError('');if(password.length<8)return setError('Le mot de passe doit contenir au moins 8 caractères.');if(password!==confirmation)return setError('Les deux mots de passe ne correspondent pas.');try{setSaving(true);await cloudAuth.updatePassword(password);onComplete()}catch(reason){setError(reason.message||'Impossible de modifier le mot de passe.')}finally{setSaving(false)}}
+  return <main className="invite-password-page"><section className="invite-password-card"><img src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><span>COMPTE SÉCURISÉ</span><h1>Nouveau mot de passe</h1><p>Choisissez un nouveau mot de passe pour retrouver vos espaces Jalonis.</p><form onSubmit={submit}><label>Nouveau mot de passe<input autoFocus required minLength="8" type="password" value={password} onChange={event=>setPassword(event.target.value)}/></label><label>Confirmer le mot de passe<input required minLength="8" type="password" value={confirmation} onChange={event=>setConfirmation(event.target.value)}/></label>{error&&<p className="auth-error">{error}</p>}<button className="auth-submit" disabled={saving}><LockKeyhole size={16}/>{saving?'Enregistrement…':'Enregistrer le mot de passe'}</button></form></section></main>
 }
 
 function WelcomeScreen({ onConnect, onPreview }) {
@@ -89,6 +97,7 @@ function AuthScreen({ cloudReady, onBack, onPreview }) {
       return
     }
     try {
+      if(mode==='forgot'){await cloudAuth.resetPassword(form.email);setMessage('Un lien sécurisé vient d’être envoyé à cette adresse.');return}
       if (mode === 'login') await cloudAuth.signIn(form.email, form.password)
       else {
         const result = await cloudAuth.signUp(form)
@@ -96,5 +105,14 @@ function AuthScreen({ cloudReady, onBack, onPreview }) {
       }
     } catch (reason) { setError(reason.message || 'Connexion impossible') }
   }
-  return <main className="auth-page"><section className="auth-presentation"><img className="auth-conductor-fresco" src="./assets/jalonis-team-conductor.png" alt=""/><button className="auth-back" onClick={onBack}><ArrowLeft size={16}/> Accueil</button><img className="auth-logo" src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><span>JALONIS CLOUD</span><h1>Une vision.<br/>Toute l’équipe en mouvement.</h1><p>Coordonnez les expertises, gardez le rythme et conduisez chaque projet jusqu’à sa livraison.</p><ul><li><CheckCircle2/>PMP, Scrum et fournisseurs</li><li><CheckCircle2/>Application web et Desktop</li><li><CheckCircle2/>Données isolées par organisation</li></ul></section><section className="auth-panel"><div className="auth-card"><div className="auth-card-heading"><span>BIENVENUE</span><h2>{mode==='login'?'Retrouvez votre espace':'Commencez avec Jalonis'}</h2><p>{mode==='login'?'Connectez-vous pour reprendre vos projets.':'Créez votre espace de travail sécurisé.'}</p></div>{!cloudReady&&<div className="cloud-pending"><Sparkles size={16}/><span><b>Connexion bientôt disponible</b>La base sécurisée est en cours de configuration.</span></div>}<div className="auth-switch"><button className={mode==='login'?'active':''} onClick={()=>setMode('login')}>Connexion</button><button className={mode==='signup'?'active':''} onClick={()=>setMode('signup')}>Créer un compte</button></div><form onSubmit={submit}>{mode==='signup'&&<><label>Nom complet<input required name="fullName" value={form.fullName||''} onChange={change}/></label><label>Type de compte<select name="accountType" value={form.accountType} onChange={change}><option>Personnel</option><option>Organisation</option></select></label>{form.accountType==='Organisation'&&<label>Nom de l’organisation<input required name="workspaceName" value={form.workspaceName||''} onChange={change}/></label>}</>}<label>Adresse e-mail<input required type="email" name="email" value={form.email||''} onChange={change}/></label><label>Mot de passe<input required minLength="8" type="password" name="password" value={form.password||''} onChange={change}/></label>{error&&<p className="auth-error">{error}</p>}{message&&<p className="auth-success">{message}</p>}<button className="auth-submit"><LockKeyhole size={16}/>{mode==='login'?'Se connecter':'Créer mon espace'}</button></form><div className="auth-preview-divider"><span>ou</span></div><button type="button" className="auth-preview-button" onClick={onPreview}>Continuer sans compte en mode aperçu</button></div></section></main>
+  const heading=mode==='login'?'Retrouvez votre espace':mode==='forgot'?'Réinitialiser votre accès':'Commencez avec Jalonis'
+  const description=mode==='login'?'Connectez-vous pour reprendre vos projets.':mode==='forgot'?'Nous vous enverrons un lien sécurisé par e-mail.':'Créez votre espace de travail sécurisé.'
+  return <main className="auth-page">
+    <section className="auth-presentation"><img className="auth-conductor-fresco" src="./assets/jalonis-team-conductor.png" alt=""/><button className="auth-back" onClick={onBack}><ArrowLeft size={16}/> Accueil</button><img className="auth-logo" src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><span>JALONIS CLOUD</span><h1>Une vision.<br/>Toute l’équipe en mouvement.</h1><p>Coordonnez les expertises, gardez le rythme et conduisez chaque projet jusqu’à sa livraison.</p><ul><li><CheckCircle2/>PMP, Scrum et fournisseurs</li><li><CheckCircle2/>Application web et Desktop</li><li><CheckCircle2/>Données isolées par organisation</li></ul></section>
+    <section className="auth-panel"><div className="auth-card"><div className="auth-card-heading"><span>BIENVENUE</span><h2>{heading}</h2><p>{description}</p></div>{!cloudReady&&<div className="cloud-pending"><Sparkles size={16}/><span><b>Connexion bientôt disponible</b>La base sécurisée est en cours de configuration.</span></div>}
+      {mode==='forgot'?<button className="auth-mode-back" onClick={()=>{setMode('login');setMessage('');setError('')}}><ArrowLeft size={14}/>Retour à la connexion</button>:<div className="auth-switch"><button className={mode==='login'?'active':''} onClick={()=>setMode('login')}>Connexion</button><button className={mode==='signup'?'active':''} onClick={()=>setMode('signup')}>Créer un compte</button></div>}
+      <form onSubmit={submit}>{mode==='signup'&&<><label>Nom complet<input required name="fullName" value={form.fullName||''} onChange={change}/></label><label>Type de compte<select name="accountType" value={form.accountType} onChange={change}><option>Personnel</option><option>Organisation</option></select></label>{form.accountType==='Organisation'&&<label>Nom de l’organisation<input required name="workspaceName" value={form.workspaceName||''} onChange={change}/></label>}</>}<label>Adresse e-mail<input required type="email" name="email" value={form.email||''} onChange={change}/></label>{mode!=='forgot'&&<label>Mot de passe<input required minLength="8" type="password" name="password" value={form.password||''} onChange={change}/></label>}{mode==='login'&&<button type="button" className="forgot-password" onClick={()=>{setMode('forgot');setError('');setMessage('')}}>Mot de passe oublié ?</button>}{error&&<p className="auth-error">{error}</p>}{message&&<p className="auth-success">{message}</p>}<button className="auth-submit"><LockKeyhole size={16}/>{mode==='login'?'Se connecter':mode==='forgot'?'Envoyer le lien':'Créer mon espace'}</button></form>
+      <div className="auth-preview-divider"><span>ou</span></div><button type="button" className="auth-preview-button" onClick={onPreview}>Continuer sans compte en mode aperçu</button>
+    </div></section>
+  </main>
 }

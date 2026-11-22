@@ -28,6 +28,7 @@ const previewApi = {
     list: async () => previewWorkspaceList(),
     select: async id => { const selected=previewWorkspaces.find(state=>state.workspace.id===id);if(!selected)throw new Error('Espace de travail introuvable.');browserWorkspace=selected;memory=previewMemories.get(id);browserWorkspace.usage.projects=memory.projects.length;return browserWorkspace },
     create: async data => { const id=crypto.randomUUID(),state=makeBrowserWorkspace({id,name:data.name,account_type:data.account_type});previewWorkspaces.push(state);previewMemories.set(id,makeMemory());browserWorkspace=state;memory=previewMemories.get(id);return browserWorkspace },
+    updateProfile: async data => { Object.assign(browserUser,browserWorkspace.current_user,data);const member=browserWorkspace.members.find(item=>item.id===browserUser.id);if(member)Object.assign(member,data);return browserWorkspace },
     update: async (data) => { Object.assign(browserWorkspace.workspace, data); return browserWorkspace },
     invite: async (data) => { browserWorkspace.members.push({ ...data, id: crypto.randomUUID(), membership_id: crypto.randomUUID(), membership_status: 'Invitation en attente' }); return browserWorkspace },
     updateMemberRole: async (id, role) => { const member=browserWorkspace.members.find(item=>item.membership_id===id);if(member&&member.role!=='Propriétaire')member.role=role;return browserWorkspace },
@@ -54,7 +55,7 @@ const previewApi = {
     open: async () => ({ ok: true }),
     reveal: async () => ({ ok: true }),
   },
-  system: { info: async () => ({ dataPath: 'Mode navigateur', version: '0.1.0' }) },
+  system: { info: async () => ({ dataPath: 'Mode navigateur', version: '0.17.1' }) },
 }
 
 const isPreviewMode = !window.jalonis && new URLSearchParams(window.location.search).get('preview') === '1'
