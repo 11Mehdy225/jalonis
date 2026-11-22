@@ -115,6 +115,21 @@
 .app-shell.dark .usage-meter b,.app-shell.dark .trial-meter b { color: #e6e8ed; }
 .app-shell.dark .billing-history { border-color: #383c47; }.app-shell.dark .billing-history > div:first-child { background: #272a31; border-color: #383c47; }.app-shell.dark .billing-history > div:first-child b { color: #e6e8ed; }.app-shell.dark .billing-history article { border-color: #383c47; }
 
+.workspace-switcher-list { display: grid; gap: 14px; }
+.workspace-switcher-list > div { display: grid; gap: 7px; }
+.workspace-switcher-list > div > button { width: 100%; display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 11px; padding: 11px; border: 1px solid #e4e7ed; border-radius: 11px; background: #fff; color: #30394e; text-align: left; }
+.workspace-switcher-list > div > button:hover { border-color: #c9c5f7; background: #f9f8ff; }
+.workspace-switcher-list > div > button.active { border-color: #7770e7; background: #f3f2ff; box-shadow: 0 0 0 3px #efeeff; }
+.workspace-switcher-list > div > button > span:nth-child(2),.workspace-create-button > span { display: grid; gap: 3px; }
+.workspace-switcher-list b { font-size: 10px; }.workspace-switcher-list small { color: #8a92a3; font-size: 8px; }
+.workspace-switcher-list > div > button > svg { color: #5b54d8; }
+.workspace-switcher-avatar { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(145deg,#5d55df,#328fa9); color: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+.workspace-create-button { width: 100%; display: flex; align-items: center; gap: 11px; padding: 13px; border: 1px dashed #c9cde0; border-radius: 11px; background: #fafbfe; color: #5a53d7; text-align: left; }
+.workspace-create-button:hover { border-color: #7770e7; background: #f5f4ff; }.workspace-create-button > svg { flex: none; }
+.workspace-creation-note { display: flex; align-items: center; gap: 9px; padding: 11px; border: 1px solid #d9d7ff; border-radius: 9px; background: #f5f4ff; color: #5b54d8; }
+.workspace-creation-note span { display: grid; gap: 2px; }.workspace-creation-note b { font-size: 9px; }.workspace-creation-note small { color: #7e8598; font-size: 8px; }
+.app-shell.dark .workspace-switcher-list > div > button { background: #272a31; border-color: #3a3e48; color: #e6e8ed; }.app-shell.dark .workspace-switcher-list > div > button:hover,.app-shell.dark .workspace-switcher-list > div > button.active { background: #302f46; border-color: #6962cf; box-shadow: 0 0 0 3px #29283d; }.app-shell.dark .workspace-create-button { background: #272a31; border-color: #444956; }.app-shell.dark .workspace-creation-note { background: #29283d; border-color: #3c3a5b; }
+
 @media (max-width: 1200px) {
   .workspace-summary { grid-template-columns: 54px 1fr; }
   .workspace-kpis { grid-column: 1 / -1; }

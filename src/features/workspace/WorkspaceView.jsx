@@ -114,4 +114,16 @@ export function InviteMemberForm({ onSubmit, onCancel }) {
   </form>
 }
 
+export function WorkspaceSwitcher({ items=[], currentId, onSelect, onCreate }) {
+  return <div className="workspace-switcher-list">
+    <div>{items.map(item=><button key={item.id} className={item.id===currentId?'active':''} onClick={()=>onSelect(item.id)}><span className="workspace-switcher-avatar">{item.name?.[0]?.toUpperCase()||'E'}</span><span><b>{item.name}</b><small>{item.account_type} · {item.role||'Membre'} · {item.project_count||0} projet{Number(item.project_count)!==1?'s':''}</small></span>{item.id===currentId&&<Check size={16}/>}</button>)}</div>
+    {onCreate&&<button className="workspace-create-button" onClick={onCreate}><Building2 size={17}/><span><b>Créer une organisation</b><small>Un espace séparé avec ses membres, projets et abonnement.</small></span></button>}
+  </div>
+}
+
+export function CreateWorkspaceForm({ onSubmit, onCancel, allowPersonal=false }) {
+  const [form,setForm]=useState({name:'',account_type:'Organisation'})
+  return <form onSubmit={event=>{event.preventDefault();onSubmit(form)}}><div className="form-grid"><label className="span-2">Nom de l’espace<input autoFocus required minLength="2" maxLength="80" value={form.name} onChange={event=>setForm({...form,name:event.target.value})} placeholder="Ex. GboroApp, Direction des projets…"/></label><label className="span-2">Type de compte<select value={form.account_type} onChange={event=>setForm({...form,account_type:event.target.value})}><option>Organisation</option>{allowPersonal&&<option>Personnel</option>}</select></label><div className="workspace-creation-note span-2"><ShieldCheck size={17}/><span><b>Données isolées</b><small>Les projets, membres, fichiers et la facturation de ce nouvel espace resteront séparés.</small></span></div></div><div className="form-actions"><button type="button" className="btn ghost" onClick={onCancel}>Annuler</button><button className="btn primary"><Building2 size={16}/>Créer l’espace</button></div></form>
+}
+
 const initials = name => String(name || '?').split(' ').filter(Boolean).map(part => part[0]).slice(0, 2).join('').toUpperCase()

@@ -38,11 +38,12 @@ npm run dev
 Créer un compte de validation, confirmer l’adresse e-mail, puis vérifier :
 
 1. la création automatique de l’espace personnel ou de l’organisation ;
-2. la création d’un projet ;
-3. l’isolation avec un second compte ;
-4. l’invitation d’un membre ;
-5. l’ajout et l’ouverture d’un document fournisseur ;
-6. l’accès depuis le web et l’application Desktop connectée.
+2. la création d’une seconde organisation, le changement d’espace et l’isolation de leurs projets ;
+3. la création d’un projet ;
+4. l’isolation avec un second compte ;
+5. l’invitation d’un membre ;
+6. l’ajout et l’ouverture d’un document fournisseur ;
+7. l’accès depuis le web et l’application Desktop connectée.
 
 ## 4. Déployer
 
@@ -50,12 +51,15 @@ Vercel et Netlify sont préconfigurés. Dans l’hébergeur choisi, ajouter les 
 
 Ajouter l’URL publique dans Supabase : Authentication → URL Configuration → Site URL et Redirect URLs.
 
-Déployer ensuite la fonction d’invitation et définir l’URL publique utilisée dans les e-mails :
+Déployer ensuite les fonctions de création d’espace et d’invitation, puis définir l’URL publique utilisée dans les e-mails :
 
 ```bash
+supabase functions deploy create-workspace
 supabase functions deploy invite-member
 supabase secrets set SITE_URL=https://jalonis.onrender.com
 ```
+
+Un compte peut posséder jusqu’à cinq espaces et un seul espace Personnel. La sélection active est mémorisée sur l’appareil, mais chaque changement est revérifié côté serveur. Les projets, membres, fichiers, abonnement et facturation restent rattachés à leur espace respectif.
 
 La clé `SUPABASE_SERVICE_ROLE_KEY` est fournie automatiquement aux fonctions Supabase hébergées. Elle ne doit jamais être ajoutée aux variables Render ni au code de l’application.
 

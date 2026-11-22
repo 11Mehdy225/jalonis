@@ -7,7 +7,7 @@ import GanttView from './features/planning/GanttView'
 import PlanningSettings from './features/planning/PlanningSettings'
 import ScrumView from './features/agile/ScrumView'
 import SupplierManagement from './features/procurement/SupplierManagement'
-import WorkspaceView, { InviteMemberForm } from './features/workspace/WorkspaceView'
+import WorkspaceView, { CreateWorkspaceForm, InviteMemberForm, WorkspaceSwitcher } from './features/workspace/WorkspaceView'
 import ActivityView from './features/collaboration/ActivityView'
 import NotificationCenter from './features/collaboration/NotificationCenter'
 import DailyBrief from './features/collaboration/DailyBrief'
@@ -36,11 +36,13 @@ const moduleAllowed=(methodology,view)=>methodology==='Scrum'?view!=='tasks':met
 
 const ENTITY_TYPES=['tasks','task_dependencies','work_calendars','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries','cost_entries','change_requests','issues','decisions','stakeholders','raci_assignments','conflicts','communication_plans','custom_fields','custom_field_values']
 const ENTITY_LABELS={tasks:'Tâche',task_dependencies:'Dépendance',work_calendars:'Calendrier de travail',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message',time_entries:'Temps saisi',cost_entries:'Coût',change_requests:'Demande de changement',issues:'Problème',decisions:'Décision',stakeholders:'Partie prenante',raci_assignments:'Attribution RACI',conflicts:'Conflit',communication_plans:'Communication',custom_fields:'Champ personnalisé',custom_field_values:'Valeur personnalisée'}
+const emptyEntities=()=>Object.fromEntries(ENTITY_TYPES.map(type=>[type,[]]))
 
 export default function App() {
   const [projects,setProjects]=useState([]), [activeId,setActiveId]=useState(null), [view,setView]=useState('dashboard')
-  const [entities,setEntities]=useState(Object.fromEntries(ENTITY_TYPES.map(type=>[type,[]]))), [modal,setModal]=useState(null), [query,setQuery]=useState('')
+  const [entities,setEntities]=useState(emptyEntities), [modal,setModal]=useState(null), [query,setQuery]=useState('')
   const [workspace,setWorkspace]=useState(null), [error,setError]=useState('')
+  const [workspaceOptions,setWorkspaceOptions]=useState([])
   const [notice,setNotice]=useState('')
   const [agileTab,setAgileTab]=useState('board'), [dark,setDark]=useState(()=>localStorage.getItem('jalonis-theme')==='dark')
   const [notificationOpen,setNotificationOpen]=useState(false)
@@ -48,7 +50,7 @@ export default function App() {
 
   async function loadProjects(selectFirst=true){ const rows=await api.projects.list(); setProjects(rows); if(selectFirst&&!activeId&&rows[0]) setActiveId(rows[0].id) }
   async function loadEntities(id){ if(!id)return; const values=await Promise.all(ENTITY_TYPES.map(t=>api.entities.list(t,id))); setEntities(Object.fromEntries(ENTITY_TYPES.map((t,i)=>[t,values[i]]))) }
-  async function loadWorkspace(){ setWorkspace(await api.workspace.get()) }
+  async function loadWorkspace(){const state=await api.workspace.get();setWorkspace(state);setWorkspaceOptions(api.workspace.list?await api.workspace.list():[state.workspace])}
   useEffect(()=>{loadProjects();loadWorkspace()},[])
   useEffect(()=>{const params=new URLSearchParams(window.location.search);if(params.get('billing')==='return'){const status=params.get('status');setNotice(status==='successful'?'Paiement reçu. La vérification sécurisée de votre abonnement est en cours.':status==='cancelled'?'Paiement annulé. Aucun changement n’a été appliqué.':'Le paiement n’a pas été finalisé.');params.delete('billing');params.delete('status');params.delete('tx_ref');params.delete('transaction_id');window.history.replaceState({},'',`${window.location.pathname}${params.size?`?${params}`:''}`)}},[])
   useEffect(()=>{loadEntities(activeId)},[activeId])
@@ -66,6 +68,23 @@ export default function App() {
     if(!permissions.createProject)return deny('Votre rôle ne permet pas de créer un projet.')
     try { setError('');const item=await api.projects.create(data);setModal(null);await loadProjects(false);setActiveId(item.id);setView('dashboard') }
     catch(reason){setError(reason.message||'Impossible de créer ce projet avec l’offre actuelle.')}
+  }
+  async function switchWorkspace(id){
+    if(id===workspace?.workspace?.id){setModal(null);return}
+    try{
+      setError('')
+      const next=await api.workspace.select(id)
+      const [rows,options]=await Promise.all([api.projects.list(),api.workspace.list?api.workspace.list():[next.workspace]])
+      setWorkspace(next);setWorkspaceOptions(options);setProjects(rows);setActiveId(rows[0]?.id||null);setEntities(emptyEntities());setView('dashboard');setModal(null);setNotice('')
+    }catch(reason){setError(reason.message||"Impossible d’ouvrir cet espace.")}
+  }
+  async function createWorkspace(data){
+    try{
+      setError('')
+      const next=await api.workspace.create(data)
+      const options=api.workspace.list?await api.workspace.list():[next.workspace]
+      setWorkspace(next);setWorkspaceOptions(options);setProjects([]);setActiveId(null);setEntities(emptyEntities());setView('dashboard');setModal(null);setNotice(`L’espace « ${next.workspace.name} » a été créé.`)
+    }catch(reason){setError(reason.message||"Impossible de créer cet espace.")}
   }
   async function importProjectArchive(backup){
     if(!permissions.createProject)return deny('Votre rôle ne permet pas d’importer un projet.')
@@ -203,7 +222,7 @@ export default function App() {
     <aside className="sidebar">
       <div className="brand"><img src="./assets/jalonis-logo.png"/><div><strong>Jalonis</strong><span>Pilotage de projets</span></div></div>
       <div className="workspace-label">ESPACE DE TRAVAIL</div>
-      <button className="project-switcher" onClick={()=>setModal('projects')} style={{'--project-color':active?.theme_color||'#4f46e5'}}>{active?.logo_url?<img className="project-avatar project-logo" src={active.logo_url} alt=""/>:<span className="project-avatar">{active?.name?.[0]||workspace?.workspace?.name?.[0]||'J'}</span>}<span><b>{workspace?.workspace?.name||'Mon espace Jalonis'}</b><small>{active?.name||'Aucun projet sélectionné'}</small></span><ChevronRight size={16}/></button>
+      <button className="project-switcher" onClick={()=>setModal('workspace-switcher')} style={{'--project-color':active?.theme_color||'#4f46e5'}}>{active?.logo_url?<img className="project-avatar project-logo" src={active.logo_url} alt=""/>:<span className="project-avatar">{active?.name?.[0]||workspace?.workspace?.name?.[0]||'J'}</span>}<span><b>{workspace?.workspace?.name||'Mon espace Jalonis'}</b><small>{active?.name||'Aucun projet sélectionné'}</small></span><ChevronRight size={16}/></button>
       <nav>{visibleNav.map(([id,label,Icon])=><button key={id} className={view===id?'active':''} onClick={()=>setView(id)}><Icon size={18}/><span>{label}</span>{id==='risks'&&stats.critical>0?<em>{stats.critical}</em>:null}</button>)}</nav>
       <div className="sidebar-bottom"><button className={view==='workspace'?'active':''} onClick={()=>setView('workspace')}><Building2 size={18}/>Espace & accès</button><button onClick={()=>setModal('projects')}><FolderKanban size={18}/>Tous les projets</button><button onClick={()=>setView('settings')}><Settings size={18}/>Paramètres</button></div>
       <div className="user-chip"><div className="avatar">{(currentUser?.full_name||'CP').split(' ').map(part=>part[0]).slice(0,2).join('')}</div><div><b>{currentUser?.full_name||'Chef de projet'}</b><small>{currentUser?.role||'Administrateur local'}</small></div><MoreHorizontal size={17}/></div>
@@ -239,6 +258,8 @@ export default function App() {
     </main>
     {modal==='project'&&<Modal title="Créer un projet" onClose={()=>setModal(null)}><ProjectForm onSubmit={createProject} onCancel={()=>setModal(null)}/></Modal>}
     {modal==='projects'&&<Modal title="Portefeuille de projets" onClose={()=>setModal(null)}><div className="project-list">{projects.map(p=><button key={p.id} style={{'--project-color':p.theme_color||'#4f46e5'}} onClick={()=>{setActiveId(p.id);setModal(null);setView('dashboard')}}>{p.logo_url?<img className="portfolio-logo" src={p.logo_url} alt=""/>:<span className="portfolio-color">{p.name?.[0]||'P'}</span>}<span><b>{p.name}</b><small>{p.code||'Sans code'} · {p.status}</small></span><strong>{p.progress||0}%</strong><ChevronRight size={17}/></button>)}</div>{permissions.createProject&&<div className="form-actions"><button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Nouveau projet</button></div>}</Modal>}
+    {modal==='workspace-switcher'&&<Modal title="Espaces de travail" onClose={()=>setModal(null)}><WorkspaceSwitcher items={workspaceOptions} currentId={workspace?.workspace?.id} onSelect={switchWorkspace} onCreate={api.workspace.create?()=>setModal('new-workspace'):null}/><div className="form-actions"><button className="btn ghost" onClick={()=>setModal('projects')}><FolderKanban size={16}/>Projets de cet espace</button></div></Modal>}
+    {modal==='new-workspace'&&<Modal title="Créer un espace de travail" onClose={()=>setModal(null)}><CreateWorkspaceForm allowPersonal={!workspaceOptions.some(item=>item.account_type==='Personnel'&&item.role==='Propriétaire')} onSubmit={createWorkspace} onCancel={()=>setModal('workspace-switcher')}/></Modal>}
     {['tasks','risks','team','meetings'].includes(modal)&&<Modal title={configs[modal].title} onClose={()=>setModal(null)}><EntityForm type={modal} tasks={entities.tasks} members={workspace?.members||[]} onSubmit={d=>addEntity(modal,d)} onCancel={()=>setModal(null)}/></Modal>}
     {modal==='invite-member'&&<Modal title="Inviter un membre" onClose={()=>setModal(null)}><InviteMemberForm onSubmit={inviteMember} onCancel={()=>setModal(null)}/></Modal>}
     {modal==='branding'&&<Modal title="Identité du projet" onClose={()=>setModal(null)}><ProjectBrandingForm project={active} onSubmit={updateBranding} onCancel={()=>setModal(null)}/></Modal>}

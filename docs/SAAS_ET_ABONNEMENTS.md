@@ -95,7 +95,7 @@ Les droits fonctionnels seront calculés côté serveur à partir de l’offre a
 ## Étapes de livraison
 
 1. comptes connectés et authentification ;
-2. organisations, invitations et rôles ;
+2. organisations, sélection multi-espace, invitations et rôles — intégrés ;
 3. base PostgreSQL et synchronisation web/Desktop ;
 4. collaboration en temps réel ;
 5. essais gratuits, plans et limites ;

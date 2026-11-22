@@ -10,6 +10,7 @@ Cette version introduit la structure nécessaire au futur mode équipe :
 - les états Actif et Invitation en attente ;
 - les préférences de rappel par e-mail et WhatsApp ;
 - l’affectation d’une tâche à un compte membre.
+- plusieurs espaces isolés, avec changement d’organisation depuis l’application.
 
 Les données restent stockées sur l’ordinateur. Créer une invitation prépare le compte, mais n’envoie pas encore d’e-mail.
 
@@ -20,7 +21,7 @@ Le même modèle sera porté sur un serveur PostgreSQL avec authentification et 
 Ordre de réalisation :
 
 1. authentification et invitations réelles ;
-2. isolation des données par espace de travail ;
+2. isolation des données par espace de travail — sélection multiple intégrée ;
 3. projets et affectations partagés ;
 4. commentaires, mentions et historique ;
 5. notifications par e-mail ;

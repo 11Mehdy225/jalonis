@@ -17,11 +17,39 @@ async function currentUser() {
 async function workspaceId() {
   const user = await currentUser()
   if (cachedWorkspaceId&&cachedUserId===user.id) return cachedWorkspaceId
+  const storageKey=`jalonis-workspace:${user.id}`
+  const preferred=localStorage.getItem(storageKey)
+  if(preferred){
+    const membership=unwrap(await supabase.from('workspace_members').select('workspace_id').eq('workspace_id',preferred).eq('user_id',user.id).eq('status','Actif').maybeSingle())
+    if(membership){cachedWorkspaceId=preferred;cachedUserId=user.id;return preferred}
+    localStorage.removeItem(storageKey)
+  }
   const rows = unwrap(await supabase.from('workspace_members').select('workspace_id,created_at').eq('user_id', user.id).eq('status', 'Actif').order('created_at',{ascending:false}).limit(1))
   if (!rows[0]) throw new Error("Aucun espace de travail actif n’est associé à ce compte")
   cachedWorkspaceId = rows[0].workspace_id
   cachedUserId = user.id
+  localStorage.setItem(storageKey,cachedWorkspaceId)
   return cachedWorkspaceId
+}
+
+async function listWorkspaces(){
+  const user=await currentUser()
+  const memberships=unwrap(await supabase.from('workspace_members').select('workspace_id,role,status,created_at').eq('user_id',user.id).eq('status','Actif').order('created_at'))
+  if(!memberships.length)return []
+  const ids=memberships.map(item=>item.workspace_id)
+  const [spaces,projects]=await Promise.all([
+    supabase.from('workspaces').select('*').in('id',ids).then(unwrap),
+    supabase.from('projects').select('workspace_id').in('workspace_id',ids).then(unwrap),
+  ])
+  return memberships.map(membership=>({...spaces.find(space=>space.id===membership.workspace_id),role:membership.role,project_count:projects.filter(project=>project.workspace_id===membership.workspace_id).length})).filter(space=>space.id)
+}
+
+async function selectWorkspace(id){
+  const user=await currentUser()
+  const membership=unwrap(await supabase.from('workspace_members').select('workspace_id').eq('workspace_id',id).eq('user_id',user.id).eq('status','Actif').maybeSingle())
+  if(!membership)throw new Error("Vous n’avez pas accès à cet espace de travail.")
+  cachedWorkspaceId=id;cachedUserId=user.id;localStorage.setItem(`jalonis-workspace:${user.id}`,id)
+  return workspaceState()
 }
 
 async function workspaceState() {
@@ -134,6 +162,14 @@ export const cloudApi = {
   },
   workspace: {
     get: workspaceState,
+    list: listWorkspaces,
+    select: selectWorkspace,
+    create: async data => {
+      const {data:result,error}=await supabase.functions.invoke('create-workspace',{body:data})
+      if(error){let message=result?.error||error.message||"Impossible de créer cet espace";try{const details=await error.context?.json();message=details?.error||message}catch{}throw new Error(message)}
+      if(result?.error)throw new Error(result.error)
+      return selectWorkspace(result.workspace_id)
+    },
     update: async data => {
       const id = await workspaceId()
       unwrap(await supabase.from('workspaces').update({ name: data.name, account_type: data.account_type }).eq('id', id))

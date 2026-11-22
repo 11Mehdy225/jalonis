@@ -79,6 +79,9 @@ class JalonisDatabase {
         subscription_status TEXT DEFAULT 'Essai', seat_limit INTEGER DEFAULT 1, trial_ends_at TEXT,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY, value TEXT
+      );
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY, full_name TEXT NOT NULL, email TEXT NOT NULL UNIQUE,
         phone TEXT, job_title TEXT, status TEXT DEFAULT 'Actif', timezone TEXT DEFAULT 'Africa/Abidjan',
@@ -362,8 +365,10 @@ class JalonisDatabase {
   }
 
   ensureLocalWorkspace() {
-    const existing = this.db.prepare('SELECT * FROM workspaces ORDER BY created_at LIMIT 1').get()
+    const selectedId = this.db.prepare("SELECT value FROM app_settings WHERE key='active_workspace_id'").get()?.value
+    const existing = (selectedId&&this.db.prepare('SELECT * FROM workspaces WHERE id=?').get(selectedId)) || this.db.prepare('SELECT * FROM workspaces ORDER BY created_at LIMIT 1').get()
     if (existing) {
+      this.db.prepare("INSERT INTO app_settings(key,value) VALUES('active_workspace_id',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(existing.id)
       this.db.prepare("UPDATE projects SET workspace_id=? WHERE workspace_id IS NULL OR workspace_id='' ").run(existing.id)
       return existing
     }
@@ -376,6 +381,7 @@ class JalonisDatabase {
       VALUES (?,?,?,?,?,?,?,?,?,?)`).run(userId, 'Chef de projet', `admin-${userId.slice(0, 8)}@jalonis.local`, 'Administrateur', 'Actif', 'Africa/Abidjan', 1, 0, now, now)
     this.db.prepare(`INSERT INTO workspace_members (id,workspace_id,user_id,role,status,created_at,updated_at)
       VALUES (?,?,?,?,?,?,?)`).run(membershipId, workspaceId, userId, 'Propriétaire', 'Actif', now, now)
+    this.db.prepare("INSERT INTO app_settings(key,value) VALUES('active_workspace_id',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(workspaceId)
     this.db.prepare("UPDATE projects SET workspace_id=? WHERE workspace_id IS NULL OR workspace_id='' ").run(workspaceId)
     return this.db.prepare('SELECT * FROM workspaces WHERE id=?').get(workspaceId)
   }
@@ -388,6 +394,38 @@ class JalonisDatabase {
       FROM workspace_members wm JOIN users u ON u.id=wm.user_id
       WHERE wm.workspace_id=? ORDER BY CASE wm.role WHEN 'Propriétaire' THEN 0 WHEN 'Administrateur' THEN 1 WHEN 'Chef de projet' THEN 2 ELSE 3 END, u.full_name`).all(workspace.id)
     return { workspace, members, current_user: members[0] || null }
+  }
+
+  listWorkspaces() {
+    const state=this.getWorkspace(),userId=state.current_user?.id
+    if(!userId)return []
+    return this.db.prepare(`SELECT w.*,wm.role,(SELECT COUNT(*) FROM projects p WHERE p.workspace_id=w.id) project_count
+      FROM workspaces w JOIN workspace_members wm ON wm.workspace_id=w.id
+      WHERE wm.user_id=? AND wm.status='Actif' ORDER BY w.created_at`).all(userId)
+  }
+
+  selectWorkspace(id) {
+    const current=this.getWorkspace().current_user
+    const membership=current&&this.db.prepare("SELECT id FROM workspace_members WHERE workspace_id=? AND user_id=? AND status='Actif'").get(id,current.id)
+    if(!membership)throw new Error("Vous n’avez pas accès à cet espace de travail")
+    this.db.prepare("INSERT INTO app_settings(key,value) VALUES('active_workspace_id',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(id)
+    return this.getWorkspace()
+  }
+
+  createWorkspace(data) {
+    const current=this.getWorkspace().current_user
+    if(!current)throw new Error('Utilisateur local introuvable')
+    const name=String(data.name||'').trim(),accountType=data.account_type==='Personnel'?'Personnel':'Organisation'
+    if(name.length<2||name.length>80)throw new Error('Le nom doit contenir entre 2 et 80 caractères')
+    const owned=this.db.prepare("SELECT w.account_type FROM workspaces w JOIN workspace_members wm ON wm.workspace_id=w.id WHERE wm.user_id=? AND wm.role='Propriétaire'").all(current.id)
+    if(owned.length>=5)throw new Error('La limite de 5 espaces possédés est atteinte')
+    if(accountType==='Personnel'&&owned.some(space=>space.account_type==='Personnel'))throw new Error('Ce compte possède déjà un espace personnel')
+    const id=crypto.randomUUID(),now=new Date().toISOString(),seats=accountType==='Organisation'?3:1
+    this.db.prepare(`INSERT INTO workspaces(id,name,slug,mode,account_type,subscription_plan,subscription_status,seat_limit,trial_ends_at,created_at,updated_at)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?)`).run(id,name,`${name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${id.slice(0,8)}`,'local',accountType,'Découverte','Local',seats,null,now,now)
+    this.db.prepare(`INSERT INTO workspace_members(id,workspace_id,user_id,role,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?)`).run(crypto.randomUUID(),id,current.id,'Propriétaire','Actif',now,now)
+    this.db.prepare("INSERT INTO app_settings(key,value) VALUES('active_workspace_id',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(id)
+    return this.getWorkspace()
   }
 
   updateWorkspace(data) {
@@ -438,18 +476,19 @@ class JalonisDatabase {
   updateCurrentUserPreferences(data) {
     const state = this.getWorkspace(); const user = state.current_user
     if (!user) throw new Error('Utilisateur local introuvable')
-    const allowed = ['notify_email','notify_whatsapp','notify_in_app','notify_assignments','notify_status_changes','notify_comments','daily_digest','quiet_start','quiet_end']
+    const allowed = ['phone','notify_email','notify_whatsapp','notify_in_app','notify_assignments','notify_status_changes','notify_comments','daily_digest','quiet_start','quiet_end']
     const entries = Object.entries(data).filter(([key]) => allowed.includes(key))
     if (entries.length) this.db.prepare(`UPDATE users SET ${entries.map(([key])=>`${key}=?`).join(',')},updated_at=? WHERE id=?`).run(...entries.map(([,value])=>sqlValue(value)),new Date().toISOString(),user.id)
     return this.getWorkspace()
   }
 
   listProjects() {
+    const workspace=this.ensureLocalWorkspace()
     return this.db.prepare(`SELECT p.*,
       (SELECT COUNT(*) FROM tasks t WHERE t.project_id=p.id) task_count,
       (SELECT COALESCE(ROUND(AVG(progress)),0) FROM tasks t WHERE t.project_id=p.id) progress,
       (SELECT COUNT(*) FROM risks r WHERE r.project_id=p.id AND r.status!='Fermé') open_risks
-      FROM projects p ORDER BY updated_at DESC`).all()
+      FROM projects p WHERE p.workspace_id=? ORDER BY updated_at DESC`).all(workspace.id)
   }
 
   createProject(data) {
