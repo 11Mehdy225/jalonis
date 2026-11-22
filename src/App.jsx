@@ -16,16 +16,17 @@ import ResourceManagement from './features/resources/ResourceManagement'
 import FinancialView from './features/finance/FinancialView'
 import GovernanceView from './features/governance/GovernanceView'
 import StakeholderManagement from './features/stakeholders/StakeholderManagement'
+import ReportCenter from './features/reports/ReportCenter'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
-import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel } from 'lucide-react'
+import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown } from 'lucide-react'
 
 const money = (n,currency='XOF') => new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0)
 const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)) : '—'
 
 const NAV = [
   ['dashboard','Vue d’ensemble',LayoutDashboard],['charter','Charte du projet',FileText],['tasks','Planning',CalendarRange],['scrum','Agile & Sprints',Columns3],
-  ['team','Équipe',Users],['stakeholders','Parties prenantes & RACI',Building2],['suppliers','Fournisseurs & Achats',Truck],['finance','Budget & Coûts',CircleDollarSign],['governance','Gouvernance',Gavel],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
+  ['team','Équipe',Users],['stakeholders','Parties prenantes & RACI',Building2],['suppliers','Fournisseurs & Achats',Truck],['finance','Budget & Coûts',CircleDollarSign],['reports','Rapports & Exports',FileDown],['governance','Gouvernance',Gavel],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
 ]
 
 const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries','cost_entries','change_requests','issues','decisions','stakeholders','raci_assignments','conflicts','communication_plans']
@@ -52,6 +53,29 @@ export default function App() {
   },[entities])
 
   async function createProject(data){ const item=await api.projects.create(data); setModal(null); await loadProjects(false); setActiveId(item.id); setView('dashboard') }
+  async function importProjectArchive(backup){
+    const source=backup.project||{}
+    const projectData=Object.fromEntries(Object.entries(source).filter(([key])=>!['id','workspace_id','created_at','updated_at','logo_path','logo_url','task_count','progress','open_risks'].includes(key)))
+    projectData.name=`${source.name||'Projet restauré'} (copie)`
+    const restored=await api.projects.create(projectData)
+    const excluded=new Set(['attachments','activities','notifications','supplier_documents'])
+    const idMap=new Map(),created=[]
+    for(const type of ENTITY_TYPES.filter(name=>!excluded.has(name))){
+      for(const row of backup.entities?.[type]||[]){
+        const clean=Object.fromEntries(Object.entries(row).filter(([key])=>!['id','project_id','created_at','updated_at','stored_path','url'].includes(key)))
+        const item=await api.entities.create(type,{...clean,project_id:restored.id})
+        if(row.id)idMap.set(row.id,item.id)
+        created.push({type,item,source:row})
+      }
+    }
+    for(const {type,item,source:row} of created){
+      const links={}
+      Object.entries(row).forEach(([key,value])=>{if((key==='entity_id'||key.endsWith('_id'))&&idMap.has(value))links[key]=idMap.get(value)})
+      if(Object.keys(links).length)await api.entities.update(type,item.id,links)
+    }
+    await loadProjects(false);setActiveId(restored.id);setView('dashboard');await loadEntities(restored.id)
+    return restored
+  }
   async function recordEvent({projectId=activeId,eventType,entityType,entityId,title,description,notify=true}){
     if(!projectId)return
     const actorName=workspace?.current_user?.full_name||'Chef de projet'
@@ -149,6 +173,7 @@ export default function App() {
           {view==='finance'&&<FinancialView project={active} costs={entities.cost_entries} team={entities.team} tasks={entities.tasks} timeEntries={entities.time_entries} suppliers={entities.suppliers} onCreate={data=>addEntity('cost_entries',data)} onDelete={id=>removeEntity('cost_entries',id)} onUpdateProject={updateCharter}/>}
           {view==='governance'&&<GovernanceView project={active} changes={entities.change_requests} issues={entities.issues} decisions={entities.decisions} tasks={entities.tasks} risks={entities.risks} meetings={entities.meetings} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity}/>}
           {view==='stakeholders'&&<StakeholderManagement stakeholders={entities.stakeholders} raci={entities.raci_assignments} conflicts={entities.conflicts} communications={entities.communication_plans} tasks={entities.tasks} team={entities.team} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity}/>}
+          {view==='reports'&&<ReportCenter project={active} entities={entities} onImport={importProjectArchive}/>}
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>} 
           {view==='team'&&<ResourceManagement members={entities.team} tasks={entities.tasks} entries={entities.time_entries} query={query} onCreateEntry={data=>addEntity('time_entries',data)} onUpdateEntry={(id,data)=>updateEntity('time_entries',id,data)} onDeleteEntry={id=>removeEntity('time_entries',id)} onDeleteMember={id=>removeEntity('team',id)}/>}
           {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('meetings',id)}/>} 
@@ -166,7 +191,7 @@ export default function App() {
 
 const PROJECT_TABS=[
   ['dashboard',null,'Résumé',LayoutDashboard],['tasks',null,'Planning',ChartNoAxesGantt],['scrum','board','Tableau',Columns3],['scrum','backlog','Backlog',ClipboardList],
-  ['suppliers',null,'Fournisseurs',Truck],['finance',null,'Budget',CircleDollarSign],['governance',null,'Gouvernance',Gavel],['stakeholders',null,'Parties prenantes',Building2],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
+  ['suppliers',null,'Fournisseurs',Truck],['finance',null,'Budget',CircleDollarSign],['reports',null,'Rapports',FileDown],['governance',null,'Gouvernance',Gavel],['stakeholders',null,'Parties prenantes',Building2],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
 ]
 
 function ProjectHeader({active,view,agileTab,members,onNavigate,onShare,onBranding}){
