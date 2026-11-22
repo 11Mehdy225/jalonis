@@ -30,5 +30,16 @@ export const cloudAuth = {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
   },
-  onChange: callback => supabase.auth.onAuthStateChange((_event, session) => callback(session)),
+  updatePassword: async password => {
+    const { data, error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+    return data
+  },
+  acceptInvitations: async () => {
+    const { data, error } = await supabase.rpc('accept_my_invitations')
+    if (error) throw error
+    if (!Number(data)) throw new Error('Cette invitation a expiré ou a déjà été utilisée.')
+    return data
+  },
+  onChange: callback => supabase.auth.onAuthStateChange((event, session) => callback(session,event)),
 }

@@ -4,7 +4,7 @@
 
 Créer un projet Supabase dans la région la plus proche des futurs clients. Conserver la clé `service_role` uniquement dans les fonctions serveur. Le navigateur utilise exclusivement la clé publique `anon`.
 
-Dans l’éditeur SQL Supabase, appliquer le fichier `supabase/migrations/202611190001_initial_saas.sql`.
+Dans l’éditeur SQL Supabase, appliquer dans l’ordre tous les fichiers du dossier `supabase/migrations`.
 
 Cette migration crée :
 
@@ -50,10 +50,19 @@ Vercel et Netlify sont préconfigurés. Dans l’hébergeur choisi, ajouter les 
 
 Ajouter l’URL publique dans Supabase : Authentication → URL Configuration → Site URL et Redirect URLs.
 
+Déployer ensuite la fonction d’invitation et définir l’URL publique utilisée dans les e-mails :
+
+```bash
+supabase functions deploy invite-member
+supabase secrets set SITE_URL=https://jalonis.onrender.com
+```
+
+La clé `SUPABASE_SERVICE_ROLE_KEY` est fournie automatiquement aux fonctions Supabase hébergées. Elle ne doit jamais être ajoutée aux variables Render ni au code de l’application.
+
 ## 5. Activer la facturation
 
 La table `subscriptions` est prête, mais aucun paiement réel n’est encore déclenché. La prochaine étape consiste à connecter un prestataire de paiement au moyen de fonctions serveur et de webhooks signés. Les droits ne doivent être activés qu’après vérification serveur de l’événement de paiement.
 
 ## 6. Invitations et notifications
 
-La création d’une invitation est enregistrée. L’envoi d’e-mail doit passer par une fonction serveur afin de ne jamais exposer la clé du fournisseur d’e-mail. Le même principe s’applique à WhatsApp et aux rappels automatiques.
+La fonction `invite-member` vérifie le rôle de l’expéditeur, la limite de places, crée l’invitation puis déclenche l’e-mail sécurisé de Supabase. Le lien rattache le nouveau compte à l’organisation et lui demande de choisir son mot de passe. Le même principe serveur s’appliquera ultérieurement à WhatsApp et aux rappels automatiques.

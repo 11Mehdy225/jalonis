@@ -17,6 +17,7 @@ export default function AuthGate({ children }) {
   const [checking, setChecking] = useState(!desktop && isCloudConfigured)
   const preview = new URLSearchParams(window.location.search).get('preview') === '1'
   const [authOpen, setAuthOpen] = useState(false)
+  const [inviteSetup,setInviteSetup]=useState(()=>new URLSearchParams(window.location.search).get('invited')==='1')
   const openPreview = () => {
     const url=new URL(window.location.href)
     url.searchParams.set('preview','1')
@@ -30,10 +31,17 @@ export default function AuthGate({ children }) {
     return () => data.subscription.unsubscribe()
   }, [desktop])
 
+  if(session&&inviteSetup)return <InvitationPasswordScreen onComplete={()=>{const url=new URL(window.location.href);url.searchParams.delete('invited');window.history.replaceState({},'',url);setInviteSetup(false)}}/>
   if (desktop || session || preview) return children
   if (checking) return <div className="auth-loading"><Sparkles size={30}/><b>Ouverture de votre espace Jalonis…</b></div>
   if (authOpen) return <AuthScreen cloudReady={isCloudConfigured} onBack={() => setAuthOpen(false)} onPreview={openPreview}/>
   return <WelcomeScreen onConnect={() => setAuthOpen(true)} onPreview={openPreview}/>
+}
+
+function InvitationPasswordScreen({onComplete}){
+  const [password,setPassword]=useState(''),[confirmation,setConfirmation]=useState(''),[error,setError]=useState(''),[saving,setSaving]=useState(false)
+  const submit=async event=>{event.preventDefault();setError('');if(password.length<8)return setError('Le mot de passe doit contenir au moins 8 caractères.');if(password!==confirmation)return setError('Les deux mots de passe ne correspondent pas.');try{setSaving(true);await cloudAuth.acceptInvitations();await cloudAuth.updatePassword(password);onComplete()}catch(reason){setError(reason.message||'Impossible de finaliser cette invitation.')}finally{setSaving(false)}}
+  return <main className="invite-password-page"><section className="invite-password-card"><img src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><span>INVITATION ACCEPTÉE</span><h1>Bienvenue dans votre équipe</h1><p>Choisissez votre mot de passe pour sécuriser votre compte et ouvrir l’espace auquel vous avez été invité.</p><form onSubmit={submit}><label>Nouveau mot de passe<input autoFocus required minLength="8" type="password" value={password} onChange={event=>setPassword(event.target.value)}/></label><label>Confirmer le mot de passe<input required minLength="8" type="password" value={confirmation} onChange={event=>setConfirmation(event.target.value)}/></label>{error&&<p className="auth-error">{error}</p>}<button className="auth-submit" disabled={saving}><LockKeyhole size={16}/>{saving?'Sécurisation…':'Ouvrir mon espace'}</button></form></section></main>
 }
 
 function WelcomeScreen({ onConnect, onPreview }) {

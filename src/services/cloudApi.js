@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 
 let cachedWorkspaceId = null
+let cachedUserId = null
 
 const unwrap = ({ data, error }) => {
   if (error) throw error
@@ -14,11 +15,12 @@ async function currentUser() {
 }
 
 async function workspaceId() {
-  if (cachedWorkspaceId) return cachedWorkspaceId
   const user = await currentUser()
-  const rows = unwrap(await supabase.from('workspace_members').select('workspace_id').eq('user_id', user.id).eq('status', 'Actif').limit(1))
+  if (cachedWorkspaceId&&cachedUserId===user.id) return cachedWorkspaceId
+  const rows = unwrap(await supabase.from('workspace_members').select('workspace_id,created_at').eq('user_id', user.id).eq('status', 'Actif').order('created_at',{ascending:false}).limit(1))
   if (!rows[0]) throw new Error("Aucun espace de travail actif n’est associé à ce compte")
   cachedWorkspaceId = rows[0].workspace_id
+  cachedUserId = user.id
   return cachedWorkspaceId
 }
 
@@ -27,7 +29,7 @@ async function workspaceState() {
   const [workspace, memberships, invitations, user] = await Promise.all([
     supabase.from('workspaces').select('*').eq('id', id).single().then(unwrap),
     supabase.from('workspace_members').select('*').eq('workspace_id', id).order('created_at').then(unwrap),
-    supabase.from('workspace_invitations').select('*').eq('workspace_id', id).eq('status', 'En attente').order('created_at').then(unwrap),
+    supabase.from('workspace_invitations').select('*').eq('workspace_id', id).eq('status', 'En attente').gt('expires_at',new Date().toISOString()).order('created_at').then(unwrap),
     currentUser(),
   ])
   const profileIds = memberships.map(item => item.user_id)
@@ -118,16 +120,10 @@ export const cloudApi = {
     },
     invite: async data => {
       const id = await workspaceId()
-      const user = await currentUser()
-      unwrap(await supabase.from('workspace_invitations').insert({
-        workspace_id: id,
-        email: String(data.email).trim().toLowerCase(),
-        full_name: data.full_name,
-        phone: data.phone || null,
-        role: data.role || 'Membre',
-        invited_by: user.id,
-      }))
-      return workspaceState()
+      const {data:result,error}=await supabase.functions.invoke('invite-member',{body:{...data,workspace_id:id}})
+      if(error){let message=result?.error||error.message||"Impossible d’envoyer l’invitation";try{const details=await error.context?.json();message=details?.error||message}catch{}throw new Error(message)}
+      if(result?.error)throw new Error(result.error)
+      return {...await workspaceState(),invite_result:result}
     },
     removeMember: async membershipId => {
       if (String(membershipId).startsWith('invitation-')) {

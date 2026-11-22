@@ -40,6 +40,7 @@ export default function App() {
   const [projects,setProjects]=useState([]), [activeId,setActiveId]=useState(null), [view,setView]=useState('dashboard')
   const [entities,setEntities]=useState(Object.fromEntries(ENTITY_TYPES.map(type=>[type,[]]))), [modal,setModal]=useState(null), [query,setQuery]=useState('')
   const [workspace,setWorkspace]=useState(null), [error,setError]=useState('')
+  const [notice,setNotice]=useState('')
   const [agileTab,setAgileTab]=useState('board'), [dark,setDark]=useState(()=>localStorage.getItem('jalonis-theme')==='dark')
   const [notificationOpen,setNotificationOpen]=useState(false)
   const active=projects.find(p=>p.id===activeId)
@@ -155,7 +156,7 @@ export default function App() {
   async function updateNotificationPreferences(data){ setWorkspace(await api.workspace.updatePreferences(data)) }
   async function inviteMember(data){
     if(!permissions.inviteMembers)return deny('Votre rôle ne permet pas d’inviter des membres.')
-    try { setError(''); setWorkspace(await api.workspace.invite(data)); setModal(null) }
+    try { setError('');const next=await api.workspace.invite(data);setWorkspace(next);setNotice(next?.invite_result?.message||'Invitation créée.');setModal(null) }
     catch (reason) { setError(reason.message || "Impossible de créer l’invitation") }
   }
   async function removeMember(id){
@@ -188,6 +189,7 @@ export default function App() {
       <header className="app-header"><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button>{permissions.createProject&&<button className="btn primary" onClick={()=>setModal('project')}><Plus size={17}/>Créer</button>}{notificationOpen&&<NotificationCenter notifications={visibleNotifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
       <section className={`content${active&&view!=='workspace'&&view!=='settings'?' project-content':''}`} style={active?{'--project-color':active.theme_color||'#4f46e5'}:undefined}>
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
+        {notice&&<div className="app-notice">{notice}<button onClick={()=>setNotice('')}>×</button></div>}
         {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les futurs canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Configuration de cette installation de Jalonis.</p></div></div><SettingsView/></>
         : !active ? <Empty canCreate={permissions.createProject} onCreate={()=>setModal('project')}/> : <>

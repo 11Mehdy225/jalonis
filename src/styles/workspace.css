@@ -2,6 +2,7 @@
 .sidebar-bottom button.active svg { color: #7c75ff; }
 .app-error { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; padding: 11px 14px; border: 1px solid #ffd4ce; border-radius: 9px; background: #fff1ef; color: #b84639; font-size: 11px; }
 .app-error button { border: 0; background: transparent; color: inherit; font-size: 18px; }
+.app-notice{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding:11px 14px;border:1px solid #bfe9dc;border-radius:9px;background:#ebf8f3;color:#247c66;font-size:11px}.app-notice button{border:0;background:transparent;color:inherit;font-size:18px}
 .workspace-page { display: flex; flex-direction: column; gap: 16px; max-width: 1100px; }
 .workspace-summary { display: grid; grid-template-columns: 54px 1fr auto; gap: 17px; align-items: center; }
 .workspace-mark { width: 54px; height: 54px; border-radius: 15px; background: #eeedff; color: #554de0; display: grid; place-items: center; }
