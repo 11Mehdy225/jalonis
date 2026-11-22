@@ -28,15 +28,16 @@ Deno.serve(async request=>{
     const {data:caller}=await admin.from('workspace_members').select('role,status').eq('workspace_id',workspaceId).eq('user_id',user.id).maybeSingle()
     if(!caller||caller.status!=='Actif'||!['Propriétaire','Administrateur','Chef de projet'].includes(caller.role))return json({error:'Vous ne pouvez pas inviter de membre dans cet espace.'},403)
 
-    const [{data:workspace},{count:members},{count:pending}]=await Promise.all([
+    const [{data:workspace},{data:activeMembers}]=await Promise.all([
       admin.from('workspaces').select('seat_limit').eq('id',workspaceId).single(),
-      admin.from('workspace_members').select('id',{count:'exact',head:true}).eq('workspace_id',workspaceId).eq('status','Actif'),
-      admin.from('workspace_invitations').select('id',{count:'exact',head:true}).eq('workspace_id',workspaceId).eq('status','En attente').gt('expires_at',new Date().toISOString()),
+      admin.from('workspace_members').select('role').eq('workspace_id',workspaceId).eq('status','Actif'),
     ])
     if(!workspace)return json({error:'Espace de travail introuvable.'},404)
     const {data:existingProfile}=await admin.from('profiles').select('id').eq('email',email).maybeSingle()
     if(existingProfile){const {data:alreadyMember}=await admin.from('workspace_members').select('id').eq('workspace_id',workspaceId).eq('user_id',existingProfile.id).maybeSingle();if(alreadyMember)return json({error:'Cette personne appartient déjà à cet espace.'},409)}
-    if(Number(members||0)+Number(pending||0)>=Number(workspace.seat_limit))return json({error:`La limite de ${workspace.seat_limit} place(s) est atteinte pour cet abonnement.`},409)
+    const billableRoles=(activeMembers||[]).filter(member=>!['Observateur','Fournisseur externe'].includes(member.role)).length
+    const invitationUsesSeat=!['Observateur','Fournisseur externe'].includes(role)
+    if(invitationUsesSeat&&billableRoles>=Number(workspace.seat_limit))return json({error:`La limite de ${workspace.seat_limit} siège(s) actif(s) est atteinte pour cet abonnement.`},409)
 
     const {data:invitation,error:inviteError}=await admin.from('workspace_invitations').insert({workspace_id:workspaceId,email,full_name:body.full_name||null,phone:body.phone||null,role,invited_by:user.id}).select().single()
     if(inviteError){

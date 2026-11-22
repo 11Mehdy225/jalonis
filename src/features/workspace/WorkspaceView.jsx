@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BellRing, Building2, Clock3, Mail, MessageCircle, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
+import { BadgeCheck, BellRing, Building2, CalendarClock, Check, Clock3, Gauge, Mail, MessageCircle, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
 
 const ROLES = ['Administrateur', 'Chef de projet', 'Scrum Master', 'Product Owner', 'Membre', 'Observateur', 'Fournisseur externe']
 const PREFERENCE_DEFAULTS = { notify_in_app: true, notify_email: true, notify_whatsapp: false, notify_assignments: true, notify_status_changes: true, notify_comments: true, daily_digest: true, quiet_start: '20:00', quiet_end: '07:00' }
@@ -26,6 +26,7 @@ export default function WorkspaceView({ data, canManage=false, canInvite=false, 
       </form>
       <div className="workspace-kpis"><span><b>{data.members.length}</b>Membres</span><span><b>{active}</b>Actifs</span><span><b>{pending}</b>Invitations</span><span><b>{data.workspace.subscription_plan || 'Découverte'}</b>{data.workspace.subscription_status || 'Local'}</span></div>
     </section>
+    <SubscriptionOverview data={data}/>
     <section className="card members-card">
       <div className="members-head"><div><h3>Membres et accès</h3><p>Invitez les personnes qui pourront participer aux projets de cet espace.</p></div>{canInvite&&<button className="btn primary" onClick={onInvite}><UserPlus size={16}/>Inviter un membre</button>}</div>
       <div className="members-table">
@@ -43,6 +44,34 @@ export default function WorkspaceView({ data, canManage=false, canInvite=false, 
     <section className="workspace-note"><ShieldCheck size={18}/><div><b>Accès contrôlés par rôle</b><p>Chaque membre dispose uniquement des actions autorisées par son rôle. Les observateurs et fournisseurs externes restent en lecture seule.</p></div></section>
   </div>
 }
+
+function SubscriptionOverview({ data }) {
+  const [annual,setAnnual]=useState(false)
+  const subscription=data.subscription||{}
+  const currentCode=subscription.plan_code||'discovery'
+  const currentPlan=data.plans?.find(plan=>plan.code===currentCode)
+  const projectLimit=Number(currentPlan?.features?.projects ?? (currentCode==='discovery'?2:-1))
+  const projects=Number(data.usage?.projects||0)
+  const billable=data.members.filter(member=>member.membership_status==='Actif'&&!['Observateur','Fournisseur externe'].includes(member.role)).length
+  const seatLimit=Number(subscription.seats||data.workspace.seat_limit||1)
+  const trialEnd=subscription.current_period_end||data.workspace.trial_ends_at
+  const trialDays=trialEnd?Math.max(0,Math.ceil((new Date(trialEnd)-new Date())/86400000)):null
+  const plans=(data.plans||[]).filter(plan=>plan.account_type===data.workspace.account_type||plan.code==='discovery')
+  return <section className="card subscription-card">
+    <header className="subscription-head"><div><span className="subscription-icon"><BadgeCheck size={21}/></span><div><small>ABONNEMENT</small><h3>{currentPlan?.name||data.workspace.subscription_plan||'Découverte'}</h3><p>{subscription.status==='trialing'&&trialDays!==null?`Essai gratuit · ${trialDays} jour${trialDays>1?'s':''} restant${trialDays>1?'s':''}`:data.workspace.subscription_status||'Mode local'}</p></div></div><div className="billing-toggle"><button className={!annual?'active':''} onClick={()=>setAnnual(false)}>Mensuel</button><button className={annual?'active':''} onClick={()=>setAnnual(true)}>Annuel <em>−15 %</em></button></div></header>
+    <div className="usage-grid"><UsageMeter icon={Users} label="Sièges actifs" value={billable} limit={seatLimit}/><UsageMeter icon={Gauge} label="Projets" value={projects} limit={projectLimit}/><div className="trial-meter"><CalendarClock size={18}/><span><small>Prochaine échéance</small><b>{trialEnd?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'long',year:'numeric'}).format(new Date(trialEnd)):'Aucune'}</b></span></div></div>
+    <div className="plan-grid">{plans.map(plan=>{const price=Number(annual?plan.annual_price_eur:plan.monthly_price_eur);const selected=plan.code===currentCode;return <article key={plan.code} className={selected?'current':''}><div><span>{selected?'OFFRE ACTUELLE':plan.account_type.toUpperCase()}</span><h4>{plan.name}</h4><p>{price===0?'Gratuit':<><b>{annual?(price/12).toFixed(2):price.toFixed(2)} €</b><small> / mois{plan.min_seats>1?' / siège':''}</small></>}</p></div><ul><li><Check size={13}/>{Number(plan.features?.projects)<0?'Projets illimités':`${plan.features?.projects||2} projets`}</li><li><Check size={13}/>{formatStorage(plan.features?.storage_mb)}</li><li><Check size={13}/>{plan.features?.collaboration?'Collaboration en temps réel':'Pilotage individuel'}</li></ul><button disabled>{selected?'Plan actif':'Disponible avec le paiement'}</button></article>})}</div>
+    <footer><ShieldCheck size={15}/><span>Le changement d’offre sera activé uniquement après confirmation sécurisée du paiement. Aucune carte bancaire n’est stockée par Jalonis.</span></footer>
+  </section>
+}
+
+function UsageMeter({icon:Icon,label,value,limit}){
+  const unlimited=limit<0
+  const ratio=unlimited?0:Math.min(100,value/Math.max(1,limit)*100)
+  return <div className="usage-meter"><Icon size={18}/><span><small>{label}</small><b>{value} / {unlimited?'∞':limit}</b><i><em style={{width:`${ratio}%`}}/></i></span></div>
+}
+
+function formatStorage(megabytes){const value=Number(megabytes||250);return value>=1024?`${Math.round(value/1024)} Go de stockage`:`${value} Mo de stockage`}
 
 function NotificationPreferences({ user, onSave }) {
   const [form, setForm] = useState(PREFERENCE_DEFAULTS)

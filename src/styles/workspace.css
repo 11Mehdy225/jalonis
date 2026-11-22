@@ -53,9 +53,51 @@
 .quiet-hours label { display: flex; align-items: center; gap: 6px; font-size: 9px; font-weight: 700; }.quiet-hours input { border: 1px solid #dfe3eb; border-radius: 7px; padding: 6px 8px; color: #4e566a; background: #fff; }
 .app-shell.dark .preference-grid label,.app-shell.dark .quiet-hours { background: #272a31; border-color: #343842; }.app-shell.dark .quiet-hours input { background: #202228; border-color: #3a3e48; color: #e6e8ed; }
 
+.subscription-card { padding: 0; overflow: hidden; }
+.subscription-head { height: auto; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px; border-bottom: 1px solid #edf0f4; }
+.subscription-head > div:first-child { display: flex; align-items: center; gap: 12px; }
+.subscription-head > div:first-child > div { display: grid; gap: 2px; }
+.subscription-icon { width: 45px; height: 45px; display: grid; place-items: center; border-radius: 12px; background: #eeedff; color: #5750da; }
+.subscription-head small { color: #716ae1; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
+.subscription-head h3 { margin: 0; font-size: 15px; }
+.subscription-head p { margin: 0; color: #858da0; font-size: 9px; }
+.billing-toggle { display: flex; gap: 3px; padding: 3px; border-radius: 9px; background: #f0f2f6; }
+.billing-toggle button { height: 31px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: #737b8e; font-size: 9px; font-weight: 700; }
+.billing-toggle button.active { background: #fff; color: #4f46d8; box-shadow: 0 1px 4px #17213c18; }
+.billing-toggle em { color: #1b916e; font-style: normal; }
+.usage-grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 10px; padding: 16px 19px; background: #fafbfc; }
+.usage-meter,.trial-meter { display: flex; align-items: center; gap: 10px; min-height: 63px; padding: 12px; border: 1px solid #e7e9ef; border-radius: 11px; background: #fff; color: #625ada; }
+.usage-meter > span,.trial-meter > span { display: grid; flex: 1; gap: 3px; }
+.usage-meter small,.trial-meter small { color: #8990a0; font-size: 8px; }
+.usage-meter b,.trial-meter b { color: #30384d; font-size: 11px; }
+.usage-meter i { height: 4px; overflow: hidden; border-radius: 4px; background: #eceef3; }
+.usage-meter em { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#5d55e3,#28a6b8); }
+.plan-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; padding: 3px 19px 19px; }
+.plan-grid article { display: flex; flex-direction: column; min-height: 230px; padding: 14px; border: 1px solid #e5e8ef; border-radius: 12px; background: #fff; }
+.plan-grid article.current { border-color: #7770e7; box-shadow: 0 0 0 3px #efeeff; }
+.plan-grid article > div > span { color: #9299aa; font-size: 7px; font-weight: 800; letter-spacing: .8px; }
+.plan-grid article.current > div > span { color: #5c54d9; }
+.plan-grid h4 { margin: 6px 0 8px; font-size: 13px; }
+.plan-grid p { min-height: 31px; margin: 0; color: #4e566a; font-size: 11px; }
+.plan-grid p b { font-size: 18px; }
+.plan-grid p small { color: #8990a0; font-size: 8px; }
+.plan-grid ul { display: grid; gap: 8px; margin: 13px 0; padding: 12px 0 0; border-top: 1px solid #edf0f4; list-style: none; }
+.plan-grid li { display: flex; align-items: center; gap: 6px; color: #687086; font-size: 8px; }
+.plan-grid li svg { color: #1c9a78; }
+.plan-grid article > button { height: 31px; margin-top: auto; border: 0; border-radius: 8px; background: #f0f1f5; color: #8990a0; font-size: 8px; font-weight: 700; }
+.plan-grid article.current > button { background: #eeedff; color: #554dd5; }
+.subscription-card > footer { display: flex; align-items: center; gap: 8px; padding: 11px 19px; border-top: 1px solid #edf0f4; background: #fafbfc; color: #7e8597; font-size: 8px; }
+.subscription-card > footer svg { color: #249476; flex: none; }
+.app-shell.dark .subscription-head,.app-shell.dark .subscription-card > footer { border-color: #343842; }
+.app-shell.dark .billing-toggle,.app-shell.dark .usage-grid,.app-shell.dark .subscription-card > footer { background: #272a31; }
+.app-shell.dark .billing-toggle button.active,.app-shell.dark .usage-meter,.app-shell.dark .trial-meter,.app-shell.dark .plan-grid article { background: #202228; border-color: #383c47; }
+.app-shell.dark .plan-grid article.current { border-color: #7770e7; box-shadow: 0 0 0 3px #302e4d; }
+.app-shell.dark .usage-meter b,.app-shell.dark .trial-meter b { color: #e6e8ed; }
+
 @media (max-width: 1200px) {
   .workspace-summary { grid-template-columns: 54px 1fr; }
   .workspace-kpis { grid-column: 1 / -1; }
   .members-row { grid-template-columns: 2fr 1.2fr .7fr 1fr 28px; }
   .preference-grid { grid-template-columns: 1fr; }.quiet-hours { grid-template-columns: 28px 1fr; }.quiet-hours label { grid-row: 2; }
+  .plan-grid { grid-template-columns: repeat(2,1fr); }
 }

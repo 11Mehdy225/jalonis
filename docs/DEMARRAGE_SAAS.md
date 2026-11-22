@@ -61,7 +61,7 @@ La clé `SUPABASE_SERVICE_ROLE_KEY` est fournie automatiquement aux fonctions Su
 
 ## 5. Activer la facturation
 
-La table `subscriptions` est prête, mais aucun paiement réel n’est encore déclenché. La prochaine étape consiste à connecter un prestataire de paiement au moyen de fonctions serveur et de webhooks signés. Les droits ne doivent être activés qu’après vérification serveur de l’événement de paiement.
+La table `subscriptions`, le catalogue d’offres, l’essai de 14 jours et les limites de projets sont prêts. L’écran **Espace & accès** affiche l’offre, les sièges, les projets consommés et l’échéance. Aucun paiement réel n’est encore déclenché : la prochaine étape consiste à connecter un prestataire de paiement au moyen de fonctions serveur et de webhooks signés. Les droits ne doivent être activés qu’après vérification serveur de l’événement de paiement.
 
 ## 6. Invitations et notifications
 

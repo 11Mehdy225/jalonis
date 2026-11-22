@@ -60,7 +60,11 @@ export default function App() {
     return {progress,critical,total,done:isScrum?scrumItems.filter(item=>item.status==='Terminé').length:entities.tasks.filter(t=>t.status==='Terminé').length}
   },[entities,active?.methodology])
 
-  async function createProject(data){if(!permissions.createProject)return deny('Votre rôle ne permet pas de créer un projet.');const item=await api.projects.create(data);setModal(null);await loadProjects(false);setActiveId(item.id);setView('dashboard')}
+  async function createProject(data){
+    if(!permissions.createProject)return deny('Votre rôle ne permet pas de créer un projet.')
+    try { setError('');const item=await api.projects.create(data);setModal(null);await loadProjects(false);setActiveId(item.id);setView('dashboard') }
+    catch(reason){setError(reason.message||'Impossible de créer ce projet avec l’offre actuelle.')}
+  }
   async function importProjectArchive(backup){
     if(!permissions.createProject)return deny('Votre rôle ne permet pas d’importer un projet.')
     const source=backup.project||{}

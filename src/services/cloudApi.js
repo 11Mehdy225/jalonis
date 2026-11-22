@@ -26,11 +26,14 @@ async function workspaceId() {
 
 async function workspaceState() {
   const id = await workspaceId()
-  const [workspace, memberships, invitations, user] = await Promise.all([
+  const [workspace, memberships, invitations, user, subscription, plans, projectCount] = await Promise.all([
     supabase.from('workspaces').select('*').eq('id', id).single().then(unwrap),
     supabase.from('workspace_members').select('*').eq('workspace_id', id).order('created_at').then(unwrap),
     supabase.from('workspace_invitations').select('*').eq('workspace_id', id).eq('status', 'En attente').gt('expires_at',new Date().toISOString()).order('created_at').then(unwrap),
     currentUser(),
+    supabase.from('subscriptions').select('*').eq('workspace_id', id).maybeSingle().then(unwrap),
+    supabase.from('plan_catalog').select('*').eq('active', true).order('monthly_price_eur').then(unwrap),
+    supabase.from('projects').select('id',{count:'exact',head:true}).eq('workspace_id',id).then(({count,error})=>{if(error)throw error;return count||0}),
   ])
   const profileIds = memberships.map(item => item.user_id)
   const profiles = profileIds.length ? unwrap(await supabase.from('profiles').select('*').in('id', profileIds)) : []
@@ -52,7 +55,7 @@ async function workspaceState() {
     notify_whatsapp: 0,
     invitation: true,
   }))
-  return { workspace, members, current_user: members.find(member => member.id === user.id) || null }
+  return { workspace, subscription, plans, usage: { projects: projectCount }, members, current_user: members.find(member => member.id === user.id) || null }
 }
 
 async function listProjects() {
