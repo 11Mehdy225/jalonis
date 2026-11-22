@@ -90,4 +90,25 @@ La valeur **Secret Hash** saisie dans Flutterwave doit être strictement identiq
 
 ## 6. Invitations et notifications
 
-La fonction `invite-member` vérifie le rôle de l’expéditeur, la limite de places, crée l’invitation puis déclenche l’e-mail sécurisé de Supabase. Le lien rattache le nouveau compte à l’organisation et lui demande de choisir son mot de passe. Le même principe serveur s’appliquera ultérieurement à WhatsApp et aux rappels automatiques.
+La fonction `invite-member` vérifie le rôle de l’expéditeur, la limite de places, crée l’invitation puis déclenche l’e-mail sécurisé de Supabase. Le lien rattache le nouveau compte à l’organisation et lui demande de choisir son mot de passe.
+
+Les autres e-mails passent par une file sécurisée : affectations, changements de statut, tâches terminées, commentaires, mentions et résumé quotidien. Les préférences et heures silencieuses du membre sont respectées, et une clé d’idempotence empêche les envois en double.
+
+Créer un compte Resend, vérifier le domaine d’envoi, puis configurer :
+
+```bash
+supabase functions deploy process-email-queue --no-verify-jwt
+supabase secrets set RESEND_API_KEY=re_xxx
+supabase secrets set JALONIS_EMAIL_FROM="Jalonis <notifications@votre-domaine.com>"
+supabase secrets set JALONIS_CRON_SECRET=une_autre_valeur_longue_et_aleatoire
+```
+
+Dans **Supabase → Integrations → Cron**, créer un appel HTTP toutes les heures vers :
+
+```text
+https://VOTRE-PROJET.supabase.co/functions/v1/process-email-queue
+```
+
+Ajouter l’en-tête `x-jalonis-cron-secret` avec la même valeur que `JALONIS_CRON_SECRET`. Une exécution horaire permet de respecter l’heure locale de chaque utilisateur. La fonction traite au maximum 50 messages par passage et reporte automatiquement un échec temporaire.
+
+WhatsApp restera désactivé jusqu’à la configuration d’un fournisseur et au consentement explicite de chaque destinataire.

@@ -90,7 +90,7 @@ function NotificationPreferences({ user, onSave }) {
     ['notify_status_changes','Changements de statut','Passage en cours, en revue, terminé ou bloqué.'],
     ['notify_comments','Messages et mentions','Nouveaux commentaires et mentions avec @.'],
     ['daily_digest','Résumé quotidien','Priorités, retards, réunions et risques du jour.'],
-    ['notify_email','E-mail','Prêt à être activé avec le service d’envoi.'],
+    ['notify_email','E-mail','Affectations, changements, mentions et résumé quotidien.'],
     ['notify_whatsapp','WhatsApp','Prêt à être activé après consentement.'],
   ]
   return <form className="card preference-card" onSubmit={submit}><div className="preference-head"><div className="workspace-mark"><BellRing size={22}/></div><div><h3>Mes notifications</h3><p>Choisissez les événements qui doivent attirer votre attention.</p></div><button className="btn primary">{saved?'Enregistré':'Enregistrer'}</button></div><div className="preference-grid">{choices.map(([key,title,description])=><label key={key}><input type="checkbox" name={key} checked={Boolean(Number(form[key]))} onChange={toggle}/><span><b>{title}</b><small>{description}</small></span></label>)}</div><div className="quiet-hours"><Clock3 size={17}/><div><b>Heures silencieuses</b><small>Aucun rappel externe pendant cette période.</small></div><label>De<input type="time" value={form.quiet_start||'20:00'} onChange={event=>setForm({...form,quiet_start:event.target.value})}/></label><label>À<input type="time" value={form.quiet_end||'07:00'} onChange={event=>setForm({...form,quiet_end:event.target.value})}/></label></div></form>
