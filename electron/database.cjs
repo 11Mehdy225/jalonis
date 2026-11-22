@@ -6,6 +6,8 @@ const ENTITY_TABLES = {
   tasks: ['title', 'status', 'priority', 'assignee', 'assignee_id', 'start_date', 'due_date', 'progress', 'notes', 'color',
     'wbs_code', 'predecessor_id', 'dependency_type', 'lag_days', 'is_milestone',
     'baseline_start', 'baseline_end', 'actual_start', 'actual_end', 'work_hours'],
+  task_dependencies: ['task_id', 'predecessor_task_id', 'dependency_type', 'lag_days'],
+  work_calendars: ['name', 'working_days', 'hours_per_day', 'holidays', 'is_default'],
   risks: ['title', 'category', 'probability', 'impact', 'owner', 'response', 'status', 'linked_task_id'],
   team: ['name', 'role', 'email', 'availability', 'weekly_capacity', 'hourly_cost', 'billing_rate', 'skills'],
   meetings: ['title', 'meeting_date', 'participants', 'agenda', 'decisions', 'actions', 'linked_task_id'],
@@ -95,6 +97,20 @@ class JalonisDatabase {
         wbs_code TEXT, predecessor_id TEXT, dependency_type TEXT DEFAULT 'FS', lag_days INTEGER DEFAULT 0,
         is_milestone INTEGER DEFAULT 0, baseline_start TEXT, baseline_end TEXT,
         actual_start TEXT, actual_end TEXT, work_hours REAL DEFAULT 0,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS task_dependencies (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        predecessor_task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        dependency_type TEXT DEFAULT 'FS', lag_days INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+        UNIQUE(task_id, predecessor_task_id)
+      );
+      CREATE TABLE IF NOT EXISTS work_calendars (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        name TEXT NOT NULL DEFAULT 'Calendrier du projet', working_days TEXT DEFAULT '1,2,3,4,5',
+        hours_per_day REAL DEFAULT 8, holidays TEXT, is_default INTEGER DEFAULT 1,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS risks (
@@ -461,6 +477,7 @@ class JalonisDatabase {
 
   deleteEntity(type, id) {
     if (!ENTITY_TABLES[type]) throw new Error('Type non autorisé')
+    if (type === 'tasks') this.db.prepare('DELETE FROM task_dependencies WHERE task_id=? OR predecessor_task_id=?').run(id,id)
     this.db.prepare(`DELETE FROM ${type} WHERE id=?`).run(id)
     return { ok: true }
   }
