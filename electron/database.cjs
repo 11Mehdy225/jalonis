@@ -42,6 +42,14 @@ const ENTITY_TABLES = {
   issues: ['title', 'description', 'severity', 'owner', 'due_date', 'status', 'resolution', 'linked_task_id', 'linked_risk_id'],
   decisions: ['title', 'decision_date', 'context', 'decision', 'rationale', 'owner', 'status', 'linked_meeting_id',
     'linked_task_id', 'linked_change_id'],
+  stakeholders: ['name', 'organization', 'role', 'category', 'influence', 'interest', 'current_engagement',
+    'desired_engagement', 'sentiment', 'owner', 'communication_needs', 'email', 'phone', 'status'],
+  raci_assignments: ['activity_label', 'task_id', 'responsible_member_id', 'accountable_member_id',
+    'consulted_member_ids', 'informed_member_ids', 'notes'],
+  conflicts: ['title', 'parties', 'category', 'severity', 'detected_date', 'owner', 'status',
+    'resolution_strategy', 'resolution', 'linked_task_id'],
+  communication_plans: ['audience', 'objective', 'content', 'channel', 'frequency', 'owner', 'next_date',
+    'status', 'stakeholder_id'],
 }
 
 class JalonisDatabase {
@@ -240,6 +248,32 @@ class JalonisDatabase {
         status TEXT DEFAULT 'Décidée', linked_meeting_id TEXT, linked_task_id TEXT, linked_change_id TEXT,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS stakeholders (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        name TEXT NOT NULL, organization TEXT, role TEXT, category TEXT DEFAULT 'Externe',
+        influence INTEGER DEFAULT 3, interest INTEGER DEFAULT 3,
+        current_engagement TEXT DEFAULT 'Neutre', desired_engagement TEXT DEFAULT 'Soutien',
+        sentiment TEXT DEFAULT 'Neutre', owner TEXT, communication_needs TEXT, email TEXT, phone TEXT,
+        status TEXT DEFAULT 'Actif', created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS raci_assignments (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        activity_label TEXT NOT NULL, task_id TEXT, responsible_member_id TEXT, accountable_member_id TEXT,
+        consulted_member_ids TEXT, informed_member_ids TEXT, notes TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS conflicts (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        title TEXT NOT NULL, parties TEXT, category TEXT, severity TEXT DEFAULT 'Moyenne', detected_date TEXT,
+        owner TEXT, status TEXT DEFAULT 'Ouvert', resolution_strategy TEXT, resolution TEXT, linked_task_id TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS communication_plans (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        audience TEXT NOT NULL, objective TEXT, content TEXT, channel TEXT DEFAULT 'Réunion', frequency TEXT,
+        owner TEXT, next_date TEXT, status TEXT DEFAULT 'Actif', stakeholder_id TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
     `)
     const taskColumns = this.db.prepare('PRAGMA table_info(tasks)').all().map(column => column.name)
     const taskMigrations = {
@@ -394,7 +428,7 @@ class JalonisDatabase {
 
   listEntities(type, projectId) {
     if (!ENTITY_TABLES[type]) throw new Error('Type non autorisé')
-    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC', checklist_items: 'rank ASC, created_at ASC', sprint_snapshots: 'snapshot_date ASC, created_at ASC', time_entries: 'entry_date DESC, created_at DESC', cost_entries: 'entry_date DESC, created_at DESC', decisions: 'decision_date DESC, created_at DESC', issues: 'due_date ASC, created_at DESC' }
+    const orders = { meetings: 'meeting_date DESC', procurements: 'deadline ASC', supplier_contracts: 'end_date ASC', supplier_documents: 'expiry_date ASC', checklist_items: 'rank ASC, created_at ASC', sprint_snapshots: 'snapshot_date ASC, created_at ASC', time_entries: 'entry_date DESC, created_at DESC', cost_entries: 'entry_date DESC, created_at DESC', decisions: 'decision_date DESC, created_at DESC', issues: 'due_date ASC, created_at DESC', communication_plans: 'next_date ASC, created_at DESC', conflicts: 'detected_date DESC, created_at DESC', stakeholders: 'influence DESC, interest DESC, created_at DESC' }
     const order = orders[type] || 'created_at DESC'
     return this.db.prepare(`SELECT * FROM ${type} WHERE project_id=? ORDER BY ${order}`).all(projectId)
   }

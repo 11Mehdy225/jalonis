@@ -15,6 +15,7 @@ import WorkItemDetails from './features/projects/WorkItemDetails'
 import ResourceManagement from './features/resources/ResourceManagement'
 import FinancialView from './features/finance/FinancialView'
 import GovernanceView from './features/governance/GovernanceView'
+import StakeholderManagement from './features/stakeholders/StakeholderManagement'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel } from 'lucide-react'
@@ -24,11 +25,11 @@ const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',mon
 
 const NAV = [
   ['dashboard','Vue d’ensemble',LayoutDashboard],['charter','Charte du projet',FileText],['tasks','Planning',CalendarRange],['scrum','Agile & Sprints',Columns3],
-  ['team','Équipe',Users],['suppliers','Fournisseurs & Achats',Truck],['finance','Budget & Coûts',CircleDollarSign],['governance','Gouvernance',Gavel],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
+  ['team','Équipe',Users],['stakeholders','Parties prenantes & RACI',Building2],['suppliers','Fournisseurs & Achats',Truck],['finance','Budget & Coûts',CircleDollarSign],['governance','Gouvernance',Gavel],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
 ]
 
-const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries','cost_entries','change_requests','issues','decisions']
-const ENTITY_LABELS={tasks:'Tâche',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message',time_entries:'Temps saisi',cost_entries:'Coût',change_requests:'Demande de changement',issues:'Problème',decisions:'Décision'}
+const ENTITY_TYPES=['tasks','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries','cost_entries','change_requests','issues','decisions','stakeholders','raci_assignments','conflicts','communication_plans']
+const ENTITY_LABELS={tasks:'Tâche',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message',time_entries:'Temps saisi',cost_entries:'Coût',change_requests:'Demande de changement',issues:'Problème',decisions:'Décision',stakeholders:'Partie prenante',raci_assignments:'Attribution RACI',conflicts:'Conflit',communication_plans:'Communication'}
 
 export default function App() {
   const [projects,setProjects]=useState([]), [activeId,setActiveId]=useState(null), [view,setView]=useState('dashboard')
@@ -147,6 +148,7 @@ export default function App() {
           {view==='suppliers'&&<SupplierManagement projectId={activeId} data={entities} tasks={entities.tasks} risks={entities.risks} onCreate={addEntity} onDelete={removeEntity} onReload={()=>loadEntities(activeId)}/>} 
           {view==='finance'&&<FinancialView project={active} costs={entities.cost_entries} team={entities.team} tasks={entities.tasks} timeEntries={entities.time_entries} suppliers={entities.suppliers} onCreate={data=>addEntity('cost_entries',data)} onDelete={id=>removeEntity('cost_entries',id)} onUpdateProject={updateCharter}/>}
           {view==='governance'&&<GovernanceView project={active} changes={entities.change_requests} issues={entities.issues} decisions={entities.decisions} tasks={entities.tasks} risks={entities.risks} meetings={entities.meetings} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity}/>}
+          {view==='stakeholders'&&<StakeholderManagement stakeholders={entities.stakeholders} raci={entities.raci_assignments} conflicts={entities.conflicts} communications={entities.communication_plans} tasks={entities.tasks} team={entities.team} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity}/>}
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>} 
           {view==='team'&&<ResourceManagement members={entities.team} tasks={entities.tasks} entries={entities.time_entries} query={query} onCreateEntry={data=>addEntity('time_entries',data)} onUpdateEntry={(id,data)=>updateEntity('time_entries',id,data)} onDeleteEntry={id=>removeEntity('time_entries',id)} onDeleteMember={id=>removeEntity('team',id)}/>}
           {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('meetings',id)}/>} 
@@ -164,7 +166,7 @@ export default function App() {
 
 const PROJECT_TABS=[
   ['dashboard',null,'Résumé',LayoutDashboard],['tasks',null,'Planning',ChartNoAxesGantt],['scrum','board','Tableau',Columns3],['scrum','backlog','Backlog',ClipboardList],
-  ['suppliers',null,'Fournisseurs',Truck],['finance',null,'Budget',CircleDollarSign],['governance',null,'Gouvernance',Gavel],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
+  ['suppliers',null,'Fournisseurs',Truck],['finance',null,'Budget',CircleDollarSign],['governance',null,'Gouvernance',Gavel],['stakeholders',null,'Parties prenantes',Building2],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
 ]
 
 function ProjectHeader({active,view,agileTab,members,onNavigate,onShare,onBranding}){
