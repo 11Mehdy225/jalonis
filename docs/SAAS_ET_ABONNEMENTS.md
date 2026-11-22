@@ -101,5 +101,5 @@ Les droits fonctionnels seront calculés côté serveur à partir de l’offre a
 5. essais gratuits, plans et limites ;
 6. paiement et portail de facturation — socle Flutterwave intégré, activation en attente des clés ;
 7. e-mails transactionnels — file, préférences, résumé quotidien et anti-doublon intégrés ;
-8. WhatsApp et assistance intelligente ;
+8. rappels WhatsApp — consentement, file d’envoi, résumé quotidien et suivi de livraison intégrés ; assistance intelligente à compléter ;
 9. édition Entreprise privée.

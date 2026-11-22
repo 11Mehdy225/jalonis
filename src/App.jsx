@@ -158,7 +158,16 @@ export default function App() {
   async function attachMedia(entityType,entityId){if(!permissions.editProject)return deny('Votre rôle dispose uniquement d’un accès en lecture.');await api.media.attach({project_id:activeId,entity_type:entityType,entity_id:entityId});await loadEntities(activeId)}
   async function updateBranding(data){if(!permissions.manageProject)return deny('Votre rôle ne permet pas de personnaliser ce projet.');await api.projects.update(activeId,{theme_color:data.theme_color});if(data.upload_logo)await api.projects.uploadLogo(activeId);setModal(null);await loadProjects(false)}
   async function renameWorkspace(data){if(!permissions.manageWorkspace)return deny('Seuls le propriétaire et les administrateurs peuvent modifier cet espace.');setWorkspace(await api.workspace.update(data))}
-  async function updateNotificationPreferences(data){ setWorkspace(await api.workspace.updatePreferences(data)) }
+  async function updateNotificationPreferences(data){
+    try{
+      setError('')
+      setWorkspace(await api.workspace.updatePreferences(data))
+    }catch(reason){
+      const message=reason?.message||'Impossible d’enregistrer les préférences de notification.'
+      setError(message)
+      throw reason
+    }
+  }
   async function startCheckout(data){
     if(!permissions.manageWorkspace)return deny('Seuls le propriétaire et les administrateurs peuvent gérer la facturation.')
     try{setError('');const result=await api.billing.createCheckout(data);if(!result?.checkout_url)throw new Error('Lien de paiement indisponible.');window.location.assign(result.checkout_url)}
@@ -200,7 +209,7 @@ export default function App() {
       <section className={`content${active&&view!=='workspace'&&view!=='settings'?' project-content':''}`} style={active?{'--project-color':active.theme_color||'#4f46e5'}:undefined}>
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
         {notice&&<div className="app-notice">{notice}<button onClick={()=>setNotice('')}>×</button></div>}
-        {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les futurs canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout}/></>
+        {view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Configuration de cette installation de Jalonis.</p></div></div><SettingsView/></>
         : !active ? <Empty canCreate={permissions.createProject} onCreate={()=>setModal('project')}/> : <>
           <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} canManage={permissions.manageProject} canInvite={permissions.inviteMembers} onNavigate={openProjectView} onShare={()=>setModal('invite-member')} onBranding={()=>setModal('branding')}/>

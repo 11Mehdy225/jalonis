@@ -111,4 +111,40 @@ https://VOTRE-PROJET.supabase.co/functions/v1/process-email-queue
 
 Ajouter l’en-tête `x-jalonis-cron-secret` avec la même valeur que `JALONIS_CRON_SECRET`. Une exécution horaire permet de respecter l’heure locale de chaque utilisateur. La fonction traite au maximum 50 messages par passage et reporte automatiquement un échec temporaire.
 
-WhatsApp restera désactivé jusqu’à la configuration d’un fournisseur et au consentement explicite de chaque destinataire.
+### Rappels WhatsApp
+
+Jalonis utilise l’API WhatsApp Cloud de Meta et uniquement des modèles approuvés. Aucun message n’est préparé tant que le membre n’a pas renseigné son numéro et activé lui-même WhatsApp dans **Espace de travail → Mes notifications**.
+
+Créer l’application Meta Business, rattacher le numéro WhatsApp Business, puis déployer et configurer les deux fonctions :
+
+```bash
+supabase functions deploy process-whatsapp-queue --no-verify-jwt
+supabase functions deploy whatsapp-webhook --no-verify-jwt
+supabase secrets set WHATSAPP_ACCESS_TOKEN=EA...
+supabase secrets set WHATSAPP_PHONE_NUMBER_ID=000000000000000
+supabase secrets set WHATSAPP_VERIFY_TOKEN=une_valeur_longue_et_aleatoire
+supabase secrets set WHATSAPP_APP_SECRET=le_secret_de_l_application_meta
+supabase secrets set WHATSAPP_TEMPLATE_LANGUAGE=fr
+supabase secrets set SITE_URL=https://votre-domaine.com
+```
+
+Créer et faire approuver deux modèles utilitaires dans WhatsApp Manager :
+
+- `jalonis_project_alert` : titre `{{1}}`, puis détail `{{2}}` ;
+- `jalonis_daily_summary` : prénom `{{1}}`, tâches `{{2}}`, réunions `{{3}}`, risques critiques `{{4}}` et adresse Jalonis `{{5}}`.
+
+Dans la configuration des webhooks Meta, utiliser :
+
+```text
+https://VOTRE-PROJET.supabase.co/functions/v1/whatsapp-webhook
+```
+
+Le jeton de vérification doit être identique à `WHATSAPP_VERIFY_TOKEN`. S’abonner au champ `messages` permet ensuite de mettre à jour les états envoyé, livré, lu ou échoué.
+
+Créer enfin un second appel HTTP horaire dans **Supabase → Integrations → Cron** vers :
+
+```text
+https://VOTRE-PROJET.supabase.co/functions/v1/process-whatsapp-queue
+```
+
+Ajouter l’en-tête `x-jalonis-cron-secret` déjà utilisé pour les e-mails. La fonction respecte les préférences, les heures silencieuses et le fuseau horaire, déduplique les rappels et retente les échecs temporaires. Sans ces clés Meta, le canal reste inactif et n’empêche pas le reste de Jalonis de fonctionner.

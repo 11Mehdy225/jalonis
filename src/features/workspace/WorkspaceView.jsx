@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { BadgeCheck, BellRing, Building2, CalendarClock, Check, Clock3, Gauge, Mail, MessageCircle, ReceiptText, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
 
 const ROLES = ['Administrateur', 'Chef de projet', 'Scrum Master', 'Product Owner', 'Membre', 'Observateur', 'Fournisseur externe']
-const PREFERENCE_DEFAULTS = { notify_in_app: true, notify_email: true, notify_whatsapp: false, notify_assignments: true, notify_status_changes: true, notify_comments: true, daily_digest: true, quiet_start: '20:00', quiet_end: '07:00' }
+const PREFERENCE_DEFAULTS = { phone: '', notify_in_app: true, notify_email: true, notify_whatsapp: false, notify_assignments: true, notify_status_changes: true, notify_comments: true, daily_digest: true, quiet_start: '20:00', quiet_end: '07:00' }
 
 export default function WorkspaceView({ data, canManage=false, canInvite=false, onRename, onInvite, onRemove, onUpdateRole, onUpdatePreferences, onCheckout }) {
   const [name, setName] = useState(data?.workspace?.name || '')
@@ -83,7 +83,7 @@ function NotificationPreferences({ user, onSave }) {
   const [saved, setSaved] = useState(false)
   useEffect(() => { if (user) setForm(Object.fromEntries(Object.entries(PREFERENCE_DEFAULTS).map(([key,value]) => [key,user[key] ?? value]))) }, [user])
   const toggle = event => setForm({ ...form, [event.target.name]: event.target.checked })
-  const submit = async event => { event.preventDefault(); await onSave(form); setSaved(true); setTimeout(() => setSaved(false), 1600) }
+  const submit = async event => { event.preventDefault(); try { await onSave(form); setSaved(true); setTimeout(() => setSaved(false), 1600) } catch {} }
   const choices = [
     ['notify_in_app','Dans Jalonis','Cloche, compteur et centre de notifications.'],
     ['notify_assignments','Affectations','Quand une tâche ou une story m’est attribuée.'],
@@ -91,9 +91,9 @@ function NotificationPreferences({ user, onSave }) {
     ['notify_comments','Messages et mentions','Nouveaux commentaires et mentions avec @.'],
     ['daily_digest','Résumé quotidien','Priorités, retards, réunions et risques du jour.'],
     ['notify_email','E-mail','Affectations, changements, mentions et résumé quotidien.'],
-    ['notify_whatsapp','WhatsApp','Prêt à être activé après consentement.'],
+    ['notify_whatsapp','WhatsApp','Rappels de projet après consentement explicite.'],
   ]
-  return <form className="card preference-card" onSubmit={submit}><div className="preference-head"><div className="workspace-mark"><BellRing size={22}/></div><div><h3>Mes notifications</h3><p>Choisissez les événements qui doivent attirer votre attention.</p></div><button className="btn primary">{saved?'Enregistré':'Enregistrer'}</button></div><div className="preference-grid">{choices.map(([key,title,description])=><label key={key}><input type="checkbox" name={key} checked={Boolean(Number(form[key]))} onChange={toggle}/><span><b>{title}</b><small>{description}</small></span></label>)}</div><div className="quiet-hours"><Clock3 size={17}/><div><b>Heures silencieuses</b><small>Aucun rappel externe pendant cette période.</small></div><label>De<input type="time" value={form.quiet_start||'20:00'} onChange={event=>setForm({...form,quiet_start:event.target.value})}/></label><label>À<input type="time" value={form.quiet_end||'07:00'} onChange={event=>setForm({...form,quiet_end:event.target.value})}/></label></div></form>
+  return <form className="card preference-card" onSubmit={submit}><div className="preference-head"><div className="workspace-mark"><BellRing size={22}/></div><div><h3>Mes notifications</h3><p>Choisissez les événements qui doivent attirer votre attention.</p></div><button className="btn primary">{saved?'Enregistré':'Enregistrer'}</button></div><div className="preference-grid">{choices.map(([key,title,description])=><label key={key}><input type="checkbox" name={key} checked={Boolean(Number(form[key]))} onChange={toggle}/><span><b>{title}</b><small>{description}</small></span></label>)}</div><div className={`whatsapp-consent${form.notify_whatsapp?' active':''}`}><MessageCircle size={18}/><div><b>Numéro WhatsApp</b><small>Format international, par exemple +225 07 00 00 00 00.</small></div><input type="tel" value={form.phone||''} onChange={event=>setForm({...form,phone:event.target.value})} placeholder="+225…" required={Boolean(form.notify_whatsapp)} pattern="[+0-9 ()-]{8,24}"/><p>{form.notify_whatsapp?'En enregistrant, vous acceptez de recevoir les rappels Jalonis sur ce numéro. Vous pourrez retirer ce consentement à tout moment.':'Activez WhatsApp ci-dessus pour donner votre consentement.'}</p></div><div className="quiet-hours"><Clock3 size={17}/><div><b>Heures silencieuses</b><small>Aucun rappel externe pendant cette période.</small></div><label>De<input type="time" value={form.quiet_start||'20:00'} onChange={event=>setForm({...form,quiet_start:event.target.value})}/></label><label>À<input type="time" value={form.quiet_end||'07:00'} onChange={event=>setForm({...form,quiet_end:event.target.value})}/></label></div></form>
 }
 
 export function InviteMemberForm({ onSubmit, onCancel }) {

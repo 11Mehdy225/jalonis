@@ -153,7 +153,7 @@ export const cloudApi = {
     },
     updatePreferences: async data => {
       const user = await currentUser()
-      const allowed = ['notify_email','notify_whatsapp','notify_in_app','notify_assignments','notify_status_changes','notify_comments','daily_digest','quiet_start','quiet_end']
+      const allowed = ['phone','notify_email','notify_whatsapp','notify_in_app','notify_assignments','notify_status_changes','notify_comments','daily_digest','quiet_start','quiet_end']
       const preferences = Object.fromEntries(Object.entries(data).filter(([key]) => allowed.includes(key)))
       unwrap(await supabase.from('profiles').update(preferences).eq('id', user.id))
       return workspaceState()
