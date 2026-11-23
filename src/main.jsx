@@ -17,5 +17,8 @@ import './styles/suppliers.css'
 import './styles/project-shell.css'
 import './styles/collaboration.css'
 import './styles/mobile.css'
+import './styles/admin.css'
+import './styles/public-pages.css'
+import './styles/onboarding.css'
 
 createRoot(document.getElementById('root')).render(<React.StrictMode><ErrorBoundary><AuthGate><App /></AuthGate></ErrorBoundary></React.StrictMode>)

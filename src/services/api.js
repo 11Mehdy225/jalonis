@@ -20,6 +20,7 @@ const chooseImages = multiple => new Promise(resolve => {
 const asDataUrl = file => new Promise((resolve,reject) => { const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file) })
 
 const previewApi = {
+  admin: { dashboard: async () => ({metrics:{},workspaces:[],channels:[],recent_failures:[]}), manageSubscription: async()=>({}), updateChannel: async()=>({}) },
   realtime: { subscribeProject: () => () => {} },
   assistant: { analyze: async () => { throw new Error('L’analyse approfondie sera disponible dans la version SaaS Business.') } },
   billing: { createCheckout: async () => { throw new Error('Le paiement sera disponible dans la version SaaS connectée.') }, submitManual: async () => { throw new Error('Le paiement manuel nécessite un compte connecté.') }, reviewManual: async () => { throw new Error('Cette action nécessite un compte administrateur.') } },

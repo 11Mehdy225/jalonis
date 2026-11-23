@@ -11,6 +11,8 @@ services:
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
+      - key: VITE_SUPPORT_EMAIL
+        value: contact@ronnagroup.net
     routes:
       - type: rewrite
         source: /*

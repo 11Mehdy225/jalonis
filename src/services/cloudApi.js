@@ -147,6 +147,14 @@ async function selectImages(multiple=true) {
 }
 
 export const cloudApi = {
+  admin: {
+    dashboard: async () => unwrap(await supabase.rpc('platform_admin_dashboard')),
+    manageSubscription: async data => unwrap(await supabase.rpc('platform_admin_manage_subscription',data)),
+    updateChannel: async (channel,data) => {
+      const user=await currentUser()
+      return unwrap(await supabase.from('notification_channel_settings').update({...data,updated_by:user.id,last_checked_at:new Date().toISOString()}).eq('channel',channel).select().single())
+    },
+  },
   assistant: {
     analyze: async (projectId, question) => {
       const {data,error}=await supabase.functions.invoke('project-assistant',{body:{project_id:projectId,question}})

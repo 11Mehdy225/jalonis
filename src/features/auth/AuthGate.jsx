@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, CheckCircle2, Cloud, HardDrive, LockKeyhole, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, Cloud, HardDrive, LockKeyhole, Sparkles, ShieldCheck } from 'lucide-react'
 import { cloudAuth, isCloudConfigured } from '../../services/supabase'
 import '../../styles/auth.css'
 
@@ -10,6 +10,7 @@ const journey = [
   { step: '04', title: 'Piloter' },
   { step: '05', title: 'Livraison' },
 ]
+const supportEmail=import.meta.env.VITE_SUPPORT_EMAIL||'contact@ronnagroup.net'
 
 export default function AuthGate({ children }) {
   const desktop = Boolean(window.jalonis)
@@ -22,6 +23,9 @@ export default function AuthGate({ children }) {
   const [authOpen, setAuthOpen] = useState(cloudDesktop)
   const [inviteSetup,setInviteSetup]=useState(()=>new URLSearchParams(window.location.search).get('invited')==='1')
   const [resetSetup,setResetSetup]=useState(()=>new URLSearchParams(window.location.search).get('reset')==='1')
+  const [publicPage,setPublicPage]=useState(()=>new URLSearchParams(window.location.search).get('page')||'')
+  const openPublicPage=page=>{const url=new URL(window.location.href);url.searchParams.set('page',page);window.history.pushState({},'',url);setPublicPage(page)}
+  const closePublicPage=()=>{const url=new URL(window.location.href);url.searchParams.delete('page');window.history.pushState({},'',url);setPublicPage('')}
   const openPreview = () => {
     if(desktop){localStorage.setItem('jalonis-desktop-mode','local');window.location.reload();return}
     const url=new URL(window.location.href)
@@ -41,8 +45,9 @@ export default function AuthGate({ children }) {
   if(session&&resetSetup)return <ResetPasswordScreen onComplete={()=>{const url=new URL(window.location.href);url.searchParams.delete('reset');window.history.replaceState({},'',url);setResetSetup(false)}}/>
   if (localDesktop || session || preview) return children
   if (checking) return <div className="auth-loading"><Sparkles size={30}/><b>Ouverture de votre espace Jalonis…</b></div>
-  if (authOpen) return <AuthScreen cloudReady={isCloudConfigured} onBack={()=>{if(cloudDesktop){localStorage.removeItem('jalonis-desktop-mode');window.location.reload()}else setAuthOpen(false)}} onPreview={openPreview} desktop={cloudDesktop}/>
-  return <WelcomeScreen onConnect={() => setAuthOpen(true)} onPreview={openPreview}/>
+  if(publicPage)return <PublicPage page={publicPage} supportEmail={supportEmail} onBack={closePublicPage} onConnect={()=>{closePublicPage();setAuthOpen(true)}}/>
+  if (authOpen) return <AuthScreen cloudReady={isCloudConfigured} onBack={()=>{if(cloudDesktop){localStorage.removeItem('jalonis-desktop-mode');window.location.reload()}else setAuthOpen(false)}} onPreview={openPreview} desktop={cloudDesktop} onPublicPage={openPublicPage}/>
+  return <WelcomeScreen onConnect={() => setAuthOpen(true)} onPreview={openPreview} onPublicPage={openPublicPage}/>
 }
 
 function DesktopModeScreen(){
@@ -62,7 +67,7 @@ function ResetPasswordScreen({onComplete}){
   return <main className="invite-password-page"><section className="invite-password-card"><img src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><span>COMPTE SÉCURISÉ</span><h1>Nouveau mot de passe</h1><p>Choisissez un nouveau mot de passe pour retrouver vos espaces Jalonis.</p><form onSubmit={submit}><label>Nouveau mot de passe<input autoFocus required minLength="8" type="password" value={password} onChange={event=>setPassword(event.target.value)}/></label><label>Confirmer le mot de passe<input required minLength="8" type="password" value={confirmation} onChange={event=>setConfirmation(event.target.value)}/></label>{error&&<p className="auth-error">{error}</p>}<button className="auth-submit" disabled={saving}><LockKeyhole size={16}/>{saving?'Enregistrement…':'Enregistrer le mot de passe'}</button></form></section></main>
 }
 
-function WelcomeScreen({ onConnect, onPreview }) {
+function WelcomeScreen({ onConnect, onPreview, onPublicPage }) {
   return <main className="welcome-page">
     <div className="welcome-aurora welcome-aurora-one"/>
     <div className="welcome-aurora welcome-aurora-two"/>
@@ -90,16 +95,17 @@ function WelcomeScreen({ onConnect, onPreview }) {
       <button className="welcome-primary" onClick={onConnect}>Se connecter à Jalonis <ArrowRight size={17}/></button>
       <button className="welcome-secondary" onClick={onPreview}>Parcourir l’interface en mode aperçu</button>
       <small>Le mode aperçu vous permet de découvrir Jalonis sans créer de compte.</small>
+      <nav className="welcome-footer-links"><button onClick={()=>onPublicPage('pricing')}>Tarifs</button><button onClick={()=>onPublicPage('terms')}>Conditions d’utilisation</button><button onClick={()=>onPublicPage('privacy')}>Confidentialité</button><button onClick={()=>onPublicPage('support')}>Support</button></nav>
     </section>
   </main>
 }
 
-function AuthScreen({ cloudReady, onBack, onPreview, desktop=false }) {
+function AuthScreen({ cloudReady, onBack, onPreview, desktop=false, onPublicPage }) {
   const [mode, setMode] = useState('login')
-  const [form, setForm] = useState({ accountType: 'Personnel' })
+  const [form, setForm] = useState({ accountType: 'Personnel',termsAccepted:false })
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const change = event => setForm({ ...form, [event.target.name]: event.target.value })
+  const change = event => setForm({ ...form, [event.target.name]: event.target.type==='checkbox'?event.target.checked:event.target.value })
   const submit = async event => {
     event.preventDefault(); setError(''); setMessage('')
     if (!cloudReady) {
@@ -121,8 +127,18 @@ function AuthScreen({ cloudReady, onBack, onPreview, desktop=false }) {
     <section className="auth-presentation"><img className="auth-conductor-fresco" src="./assets/jalonis-team-conductor.png" alt=""/><button className="auth-back" onClick={onBack}><ArrowLeft size={16}/> Accueil</button><img className="auth-logo" src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><span>JALONIS CLOUD</span><h1>Une vision.<br/>Toute l’équipe en mouvement.</h1><p>Coordonnez les expertises, gardez le rythme et conduisez chaque projet jusqu’à sa livraison.</p><ul><li><CheckCircle2/>PMP, Scrum et fournisseurs</li><li><CheckCircle2/>Application web et Desktop</li><li><CheckCircle2/>Données isolées par organisation</li></ul></section>
     <section className="auth-panel"><div className="auth-card"><div className="auth-card-heading"><span>BIENVENUE</span><h2>{heading}</h2><p>{description}</p></div>{!cloudReady&&<div className="cloud-pending"><Sparkles size={16}/><span><b>Connexion bientôt disponible</b>La base sécurisée est en cours de configuration.</span></div>}
       {mode==='forgot'?<button className="auth-mode-back" onClick={()=>{setMode('login');setMessage('');setError('')}}><ArrowLeft size={14}/>Retour à la connexion</button>:<div className="auth-switch"><button className={mode==='login'?'active':''} onClick={()=>setMode('login')}>Connexion</button><button className={mode==='signup'?'active':''} onClick={()=>setMode('signup')}>Créer un compte</button></div>}
-      <form onSubmit={submit}>{mode==='signup'&&<><label>Nom complet<input required name="fullName" value={form.fullName||''} onChange={change}/></label><label>Type de compte<select name="accountType" value={form.accountType} onChange={change}><option>Personnel</option><option>Organisation</option></select></label>{form.accountType==='Organisation'&&<label>Nom de l’organisation<input required name="workspaceName" value={form.workspaceName||''} onChange={change}/></label>}</>}<label>Adresse e-mail<input required type="email" name="email" value={form.email||''} onChange={change}/></label>{mode!=='forgot'&&<label>Mot de passe<input required minLength="8" type="password" name="password" value={form.password||''} onChange={change}/></label>}{mode==='login'&&<button type="button" className="forgot-password" onClick={()=>{setMode('forgot');setError('');setMessage('')}}>Mot de passe oublié ?</button>}{error&&<p className="auth-error">{error}</p>}{message&&<p className="auth-success">{message}</p>}<button className="auth-submit"><LockKeyhole size={16}/>{mode==='login'?'Se connecter':mode==='forgot'?'Envoyer le lien':'Créer mon espace'}</button></form>
+      <form onSubmit={submit}>{mode==='signup'&&<><label>Nom complet<input required name="fullName" value={form.fullName||''} onChange={change}/></label><label>Type de compte<select name="accountType" value={form.accountType} onChange={change}><option>Personnel</option><option>Organisation</option></select></label>{form.accountType==='Organisation'&&<label>Nom de l’organisation<input required name="workspaceName" value={form.workspaceName||''} onChange={change}/></label>}</>}<label>Adresse e-mail<input required type="email" name="email" value={form.email||''} onChange={change}/></label>{mode!=='forgot'&&<label>Mot de passe<input required minLength="8" type="password" name="password" value={form.password||''} onChange={change}/></label>}{mode==='signup'&&<label className="auth-terms"><input required type="checkbox" name="termsAccepted" checked={form.termsAccepted} onChange={change}/><span>J’accepte les <button type="button" onClick={()=>onPublicPage('terms')}>conditions d’utilisation</button> et la <button type="button" onClick={()=>onPublicPage('privacy')}>politique de confidentialité</button>.</span></label>}{mode==='login'&&<button type="button" className="forgot-password" onClick={()=>{setMode('forgot');setError('');setMessage('')}}>Mot de passe oublié ?</button>}{error&&<p className="auth-error">{error}</p>}{message&&<p className="auth-success">{message}</p>}<button className="auth-submit"><LockKeyhole size={16}/>{mode==='login'?'Se connecter':mode==='forgot'?'Envoyer le lien':'Créer mon espace'}</button></form>
       <div className="auth-preview-divider"><span>ou</span></div><button type="button" className="auth-preview-button" onClick={onPreview}>{desktop?'Utiliser le stockage local sur cet ordinateur':'Continuer sans compte en mode aperçu'}</button>
     </div></section>
   </main>
 }
+
+function PublicPage({page,supportEmail,onBack,onConnect}){
+  const pricing=[['Découverte','0 €','2 projets · Pilotage individuel'],['Personnel Pro','4,90 € / mois','Projets illimités · Rappels e-mail · 2 Go'],['Équipe','5,90 € / siège / mois','Collaboration temps réel · Audit · 3 sièges minimum'],['Business','9,90 € / siège / mois','Automatisation · Assistant · Support prioritaire']]
+  const title={pricing:'Tarifs Jalonis',terms:"Conditions générales d’utilisation",privacy:'Politique de confidentialité',support:'Support Jalonis'}[page]||'Jalonis'
+  return <main className="public-page"><header><button onClick={onBack}><ArrowLeft size={16}/>Accueil</button><div><img src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><b>Jalonis</b></div><button className="public-connect" onClick={onConnect}>Se connecter</button></header><article><span>JALONIS CLOUD</span><h1>{title}</h1>{page==='pricing'?<><p className="public-lead">Commencez gratuitement, puis choisissez l’offre adaptée à votre équipe. Les tarifs en XOF et moyens de paiement disponibles sont affichés dans votre espace.</p><div className="public-pricing">{pricing.map(([name,price,details],index)=><section key={name} className={index===2?'featured':''}><i><ShieldCheck/></i><h2>{name}</h2><strong>{price}</strong><p>{details}</p><button onClick={onConnect}>{index?'Choisir cette offre':'Commencer gratuitement'}</button></section>)}</div></>:page==='terms'?<LegalTerms supportEmail={supportEmail}/>:page==='privacy'?<Privacy supportEmail={supportEmail}/>:<Support supportEmail={supportEmail}/>}</article><footer>Dernière mise à jour : 23 novembre 2026 · <button onClick={()=>window.location.href=`mailto:${supportEmail}`}>{supportEmail}</button></footer></main>
+}
+
+function LegalTerms({supportEmail}){return <div className="legal-copy"><p>Les présentes conditions encadrent l’accès à Jalonis, service de gestion de projets disponible sur le web et sur ordinateur. La création d’un compte vaut acceptation de ces conditions.</p><h2>Compte et espace de travail</h2><p>L’utilisateur garantit l’exactitude de ses informations, protège ses identifiants et reste responsable des actions réalisées depuis son compte. Les administrateurs d’une organisation contrôlent les membres, rôles et projets de leur espace.</p><h2>Abonnement et paiement</h2><p>Les fonctionnalités et limites dépendent de l’offre choisie. Un abonnement n’est activé qu’après confirmation du paiement. Jalonis peut suspendre un accès en cas d’impayé, de fraude ou d’usage abusif, sans supprimer immédiatement les données.</p><h2>Utilisation acceptable</h2><p>Il est interdit de contourner les contrôles d’accès, perturber le service, importer un contenu illégal ou porter atteinte aux droits de tiers. Chaque client reste responsable des données et documents qu’il dépose.</p><h2>Disponibilité et responsabilité</h2><p>Jalonis met en œuvre des moyens raisonnables pour assurer la continuité et la sécurité du service. Des maintenances ou incidents peuvent toutefois interrompre temporairement l’accès. Pour toute question : {supportEmail}.</p></div>}
+function Privacy({supportEmail}){return <div className="legal-copy"><p>Jalonis traite uniquement les données nécessaires à l’authentification, à la gestion des espaces, à la collaboration, au support et à la facturation.</p><h2>Données traitées</h2><p>Identité professionnelle, adresse e-mail, téléphone facultatif, rôles, projets, tâches, messages, fichiers, préférences de notification et historique des opérations. Les mots de passe sont gérés par l’infrastructure d’authentification sécurisée et ne sont jamais lisibles par Jalonis.</p><h2>Finalités et conservation</h2><p>Les données servent à fournir le service, sécuriser les accès, notifier les membres et gérer les abonnements. Elles sont conservées pendant la durée du compte, puis supprimées ou anonymisées selon les obligations applicables et les sauvegardes techniques.</p><h2>Partage et sécurité</h2><p>Les données ne sont pas vendues. Elles peuvent être confiées aux sous-traitants indispensables à l’hébergement, à l’envoi d’e-mails et au paiement. Les espaces sont isolés par des règles d’accès en base de données.</p><h2>Vos droits</h2><p>Vous pouvez demander l’accès, la rectification, l’export ou la suppression de vos données en écrivant à {supportEmail}. Une vérification d’identité peut être demandée.</p></div>}
+function Support({supportEmail}){return <div className="legal-copy support-copy"><p>Une question sur votre compte, une invitation, une facture ou un projet ? L’équipe Jalonis vous accompagne.</p><h2>Contacter le support</h2><a className="support-email" href={`mailto:${supportEmail}`}>{supportEmail}</a><p>Indiquez le nom de votre espace, le navigateur ou système utilisé et, si possible, une capture d’écran. N’envoyez jamais votre mot de passe ni une clé privée.</p><h2>Priorités</h2><p>Les incidents bloquants et les problèmes d’accès sont traités en priorité. Les demandes fonctionnelles sont analysées dans le cadre de l’évolution du produit.</p></div>}

@@ -5,6 +5,7 @@ const crypto = require('node:crypto')
 const { JalonisDatabase } = require('./database.cjs')
 
 let database
+const externalProtocol = url => { try { return ['https:','http:','mailto:'].includes(new URL(url).protocol) } catch { return false } }
 
 const imageMime = filePath => ({'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif'}[path.extname(filePath).toLowerCase()] || 'application/octet-stream')
 const dataUrl = filePath => fs.existsSync(filePath) ? `data:${imageMime(filePath)};base64,${fs.readFileSync(filePath).toString('base64')}` : null
@@ -27,10 +28,12 @@ function createWindow() {
   })
   if (process.env.NODE_ENV === 'development' || !app.isPackaged) win.loadURL('http://localhost:5173')
   else win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
-  win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' } })
+  win.webContents.setWindowOpenHandler(({ url }) => { if(externalProtocol(url))shell.openExternal(url);return { action: 'deny' } })
+  win.webContents.on('will-navigate',(event,url)=>{const current=win.webContents.getURL();if(url!==current){event.preventDefault();if(externalProtocol(url))shell.openExternal(url)}})
 }
 
 app.whenReady().then(() => {
+  if(process.platform==='win32')app.setAppUserModelId('com.jalonis.desktop')
   database = new JalonisDatabase(path.join(app.getPath('userData'), 'jalonis.sqlite'))
   ipcMain.handle('projects:list', () => database.listProjects().map(project => ({ ...project, logo_url: project.logo_path ? dataUrl(project.logo_path) : null })))
   ipcMain.handle('projects:create', (_, data) => database.createProject(data))
