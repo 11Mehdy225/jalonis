@@ -14,6 +14,7 @@ for(const marker of ['promotion_codes','promotion_redemptions','redeem_promotion
 for(const marker of ['mrr_xof','revenue_30d_xof','conversion_rate','past_due','expiring_7d'])assert(migration.includes(marker),`KPI administrateur absent : ${marker}`)
 assert(admin.includes('Codes promotionnels')&&admin.includes('MRR estimé')&&admin.includes('Préparation de la production'),'La console commerciale est incomplète.')
 for(const marker of ['JEKO_API_KEY','JEKO_WEBHOOK_SECRET','RESEND_API_KEY','WHATSAPP_ACCESS_TOKEN','OPENAI_API_KEY','platform_admins'])assert(readiness.includes(marker),`Diagnostic de production incomplet : ${marker}`)
+assert(readiness.includes("select('event_type,processed_at')")&&readiness.includes("lastPayment?.status==='successful'"),'Le diagnostic Jèko doit suivre les colonnes et statuts réels du registre de paiement.')
 assert(workspace.includes('Vous avez un code promotionnel ?'),'Le parcours d’activation client est absent.')
 for(const marker of ['canonical','application/ld+json','twitter:card','name="robots"'])assert(html.includes(marker),`Métadonnée SEO absente : ${marker}`)
 assert(robots.includes('Sitemap:'),'Le fichier robots.txt ne référence pas le sitemap.')
