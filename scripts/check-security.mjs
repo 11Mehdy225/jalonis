@@ -28,5 +28,7 @@ assert(checkout.includes('request.method!==\'POST\''),'La fonction de paiement a
 assert(webhook.includes('payload.storeId!==storeId'),'Le magasin Jèko reçu n’est pas vérifié.')
 assert(webhook.includes('paymentRequestId===String(attempt.provider_transaction_id||\'\')'),'La demande de paiement Jèko reçue n’est pas vérifiée.')
 assert(webhook.includes("transactionType==='payment'"),'Le webhook accepte un type de transaction non prévu.')
+assert(webhook.includes('counterpartIdentifier:maskedIdentifier'),'Le numéro du payeur est conservé sans masquage.')
+assert(webhook.includes('provider_customer:null'),'Le numéro du payeur est recopié dans l’abonnement.')
 
 console.log('Sécurité validée : CSP, anti-clickjacking, validation Jèko, anti-abus et absence d’injection HTML directe.')

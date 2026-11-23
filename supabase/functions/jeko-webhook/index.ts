@@ -22,7 +22,9 @@ Deno.serve(async request=>{
     if(!transactionId)return new Response('ok',{status:200})
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}})
     const eventKey=`${eventType}:${transactionId}`
-    const {error:eventError}=await admin.from('billing_events').insert({provider:'jeko',event_key:eventKey,event_type:eventType||'UNKNOWN',payload})
+    const identifier=String(payload.counterpartIdentifier||''),maskedIdentifier=identifier?`***${identifier.slice(-4)}`:null
+    const storedPayload={...payload,counterpartIdentifier:maskedIdentifier,counterpartLabel:undefined}
+    const {error:eventError}=await admin.from('billing_events').insert({provider:'jeko',event_key:eventKey,event_type:eventType||'UNKNOWN',payload:storedPayload})
     if(eventError?.code==='23505')return new Response('ok',{status:200})
     if(eventError)throw eventError
     if(eventType!=='TRANSACTION_COMPLETED')return new Response('ok',{status:200})
@@ -35,7 +37,7 @@ Deno.serve(async request=>{
     const amountCents=Number(payload.amount?.amount),valid=payload.status==='success'&&transactionType==='payment'&&payload.amount?.currency===attempt.currency&&amountCents===Math.round(Number(attempt.amount)*100)&&paymentRequestId===String(attempt.provider_transaction_id||'')
     if(!valid)return new Response('ok',{status:200})
     const confirmedId=transactionId
-    const {error:activationError}=await admin.rpc('activate_paid_subscription',{transaction_id:attempt.id,provider_transaction:confirmedId,provider_customer:String(payload.counterpartIdentifier||'')||null})
+    const {error:activationError}=await admin.rpc('activate_paid_subscription',{transaction_id:attempt.id,provider_transaction:confirmedId,provider_customer:null})
     if(activationError)throw activationError
     return new Response('ok',{status:200})
   }catch{return new Response('Erreur de traitement',{status:500})}
