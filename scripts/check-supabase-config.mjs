@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const root=process.cwd()
-const requiredFunctions=['create-workspace','invite-member','create-billing-checkout','create-jeko-checkout','flutterwave-webhook','jeko-webhook','submit-manual-payment','review-manual-payment','process-email-queue','process-whatsapp-queue','project-assistant','whatsapp-webhook']
+const requiredFunctions=['create-workspace','invite-member','create-billing-checkout','create-jeko-checkout','flutterwave-webhook','jeko-webhook','submit-manual-payment','review-manual-payment','process-email-queue','process-whatsapp-queue','project-assistant','platform-readiness','whatsapp-webhook']
 const failures=[]
 
 const envFile=path.join(root,'.env.local')

@@ -20,7 +20,7 @@ const chooseImages = multiple => new Promise(resolve => {
 const asDataUrl = file => new Promise((resolve,reject) => { const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file) })
 
 const previewApi = {
-  admin: { dashboard: async () => ({metrics:{},workspaces:[],channels:[],recent_failures:[],promotion_codes:[]}), manageSubscription: async()=>({}), createPromotionCode:async()=>({}), setPromotionCodeActive:async()=>({}), updateChannel: async()=>({}) },
+  admin: { dashboard: async () => ({metrics:{},workspaces:[],channels:[],recent_failures:[],promotion_codes:[]}), readiness:async()=>({checks:[],summary:{ready:0,total:0,required_ready:0,required_total:0}}), manageSubscription: async()=>({}), createPromotionCode:async()=>({}), setPromotionCodeActive:async()=>({}), updateChannel: async()=>({}) },
   realtime: { subscribeProject: () => () => {} },
   assistant: { analyze: async () => { throw new Error('L’analyse approfondie sera disponible dans la version SaaS Business.') } },
   billing: { redeemPromotionCode:async()=>{throw new Error('Les codes promotionnels nécessitent un compte connecté.')}, createCheckout: async () => { throw new Error('Le paiement sera disponible dans la version SaaS connectée.') }, submitManual: async () => { throw new Error('Le paiement manuel nécessite un compte connecté.') }, reviewManual: async () => { throw new Error('Cette action nécessite un compte administrateur.') } },

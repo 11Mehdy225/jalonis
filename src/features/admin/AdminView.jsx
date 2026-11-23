@@ -4,9 +4,9 @@ import { AlertTriangle, BellRing, Building2, CalendarPlus, CircleDollarSign, Fol
 const money=(amount,currency='XOF')=>new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:currency==='XOF'?0:2}).format(Number(amount||0))
 const shortDate=value=>value?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)):'—'
 
-export default function AdminView({plans=[],onLoad,onManage,onCreatePromotion,onSetPromotionActive,onUpdateChannel}){
-  const [data,setData]=useState(null),[query,setQuery]=useState(''),[busy,setBusy]=useState(''),[error,setError]=useState('')
-  const load=async()=>{setBusy('load');setError('');try{setData(await onLoad())}catch(reason){setError(reason.message||'Impossible de charger la console.')}finally{setBusy('')}}
+export default function AdminView({plans=[],onLoad,onReadiness,onManage,onCreatePromotion,onSetPromotionActive,onUpdateChannel}){
+  const [data,setData]=useState(null),[readiness,setReadiness]=useState(null),[query,setQuery]=useState(''),[busy,setBusy]=useState(''),[error,setError]=useState('')
+  const load=async()=>{setBusy('load');setError('');try{const [dashboard,health]=await Promise.all([onLoad(),onReadiness?.()]);setData(dashboard);setReadiness(health||null)}catch(reason){setError(reason.message||'Impossible de charger la console.')}finally{setBusy('')}}
   useEffect(()=>{load()},[])
   const workspaces=useMemo(()=>{const needle=query.trim().toLowerCase();return (data?.workspaces||[]).filter(row=>!needle||[row.name,row.owner_name,row.owner_email,row.subscription_plan].some(value=>String(value||'').toLowerCase().includes(needle)))},[data,query])
   const action=async(workspaceId,adminAction,extra={})=>{setBusy(`${workspaceId}:${adminAction}`);setError('');try{await onManage({target_workspace_id:workspaceId,admin_action:adminAction,...extra});await load()}catch(reason){setError(reason.message||'Action impossible.');setBusy('')}}
@@ -27,11 +27,19 @@ export default function AdminView({plans=[],onLoad,onManage,onCreatePromotion,on
       <Metric icon={FolderKanban} label="Projets" value={metrics.projects} note="tous espaces confondus"/>
       <Metric icon={TicketPercent} label="Promotions utilisées" value={metrics.promotion_redemptions} note={`${metrics.active_promotions||0} code(s) actif(s)`}/>
     </section>
+    {readiness&&<ReadinessPanel
+      data={readiness}
+    />}
     <PromotionManager plans={plans} rows={data.promotion_codes||[]} busy={busy} onCreate={createPromotion} onToggle={togglePromotion}/>
     <section className="card admin-channels"><header><div><BellRing size={19}/><span><h3>Canaux de notification</h3><p>État opérationnel des rappels externes.</p></span></div><button className="btn ghost" onClick={load} disabled={Boolean(busy)}><RefreshCw size={15}/>Actualiser</button></header><div>{(data.channels||[]).map(row=><article key={row.channel}><i>{row.channel==='email'?<Mail/>:<BellRing/>}</i><span><b>{row.channel==='email'?'E-mail':'WhatsApp'} · {row.provider}</b><small>{row.configured?'Configuration serveur renseignée':'Clés du fournisseur à renseigner dans Supabase'} · {row.schedule_label||'Planification non définie'}</small></span><em className={row.configured?'ready':'waiting'}>{row.configured?'Configuré':'À configurer'}</em><button disabled={!row.configured||busy===`channel:${row.channel}`} onClick={()=>channel(row)}>{row.enabled?'Désactiver':'Activer'}</button></article>)}</div><footer><span>{metrics.pending_emails||0} e-mail(s) en attente · {metrics.failed_emails||0} en échec</span><span>{metrics.pending_whatsapp||0} WhatsApp en attente · {metrics.failed_whatsapp||0} en échec</span></footer></section>
     <section className="card admin-workspaces"><header><div><Building2 size={19}/><span><h3>Comptes et abonnements</h3><p>Activation, suspension et prolongation centralisées.</p></span></div><input type="search" placeholder="Rechercher un espace, un client…" value={query} onChange={event=>setQuery(event.target.value)}/></header><div className="admin-workspace-list">{workspaces.map(row=><WorkspaceRow key={row.id} row={row} plans={plans} busy={busy} onAction={action}/>)}</div></section>
     {(data.recent_failures||[]).length>0&&<section className="card admin-failures"><h3>Paiements échoués récents</h3>{data.recent_failures.map(row=><div key={row.id}><span><b>{row.plan_code}</b><small>{row.provider} · {shortDate(row.created_at)}</small></span><strong>{money(row.amount,row.currency)}</strong><em>Échec</em></div>)}</section>}
   </div>
+}
+
+function ReadinessPanel({data}){
+  const summary=data.summary||{},requiredComplete=summary.required_ready===summary.required_total
+  return <section className="card admin-readiness"><header><div><ShieldCheck size={19}/><span><h3>Préparation de la production</h3><p>Diagnostic serveur sans exposition des clés ni des secrets.</p></span></div><em className={requiredComplete?'ready':'waiting'}>{summary.required_ready||0}/{summary.required_total||0} indispensables</em></header><div>{(data.checks||[]).map(row=><article key={row.id}><i className={row.ready?'ready':row.optional?'optional':'waiting'}>{row.ready?<ShieldCheck/>:<AlertTriangle/>}</i><span><small>{row.group}{row.optional?' · facultatif':''}</small><b>{row.label}</b><p>{row.detail}</p></span><em className={row.ready?'ready':row.optional?'optional':'waiting'}>{row.ready?'Prêt':row.optional?'Optionnel':'À terminer'}</em></article>)}</div></section>
 }
 
 function Metric({icon:Icon,label,value,note}){return <article className="card"><i><Icon size={19}/></i><span><small>{label}</small><b>{typeof value==='string'?value:Number(value||0)}</b>{note&&<em>{note}</em>}</span></article>}
