@@ -64,6 +64,7 @@ function buildReport(project,entities){
   const supplierAlerts=entities.supplier_contracts.filter(item=>item.status==='Actif'&&item.end_date&&dayKey(item.end_date)<today)
   const humanAlerts=entities.conflicts.filter(item=>!['Résolu','Clos','Fermé'].includes(item.status)&&['Haute','Critique'].includes(item.severity))
   const explicitImpacts=entities.project_links.filter(item=>['Haute','Critique'].includes(item.severity))
+  const dailyBlockers=entities.scrum_event_entries.filter(item=>item.blockers?.trim())
   const costs=entities.cost_entries.reduce((sum,item)=>sum+Number(item.actual_amount||item.committed_amount||0),0)
   const budget=Number(project.budget)||0,budgetUse=budget?Math.round(costs/budget*100):0
   const priorities=[]
@@ -77,6 +78,7 @@ function buildReport(project,entities){
   if(supplierAlerts.length)priorities.push({id:'suppliers',tone:'warning',icon:Building2,target:'impact',title:`Sécuriser ${supplierAlerts.length} engagement${supplierAlerts.length>1?'s fournisseurs':' fournisseur'}`,reason:'Un contrat actif arrivé à échéance peut interrompre la chaîne allant du besoin au livrable.',evidence:`À traiter : ${supplierAlerts[0]?.title}.`})
   if(humanAlerts.length)priorities.push({id:'human',tone:'danger',icon:HeartPulse,target:'impact',title:`Arbitrer ${humanAlerts.length} tension${humanAlerts.length>1?'s humaines':' humaine'}`,reason:'Un conflit majeur non résolu fragilise la capacité de livraison et la qualité des décisions.',evidence:`Signal : ${humanAlerts[0]?.title}.`})
   if(explicitImpacts.length)priorities.push({id:'impacts',tone:'warning',icon:GitBranch,target:'impact',title:`Examiner ${explicitImpacts.length} impact${explicitImpacts.length>1?'s transverses':' transverse'}`,reason:'Ces relations métier relient plusieurs domaines du projet et peuvent provoquer un effet en cascade.',evidence:`${explicitImpacts[0]?.impact_area} · ${explicitImpacts[0]?.relationship}.`})
+  if(dailyBlockers.length)priorities.push({id:'daily',tone:'warning',icon:AlertTriangle,target:'scrum',title:`Lever ${dailyBlockers.length} blocage${dailyBlockers.length>1?'s':''} déclaré${dailyBlockers.length>1?'s':''} au Daily`,reason:'Un blocage partagé pendant le Daily doit être transformé en décision, action, problème ou risque.',evidence:`${dailyBlockers[0]?.member_name} : ${dailyBlockers[0]?.blockers}.`})
   const penalty=Math.min(75,overdue.length*7+blocked.length*9+critical.length*10+unassigned.length*2+(budgetUse>=90?12:0)+(budgetUse>100?8:0)+unresolvedIssues.length*3+supplierAlerts.length*5+humanAlerts.length*7+explicitImpacts.length*3)
   const score=Math.max(25,100-penalty)
   const headline=score>=85?'Le projet est maîtrisé.':score>=70?'Quelques arbitrages protégeront la trajectoire.':score>=55?'La trajectoire demande une intervention rapide.':'Le projet nécessite un plan de redressement.'

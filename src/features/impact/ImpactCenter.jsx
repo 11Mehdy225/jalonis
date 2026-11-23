@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { AlertTriangle, ArrowRight, Boxes, BrainCircuit, Building2, CircleDollarSign, GitBranch, HeartPulse, Link2, Plus, ShieldAlert, Trash2, Users, Workflow } from 'lucide-react'
 import '../../styles/impact-center.css'
 
-const TYPE_LABELS={tasks:'Activité',backlog_items:'Élément Scrum',sprints:'Sprint',risks:'Risque',suppliers:'Fournisseur',procurements:'Consultation',supplier_quotes:'Offre',supplier_contracts:'Contrat',cost_entries:'Coût',issues:'Problème',change_requests:'Changement',decisions:'Décision',meetings:'Réunion',conflicts:'Conflit',team:'Membre'}
+const TYPE_LABELS={tasks:'Activité',backlog_items:'Élément Scrum',sprints:'Sprint',scrum_events:'Événement Scrum',risks:'Risque',suppliers:'Fournisseur',procurements:'Consultation',supplier_quotes:'Offre',supplier_contracts:'Contrat',cost_entries:'Coût',issues:'Problème',change_requests:'Changement',decisions:'Décision',meetings:'Réunion',conflicts:'Conflit',team:'Membre'}
 const LINKABLE=Object.keys(TYPE_LABELS)
 const severityRank={Critique:4,Haute:3,Moyenne:2,Faible:1}
 const today=()=>new Date().toISOString().slice(0,10)
@@ -56,6 +56,7 @@ function buildModel(project,e){
   const add=(sourceType,sourceId,targetType,targetId,relationship,area='Délai',severity='Moyenne',manual=false,id=null)=>{if(!sourceId||!targetId)return;links.push({id,sourceType,sourceId,targetType,targetId,relationship,area,severity,manual})}
   e.task_dependencies.forEach(row=>add('tasks',row.predecessor_task_id,'tasks',row.task_id,`${row.dependency_type||'FS'} ${Number(row.lag_days)||0} j`))
   e.backlog_items.forEach(row=>add('tasks',row.linked_task_id,'backlog_items',row.id,'réalisé par','Valeur'))
+  e.scrum_events.forEach(row=>add('sprints',row.sprint_id,'scrum_events',row.id,'cadre','Valeur'))
   e.risks.forEach(row=>add('tasks',row.linked_task_id,'risks',row.id,'expose à','Risque',Number(row.probability)*Number(row.impact)>=15?'Critique':'Moyenne'))
   e.procurements.forEach(row=>{add('tasks',row.linked_task_id,'procurements',row.id,'nécessite','Fournisseur');add('risks',row.linked_risk_id,'procurements',row.id,'déclenche','Fournisseur')})
   e.supplier_quotes.forEach(row=>{add('procurements',row.procurement_id,'supplier_quotes',row.id,'reçoit');add('suppliers',row.supplier_id,'supplier_quotes',row.id,'soumet')})
@@ -73,6 +74,9 @@ function buildModel(project,e){
   const actual=e.cost_entries.reduce((sum,row)=>sum+Number(row.actual_amount||row.committed_amount||0),0),budget=Number(project.budget||0)
   if(budget&&actual>budget)signals.push({id:'budget-overrun',tone:'critical',icon:CircleDollarSign,target:'finance',title:'Dépassement budgétaire',reason:'Les dépenses engagées ou réelles dépassent le budget de référence.',evidence:`${Math.round(actual/budget*100)} % du budget consommé.`,affected:e.cost_entries.slice(0,5).map(row=>({type:'cost_entries',id:row.id,label:row.description}))})
   e.supplier_contracts.filter(row=>row.status==='Actif'&&row.end_date&&row.end_date<today()).forEach(row=>signals.push({id:`contract-${row.id}`,tone:'warning',icon:Building2,target:'suppliers',title:`Contrat fournisseur expiré · ${row.title}`,reason:'Un engagement fournisseur arrivé à échéance peut bloquer la livraison associée.',evidence:`Fin contractuelle ${row.end_date}.`,affected:[{type:'supplier_contracts',id:row.id,label:row.title},...downstream('supplier_contracts',row.id)]}))
+  e.scrum_events.filter(row=>row.event_type==='Daily Scrum'&&row.status==='Non réalisé').forEach(row=>signals.push({id:`daily-${row.id}`,tone:'warning',icon:Users,target:'scrum',title:`Daily Scrum non réalisé · ${row.title}`,reason:'L’équipe n’a pas partagé son état quotidien ; les blocages peuvent rester invisibles.',evidence:`Prévu le ${String(row.scheduled_at).slice(0,10)}.`,affected:[{type:'scrum_events',id:row.id,label:row.title}]}))
+  const dailyBlockers=e.scrum_event_entries.filter(row=>row.blockers?.trim())
+  if(dailyBlockers.length)signals.push({id:'daily-blockers',tone:'warning',icon:Users,target:'scrum',title:`${dailyBlockers.length} blocage${dailyBlockers.length>1?'s':''} déclaré${dailyBlockers.length>1?'s':''} au Daily`,reason:'Les blocages consignés par l’équipe demandent une décision ou une action explicite.',evidence:dailyBlockers.slice(0,2).map(row=>`${row.member_name} · ${row.blockers}`).join(' | '),affected:dailyBlockers.slice(0,5).map(row=>({type:'scrum_events',id:row.event_id,label:row.member_name}))})
   signals.sort((a,b)=>({critical:3,warning:2,neutral:1}[b.tone]-{critical:3,warning:2,neutral:1}[a.tone]))
   const stories=e.backlog_items.filter(row=>row.item_type!=='Epic'),linkedStories=stories.filter(row=>row.linked_task_id).length
   const hybridRows=e.tasks.filter(task=>task.is_milestone||stories.some(story=>story.linked_task_id===task.id)).map(task=>{const taskStories=stories.filter(story=>story.linked_task_id===task.id),done=taskStories.filter(story=>story.status==='Terminé').reduce((sum,row)=>sum+Number(row.story_points||1),0),total=taskStories.reduce((sum,row)=>sum+Number(row.story_points||1),0);return {task,stories:taskStories,storyProgress:total?Math.round(done/total*100):0}})

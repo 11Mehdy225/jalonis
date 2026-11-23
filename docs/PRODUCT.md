@@ -34,6 +34,10 @@ Budgets, coûts réels, EVM, changements, problèmes, décisions, notifications 
 
 Product Goal, Definition of Done, Product Backlog, Sprint Backlog, tableau déplaçable, Story Points, Sprint Goal, burndown, vélocité et liaison bidirectionnelle avec la structure WBS.
 
+### Événements Scrum — intégrés
+
+Chaque sprint possède un registre partagé pour le Sprint Planning, le Backlog Refinement, le Daily Scrum, la Sprint Review et la Sprint Retrospective. Chaque événement conserve sa date, son heure, son animateur, ses participants, son statut, son compte rendu, ses décisions et ses actions. Le Daily ajoute la contribution de chaque membre — travail réalisé, objectif du jour, blocages et niveau de confiance — puis fait remonter les blocages au copilote et à la Chaîne d’impact.
+
 ### Fournisseurs et achats — intégré
 
 Qualification des fournisseurs, RFI, RFQ, RFP, appels d’offres, comparaison pondérée des offres, contrats, évaluations de performance et coffre documentaire local. Les consultations et contrats peuvent être liés aux activités WBS et aux risques.
