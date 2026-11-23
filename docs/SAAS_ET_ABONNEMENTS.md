@@ -24,17 +24,17 @@ Un même utilisateur conserve un seul identifiant et peut appartenir à plusieur
 
 ## Modèle de facturation proposé
 
-Ces tarifs sont une hypothèse de lancement à tester commercialement avant publication.
+Ces tarifs constituent la grille de lancement en francs CFA. L’abonnement annuel correspond à dix mois facturés, soit deux mois offerts.
 
-| Offre | Prix mensuel indicatif | Utilisateurs | Cible |
-|---|---:|---:|---|
-| Découverte | Gratuit | 1 | Découverte, projets personnels limités |
-| Personnel Pro | 4,90 € | 1 | Chef de projet indépendant |
-| Équipe | 5,90 € par utilisateur actif | 3 minimum | PME et équipes projet |
-| Business | 9,90 € par utilisateur actif | 10 minimum | Organisations avec automatisations et assistance intelligente |
-| Entreprise privée | Sur devis | Selon contrat | Hébergement dédié, SSO, sauvegardes et accompagnement |
+| Offre | Prix mensuel | Prix annuel | Utilisateurs | Cible |
+|---|---:|---:|---:|---|
+| Découverte | Gratuit | Gratuit | 1 | Découverte, deux projets personnels |
+| Personnel Pro | 3 500 FCFA | 35 000 FCFA | 1 | Chef de projet indépendant |
+| Équipe | 4 500 FCFA par membre actif | 45 000 FCFA par membre | 3 minimum | PME et équipes projet |
+| Business | 7 500 FCFA par membre actif | 75 000 FCFA par membre | 10 minimum | Organisations avec automatisations et assistance intelligente |
+| Entreprise | Sur devis | Sur devis | Selon contrat | Hébergement dédié, SSO, sauvegardes et accompagnement |
 
-Une réduction de 15 % pourra être proposée pour un paiement annuel. Les observateurs en lecture seule pourront être gratuits ou facturés à un tarif réduit. Les coûts variables de WhatsApp et certains usages intensifs d’assistance intelligente devront être inclus dans un quota ou facturés séparément.
+Les observateurs en lecture seule et les fournisseurs externes ne consomment pas de siège payant. Les coûts variables de WhatsApp et certains usages intensifs d’assistance intelligente restent encadrés par les quotas de l’offre.
 
 ## Comptage des abonnements
 

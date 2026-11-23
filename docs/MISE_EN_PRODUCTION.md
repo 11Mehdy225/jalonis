@@ -23,6 +23,8 @@ La file d’envoi et le résumé quotidien sont déjà intégrés. Pour les acti
 5. dans la console **Administration SaaS**, marquer le canal E-mail comme configuré puis l’activer ;
 6. configurer le SMTP personnalisé Supabase avec le même domaine afin que les confirmations et réinitialisations portent aussi l’identité Jalonis.
 
+Les modèles prêts à synchroniser avec **Authentication > Email Templates** se trouvent dans `supabase/templates` : confirmation, invitation, récupération du mot de passe, lien magique et changement d’adresse.
+
 Le résumé quotidien respecte le fuseau horaire, l’heure de fin de silence et les préférences de chaque membre.
 
 ## WhatsApp

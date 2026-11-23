@@ -6,6 +6,7 @@ const required=[
   'src/features/admin/AdminView.jsx','src/features/auth/AuthGate.jsx','src/styles/mobile.css',
   'supabase/functions/process-email-queue/index.ts','supabase/functions/process-whatsapp-queue/index.ts',
   'supabase/migrations/202611230002_platform_operations.sql','docs/MISE_EN_PRODUCTION.md',
+  'supabase/templates/confirmation.html','supabase/templates/invite.html','supabase/templates/recovery.html',
   'build/icon.icns','build/icon.ico','public/assets/jalonis-logo.png',
 ]
 for(const file of required)if(!fs.existsSync(path.join(root,file)))failures.push(`Fichier requis absent : ${file}`)

@@ -1,6 +1,6 @@
 {
   "name": "jalonis",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "private": true,
   "type": "module",
   "description": "Jalonis — pilotage de projet SaaS et local pour le web, macOS et Windows",
@@ -11,8 +11,8 @@
     "build:web": "vite build",
     "build": "npm run build:mac",
     "build:mac": "npm run build:web && electron-builder --mac --arm64",
-    "build:win": "npm run build:web && electron-builder --win --x64",
-    "build:all": "npm run build:web && electron-builder --mac --arm64 --win --x64",
+    "build:win": "npm run build:web && electron-builder --win --x64 --config.electronVersion=44.3.0",
+    "build:all": "npm run build:mac && npm run build:win",
     "preview": "vite preview",
     "supabase:login": "supabase login",
     "supabase:link": "supabase link",
@@ -48,7 +48,6 @@
   },
   "build": {
     "appId": "com.jalonis.desktop",
-    "electronVersion": "44.3.0",
     "productName": "Jalonis",
     "files": [
       "dist/**/*",

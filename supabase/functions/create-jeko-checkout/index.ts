@@ -29,7 +29,7 @@ Deno.serve(async request=>{
     if(plan.account_type!==workspace.account_type)return json({error:'Cette offre ne correspond pas au type de compte.'},400)
     if(planCode==='discovery'||planCode==='enterprise')return json({error:'Cette offre ne passe pas par le paiement automatique.'},400)
 
-    const method=String(provider.payment_method||'wave').toLowerCase()
+    const method=String(body.payment_method||provider.payment_method||'wave').toLowerCase()
     if(!paymentMethods.has(method))return json({error:'Le moyen de paiement configuré n’est pas pris en charge.'},503)
     const {data:price}=await admin.from('provider_plan_prices').select('unit_amount,currency').eq('provider','jeko').eq('plan_code',planCode).eq('billing_cycle',cycle).eq('active',true).maybeSingle()
     if(!price)return json({error:`Le tarif ${plan.name} n’est pas encore configuré pour Jèko.`},503)
