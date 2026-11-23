@@ -23,6 +23,7 @@
     "test:permissions": "node scripts/check-permissions.mjs",
     "test:isolation": "node scripts/check-workspace-isolation.cjs",
     "test:collaboration": "node scripts/check-collaboration.mjs",
+    "test:collaboration:live": "JALONIS_ALLOW_LIVE_TEST=1 node scripts/check-live-collaboration.mjs",
     "test:billing": "node scripts/check-jeko-billing.mjs",
     "test": "npm run test:permissions && npm run test:isolation && npm run test:collaboration && npm run test:billing && npm run supabase:check"
   },

@@ -10,6 +10,7 @@ const unwrap = ({ data, error }) => {
 }
 
 const optional = (request, fallback=[]) => request.then(({data,error}) => error ? fallback : (data ?? fallback))
+const projectPayload=data=>{const next={...data};for(const key of ['start_date','end_date'])if(key in next)next[key]=next[key]||null;if('budget' in next)next.budget=next.budget===''||next.budget==null?0:Number(next.budget);return next}
 
 async function currentUser() {
   const { data, error } = await supabase.auth.getUser()
@@ -240,9 +241,9 @@ export const cloudApi = {
     list: listProjects,
     create: async data => {
       const id = await workspaceId()
-      return unwrap(await supabase.from('projects').insert({ ...data, workspace_id: id, status: 'Initialisation', health: 'good' }).select().single())
+      return unwrap(await supabase.from('projects').insert({ ...projectPayload(data), workspace_id: id, status: 'Initialisation', health: 'good' }).select().single())
     },
-    update: async (id, data) => unwrap(await supabase.from('projects').update(data).eq('id', id).select().single()),
+    update: async (id, data) => unwrap(await supabase.from('projects').update(projectPayload(data)).eq('id', id).select().single()),
     uploadLogo: async projectId => {
       const [file] = await selectImages(false)
       if (!file) return null
