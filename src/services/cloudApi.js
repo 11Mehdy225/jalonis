@@ -150,6 +150,8 @@ export const cloudApi = {
   admin: {
     dashboard: async () => unwrap(await supabase.rpc('platform_admin_dashboard')),
     readiness: async () => {const {data,error}=await supabase.functions.invoke('platform-readiness');if(error)throw error;return data},
+    monitoring: async () => {const {data,error}=await supabase.functions.invoke('platform-monitoring');if(error)throw error;return data},
+    manageIncident: async payload => {const {data,error}=await supabase.functions.invoke('platform-monitoring',{body:payload});if(error)throw error;return data},
     manageSubscription: async data => unwrap(await supabase.rpc('platform_admin_manage_subscription',data)),
     createPromotionCode: async data => unwrap(await supabase.rpc('platform_admin_create_promotion_code',data)),
     setPromotionCodeActive: async data => unwrap(await supabase.rpc('platform_admin_set_promotion_code_active',data)),

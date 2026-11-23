@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import AuthGate from './features/auth/AuthGate'
 import ErrorBoundary from './shared/ErrorBoundary'
+import { initializeTelemetry } from './services/telemetry'
 import './styles/styles.css'
 import './styles/sidebar-scroll.css'
 import './styles/calendar.css'
@@ -22,4 +23,5 @@ import './styles/public-pages.css'
 import './styles/onboarding.css'
 import './styles/impact-center.css'
 
+initializeTelemetry()
 createRoot(document.getElementById('root')).render(<React.StrictMode><ErrorBoundary><AuthGate><App /></AuthGate></ErrorBoundary></React.StrictMode>)

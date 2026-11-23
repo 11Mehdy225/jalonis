@@ -22,6 +22,7 @@ import CustomFieldsView from './features/projects/CustomFieldsView'
 import ProjectAssistant from './features/assistant/ProjectAssistant'
 import AdminView from './features/admin/AdminView'
 import ImpactCenter from './features/impact/ImpactCenter'
+import { trackTelemetry } from './services/telemetry'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { permissionsFor } from './services/permissions'
@@ -62,6 +63,7 @@ export default function App() {
   useEffect(()=>{loadEntities(activeId)},[activeId])
   useEffect(()=>{if(!activeId||!api.realtime?.subscribeProject)return;const timers=new Map();const unsubscribe=api.realtime.subscribeProject(activeId,({table})=>{clearTimeout(timers.get(table));timers.set(table,setTimeout(()=>reloadProjectTable(table,activeId).catch(reason=>setError(reason.message||'Synchronisation interrompue.')),120))});return()=>{timers.forEach(clearTimeout);unsubscribe?.()}},[activeId])
   useEffect(()=>{if(!active)return;if(active.methodology==='Scrum'&&view==='tasks'){setView('scrum');setAgileTab('backlog')}if(active.methodology==='Prédictif'&&view==='scrum')setView('tasks')},[active?.methodology,view])
+  useEffect(()=>{if(workspace?.current_user)trackTelemetry('page_view',{route:`/${view}`})},[view,workspace?.current_user?.id])
 
   const stats=useMemo(()=>{
     const scrumItems=entities.backlog_items.filter(item=>item.item_type!=='Epic'),isScrum=active?.methodology==='Scrum',total=isScrum?scrumItems.length:entities.tasks.length
@@ -259,7 +261,7 @@ export default function App() {
         <SubscriptionNotice workspace={workspace} onOpen={()=>setView('workspace')}/>
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
         {notice&&<div className="app-notice">{notice}<button onClick={()=>setNotice('')}>×</button></div>}
-        {view==='admin'&&workspace?.is_platform_admin ? <><div className="page-title"><div><span className="eyebrow">EXPLOITATION JALONIS</span><h1>Administration SaaS</h1><p>Supervisez les comptes, abonnements, paiements et notifications.</p></div></div><AdminView plans={workspace.plans||[]} onLoad={api.admin.dashboard} onReadiness={api.admin.readiness} onManage={api.admin.manageSubscription} onCreatePromotion={api.admin.createPromotionCode} onSetPromotionActive={api.admin.setPromotionCodeActive} onUpdateChannel={api.admin.updateChannel}/></>
+        {view==='admin'&&workspace?.is_platform_admin ? <><div className="page-title"><div><span className="eyebrow">EXPLOITATION JALONIS</span><h1>Administration SaaS</h1><p>Supervisez les comptes, abonnements, paiements et notifications.</p></div></div><AdminView plans={workspace.plans||[]} onLoad={api.admin.dashboard} onReadiness={api.admin.readiness} onMonitoring={api.admin.monitoring} onManageIncident={api.admin.manageIncident} onManage={api.admin.manageSubscription} onCreatePromotion={api.admin.createPromotionCode} onSetPromotionActive={api.admin.setPromotionCodeActive} onUpdateChannel={api.admin.updateChannel}/></>
         : view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout} onRedeemPromotion={redeemPromotionCode} onManualPayment={submitManualPayment} onReviewPayment={reviewManualPayment}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Votre profil et la configuration de cette installation.</p></div></div><SettingsView currentUser={currentUser} onUpdateProfile={updateProfile}/></>
         : !active ? <Empty canCreate={permissions.createProject} canInvite={permissions.inviteMembers} onCreate={()=>setModal('project')} onInvite={()=>setModal('invite-member')} onProfile={()=>setView('settings')}/> : <>

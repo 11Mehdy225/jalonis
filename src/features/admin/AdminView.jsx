@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, BellRing, Building2, CalendarPlus, CircleDollarSign, FolderKanban, Mail, PauseCircle, PlayCircle, RefreshCw, ShieldCheck, TicketPercent, TrendingUp, Users } from 'lucide-react'
+import MonitoringCenter from './MonitoringCenter'
 
 const money=(amount,currency='XOF')=>new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:currency==='XOF'?0:2}).format(Number(amount||0))
 const shortDate=value=>value?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)):'—'
 
-export default function AdminView({plans=[],onLoad,onReadiness,onManage,onCreatePromotion,onSetPromotionActive,onUpdateChannel}){
+export default function AdminView({plans=[],onLoad,onReadiness,onMonitoring,onManageIncident,onManage,onCreatePromotion,onSetPromotionActive,onUpdateChannel}){
   const [data,setData]=useState(null),[readiness,setReadiness]=useState(null),[query,setQuery]=useState(''),[busy,setBusy]=useState(''),[error,setError]=useState('')
   const load=async()=>{setBusy('load');setError('');try{const [dashboard,health]=await Promise.all([onLoad(),onReadiness?.()]);setData(dashboard);setReadiness(health||null)}catch(reason){setError(reason.message||'Impossible de charger la console.')}finally{setBusy('')}}
   useEffect(()=>{load()},[])
@@ -30,6 +31,7 @@ export default function AdminView({plans=[],onLoad,onReadiness,onManage,onCreate
     {readiness&&<ReadinessPanel
       data={readiness}
     />}
+    <MonitoringCenter onLoad={onMonitoring} onManageIncident={onManageIncident}/>
     <PromotionManager plans={plans} rows={data.promotion_codes||[]} busy={busy} onCreate={createPromotion} onToggle={togglePromotion}/>
     <section className="card admin-channels"><header><div><BellRing size={19}/><span><h3>Canaux de notification</h3><p>État opérationnel des rappels externes.</p></span></div><button className="btn ghost" onClick={load} disabled={Boolean(busy)}><RefreshCw size={15}/>Actualiser</button></header><div>{(data.channels||[]).map(row=><article key={row.channel}><i>{row.channel==='email'?<Mail/>:<BellRing/>}</i><span><b>{row.channel==='email'?'E-mail':'WhatsApp'} · {row.provider}</b><small>{row.configured?'Configuration serveur renseignée':'Clés du fournisseur à renseigner dans Supabase'} · {row.schedule_label||'Planification non définie'}</small></span><em className={row.configured?'ready':'waiting'}>{row.configured?'Configuré':'À configurer'}</em><button disabled={!row.configured||busy===`channel:${row.channel}`} onClick={()=>channel(row)}>{row.enabled?'Désactiver':'Activer'}</button></article>)}</div><footer><span>{metrics.pending_emails||0} e-mail(s) en attente · {metrics.failed_emails||0} en échec</span><span>{metrics.pending_whatsapp||0} WhatsApp en attente · {metrics.failed_whatsapp||0} en échec</span></footer></section>
     <section className="card admin-workspaces"><header><div><Building2 size={19}/><span><h3>Comptes et abonnements</h3><p>Activation, suspension et prolongation centralisées.</p></span></div><input type="search" placeholder="Rechercher un espace, un client…" value={query} onChange={event=>setQuery(event.target.value)}/></header><div className="admin-workspace-list">{workspaces.map(row=><WorkspaceRow key={row.id} row={row} plans={plans} busy={busy} onAction={action}/>)}</div></section>
