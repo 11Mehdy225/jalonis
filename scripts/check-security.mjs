@@ -3,6 +3,8 @@ import fs from 'node:fs'
 
 const read=name=>fs.readFileSync(new URL(`../${name}`,import.meta.url),'utf8')
 const render=read('render.yaml')
+const html=read('index.html')
+const frameGuard=read('public/frame-guard.js')
 const checkout=read('supabase/functions/create-jeko-checkout/index.ts')
 const webhook=read('supabase/functions/jeko-webhook/index.ts')
 const migration=read('supabase/migrations/202611230006_security_hardening.sql')
@@ -15,6 +17,9 @@ for(const header of ['Content-Security-Policy','X-Frame-Options','Strict-Transpo
   assert(render.includes(`name: ${header}`),`En-tête de sécurité absent : ${header}`)
 }
 assert(render.includes("frame-ancestors 'none'"),'La protection anti-clickjacking est absente.')
+assert(html.includes('http-equiv="Content-Security-Policy"'),'La politique CSP de secours est absente de la page.')
+assert(html.includes('/frame-guard.js'),'Le blocage anti-iframe de secours n’est pas chargé.')
+assert(frameGuard.includes('window.top!==window.self'),'Le blocage anti-iframe de secours est invalide.')
 assert(!sourceFiles.includes('dangerouslySetInnerHTML'),'Du HTML non fiable peut être injecté dans React.')
 assert(!sourceFiles.includes('.innerHTML'),'Une écriture innerHTML contourne la protection React.')
 assert(migration.includes('consume_api_rate_limit'),'La limitation anti-abus serveur est absente.')
