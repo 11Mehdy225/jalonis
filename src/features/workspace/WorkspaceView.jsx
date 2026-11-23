@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { BadgeCheck, BellRing, Building2, CalendarClock, Check, CircleCheck, Clock3, Gauge, Landmark, Mail, MessageCircle, ReceiptText, ShieldCheck, Trash2, UserPlus, Users, XCircle } from 'lucide-react'
+import { BadgeCheck, BellRing, Building2, CalendarClock, Check, CircleCheck, Clock3, Gauge, Landmark, Mail, MessageCircle, ReceiptText, ShieldCheck, TicketPercent, Trash2, UserPlus, Users, XCircle } from 'lucide-react'
 
 const ROLES = ['Administrateur', 'Chef de projet', 'Scrum Master', 'Product Owner', 'Membre', 'Observateur', 'Fournisseur externe']
 const PREFERENCE_DEFAULTS = { phone: '', notify_in_app: true, notify_email: true, notify_whatsapp: false, notify_assignments: true, notify_status_changes: true, notify_comments: true, daily_digest: true, quiet_start: '20:00', quiet_end: '07:00' }
 
-export default function WorkspaceView({ data, canManage=false, canInvite=false, onRename, onInvite, onRemove, onUpdateRole, onUpdatePreferences, onCheckout, onManualPayment, onReviewPayment }) {
+export default function WorkspaceView({ data, canManage=false, canInvite=false, onRename, onInvite, onRemove, onUpdateRole, onUpdatePreferences, onCheckout, onRedeemPromotion, onManualPayment, onReviewPayment }) {
   const [name, setName] = useState(data?.workspace?.name || '')
   const [accountType, setAccountType] = useState(data?.workspace?.account_type || 'Personnel')
   const [saved, setSaved] = useState(false)
@@ -26,7 +26,7 @@ export default function WorkspaceView({ data, canManage=false, canInvite=false, 
       </form>
       <div className="workspace-kpis"><span><b>{data.members.length}</b>Membres</span><span><b>{active}</b>Actifs</span><span><b>{pending}</b>Invitations</span><span><b>{data.workspace.subscription_plan || 'Découverte'}</b>{data.workspace.subscription_status || 'Local'}</span></div>
     </section>
-    <SubscriptionOverview data={data} canManage={canManage} onCheckout={onCheckout} onManualPayment={onManualPayment}/>
+    <SubscriptionOverview data={data} canManage={canManage} onCheckout={onCheckout} onRedeemPromotion={onRedeemPromotion} onManualPayment={onManualPayment}/>
     {data.is_platform_admin&&<ManualPaymentAdmin rows={data.platform_payment_requests||[]} onReview={onReviewPayment}/>}
     <section className="card members-card">
       <div className="members-head"><div><h3>Membres et accès</h3><p>Invitez les personnes qui pourront participer aux projets de cet espace.</p></div>{canInvite&&<button className="btn primary" onClick={onInvite}><UserPlus size={16}/>Inviter un membre</button>}</div>
@@ -46,10 +46,12 @@ export default function WorkspaceView({ data, canManage=false, canInvite=false, 
   </div>
 }
 
-function SubscriptionOverview({ data, canManage, onCheckout, onManualPayment }) {
+function SubscriptionOverview({ data, canManage, onCheckout, onRedeemPromotion, onManualPayment }) {
   const [annual,setAnnual]=useState(false)
   const [loading,setLoading]=useState('')
   const [manualPlan,setManualPlan]=useState(null)
+  const [promotionCode,setPromotionCode]=useState('')
+  const [promotionMessage,setPromotionMessage]=useState('')
   const [paymentMethod,setPaymentMethod]=useState(data.billing_provider?.payment_method||'wave')
   const subscription=data.subscription||{}
   const currentCode=subscription.plan_code||'discovery'
@@ -66,9 +68,12 @@ function SubscriptionOverview({ data, canManage, onCheckout, onManualPayment }) 
   const hasManualPrice=plan=>(data.manual_payment_methods||[]).some(method=>(data.manual_plan_prices||[]).some(price=>price.plan_code===plan.code&&price.billing_cycle===(annual?'annual':'monthly')&&price.currency===method.currency))
   const onlinePrice=plan=>(data.provider_plan_prices||[]).find(price=>price.plan_code===plan.code&&price.billing_cycle===(annual?'annual':'monthly')&&price.currency===data.billing_provider?.currency)
   const manualPrice=plan=>(data.manual_plan_prices||[]).find(price=>price.plan_code===plan.code&&price.billing_cycle===(annual?'annual':'monthly')&&price.currency==='XOF')
+  const redeemPromotion=async event=>{event.preventDefault();setLoading('promotion');setPromotionMessage('');try{const result=await onRedeemPromotion(promotionCode.trim());setPromotionCode('');setPromotionMessage(result?.message||'Code activé.')}finally{setLoading('')}}
+  const promotionActive=subscription.provider==='promotion'&&subscription.status==='active'&&trialEnd&&new Date(trialEnd)>new Date()
   return <section className="card subscription-card">
     <header className="subscription-head"><div><span className="subscription-icon"><BadgeCheck size={21}/></span><div><small>ABONNEMENT</small><h3>{currentPlan?.name||data.workspace.subscription_plan||'Découverte'}</h3><p>{subscription.status==='trialing'&&trialDays!==null?`Essai gratuit · ${trialDays} jour${trialDays>1?'s':''} restant${trialDays>1?'s':''}`:data.workspace.subscription_status||'Mode local'}</p></div></div><div className="billing-controls">{data.workspace.account_type==='Organisation'&&<label>Sièges<input type="number" min="1" value={seats} onChange={event=>setSeats(Math.max(1,Number(event.target.value)||1))}/></label>}{data.automatic_billing_available&&data.billing_provider?.provider==='jeko'&&<label>Moyen de paiement<select value={paymentMethod} onChange={event=>setPaymentMethod(event.target.value)}><option value="wave">Wave</option><option value="orange">Orange Money</option><option value="mtn">MTN MoMo</option><option value="moov">Moov Money</option><option value="djamo">Djamo</option></select></label>}<div className="billing-toggle"><button className={!annual?'active':''} onClick={()=>setAnnual(false)}>Mensuel</button><button className={annual?'active':''} onClick={()=>setAnnual(true)}>Annuel <em>2 mois offerts</em></button></div></div></header>
     <div className="usage-grid"><UsageMeter icon={Users} label="Sièges actifs" value={billable} limit={seatLimit}/><UsageMeter icon={Gauge} label="Projets" value={projects} limit={projectLimit}/><div className="trial-meter"><CalendarClock size={18}/><span><small>Prochaine échéance</small><b>{trialEnd?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'long',year:'numeric'}).format(new Date(trialEnd)):'Aucune'}</b></span></div></div>
+    <div className={`promotion-redemption ${promotionActive?'active':''}`}><TicketPercent size={20}/><div><b>{promotionActive?'Accès promotionnel actif':'Vous avez un code promotionnel ?'}</b><small>{promotionActive?`Votre accès ${currentPlan?.name||''} reste actif jusqu’au ${new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'long',year:'numeric'}).format(new Date(trialEnd))}. Un abonnement vous sera proposé ensuite.`:'La période commence le jour de la première validation du code par cet espace.'}</small>{promotionMessage&&<em>{promotionMessage}</em>}</div>{!promotionActive&&canManage&&<form onSubmit={redeemPromotion}><input required minLength="4" maxLength="32" value={promotionCode} onChange={event=>setPromotionCode(event.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g,''))} placeholder="VOTRE CODE"/><button disabled={loading==='promotion'}>{loading==='promotion'?'Activation…':'Activer'}</button></form>}</div>
     <div className="plan-grid">{plans.map(plan=>{const providerPrice=onlinePrice(plan),localPrice=manualPrice(plan);const price=Number(providerPrice?.unit_amount??localPrice?.unit_amount??(annual?plan.annual_price_xof:plan.monthly_price_xof)??0);const currency=providerPrice?.currency||localPrice?.currency||(plan.monthly_price_xof!==undefined?'XOF':'EUR');const selected=plan.code===currentCode;const payable=!selected&&!['discovery','enterprise'].includes(plan.code);const minimum=Math.max(seats,Number(plan.min_seats)||1);const automaticAvailable=data.automatic_billing_available&&Boolean(providerPrice);const available=automaticAvailable||hasManualPrice(plan);return <article key={plan.code} className={selected?'current':''}><div><span>{selected?'OFFRE ACTUELLE':plan.account_type.toUpperCase()}</span><h4>{plan.name}</h4><p>{price===0?'Gratuit':<><b>{formatMoney(annual?price/12:price,currency)}</b><small> / mois{plan.min_seats>1?' / membre':''}</small></>}</p>{annual&&price>0?<em className="plan-saving">2 mois offerts · facturation annuelle</em>:null}{payable&&minimum>1?<em className="plan-total">Total : {formatMoney(price*minimum,currency)} {annual?'par an':'par mois'}</em>:null}</div><ul><li><Check size={13}/>{Number(plan.features?.projects)<0?'Projets illimités':`${plan.features?.projects||2} projets`}</li><li><Check size={13}/>{formatStorage(plan.features?.storage_mb)}</li><li><Check size={13}/>{plan.features?.collaboration?'Collaboration en temps réel':'Pilotage individuel'}</li></ul><button disabled={!payable||!canManage||!available||Boolean(loading)} onClick={()=>checkout(plan)}>{selected?'Plan actif':loading===plan.code?'Préparation…':plan.code==='enterprise'?'Nous contacter':available?(automaticAvailable?`Payer avec ${data.billing_provider?.display_name||'le paiement sécurisé'}`:'Payer par dépôt'):'Tarif bientôt disponible'}</button></article>})}</div>
     {manualPlan&&<ManualPaymentForm plan={manualPlan} annual={annual} seats={Math.max(seats,Number(manualPlan.min_seats)||1)} methods={data.manual_payment_methods||[]} prices={data.manual_plan_prices||[]} onCancel={()=>setManualPlan(null)} onSubmit={async form=>{setLoading(manualPlan.code);try{await onManualPayment({...form,plan_code:manualPlan.code,billing_cycle:annual?'annual':'monthly',seats:Math.max(seats,Number(manualPlan.min_seats)||1)});setManualPlan(null)}finally{setLoading('')}}}/>}
     {(data.manual_payment_requests||[]).length>0&&<ManualPaymentHistory rows={data.manual_payment_requests}/>}

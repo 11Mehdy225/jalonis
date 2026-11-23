@@ -46,6 +46,16 @@ Les applications macOS et Windows proposent deux modes :
 
 Les installateurs sont produits avec `npm run build:mac` et `npm run build:win`. Une version publique devra ensuite être signée : certificat Apple Developer ID et notarisation pour macOS, certificat de signature de code pour Windows.
 
+État actuel : les installateurs de test macOS Apple Silicon, macOS Intel et Windows x64 sont générés. Ils utilisent le même backend Supabase en mode Cloud. La distribution publique reste conditionnée par les certificats de signature Apple et Windows.
+
+## Référencement public
+
+La version web publie les métadonnées sociales, une adresse canonique, des données structurées `SoftwareApplication`, un fichier `robots.txt` et un sitemap incluant l’accueil, les tarifs, le support et les pages juridiques. Après adoption d’un domaine définitif, remplacer `jalonis.onrender.com` dans ces éléments puis déclarer le domaine et le sitemap dans Google Search Console et Bing Webmaster Tools.
+
+## Codes promotionnels
+
+Les administrateurs SaaS peuvent créer un code en choisissant l’offre, la durée, le nombre maximal d’utilisations et la date limite de validation. La période commence au premier jour de validation par l’espace. Un seul avantage promotionnel est autorisé par espace. À l’échéance, l’espace passe en lecture seule et propose les offres payantes, sans supprimer les données.
+
 ## Contrôle avant publication
 
 Exécuter `npm test`, `npm run test:release`, `npm run build:web`, puis les contrôles en direct de collaboration et de production. Vérifier ensuite manuellement sur iPhone, iPad, navigateur Desktop, macOS et Windows : création de compte, invitation, rôles, fichiers, Scrum, planning, fournisseurs, exports et abonnement.

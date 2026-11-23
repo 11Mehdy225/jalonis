@@ -207,6 +207,11 @@ export default function App() {
     try{setError('');const result=await api.billing.submitManual(data);setWorkspace(result.workspace);setNotice(result.message||'Demande de paiement transmise.')}
     catch(reason){setError(reason.message||'Impossible de transmettre cette demande de paiement.');throw reason}
   }
+  async function redeemPromotionCode(code){
+    if(!permissions.manageWorkspace)return deny('Seuls le propriétaire et les administrateurs peuvent activer un code promotionnel.')
+    try{setError('');const result=await api.billing.redeemPromotionCode(code);setWorkspace(result.workspace);setNotice(result.message||'Code promotionnel activé.');return result}
+    catch(reason){setError(reason.message||'Impossible d’activer ce code promotionnel.');throw reason}
+  }
   async function reviewManualPayment(data){
     try{setError('');const result=await api.billing.reviewManual(data);setWorkspace(result.workspace);setNotice(data.decision==='approved'?'Paiement confirmé et abonnement activé.':'Demande de paiement refusée.')}
     catch(reason){setError(reason.message||'Impossible de traiter cette demande.');throw reason}
@@ -253,8 +258,8 @@ export default function App() {
         <SubscriptionNotice workspace={workspace} onOpen={()=>setView('workspace')}/>
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
         {notice&&<div className="app-notice">{notice}<button onClick={()=>setNotice('')}>×</button></div>}
-        {view==='admin'&&workspace?.is_platform_admin ? <><div className="page-title"><div><span className="eyebrow">EXPLOITATION JALONIS</span><h1>Administration SaaS</h1><p>Supervisez les comptes, abonnements, paiements et notifications.</p></div></div><AdminView plans={workspace.plans||[]} onLoad={api.admin.dashboard} onManage={api.admin.manageSubscription} onUpdateChannel={api.admin.updateChannel}/></>
-        : view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout} onManualPayment={submitManualPayment} onReviewPayment={reviewManualPayment}/></>
+        {view==='admin'&&workspace?.is_platform_admin ? <><div className="page-title"><div><span className="eyebrow">EXPLOITATION JALONIS</span><h1>Administration SaaS</h1><p>Supervisez les comptes, abonnements, paiements et notifications.</p></div></div><AdminView plans={workspace.plans||[]} onLoad={api.admin.dashboard} onManage={api.admin.manageSubscription} onCreatePromotion={api.admin.createPromotionCode} onSetPromotionActive={api.admin.setPromotionCodeActive} onUpdateChannel={api.admin.updateChannel}/></>
+        : view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout} onRedeemPromotion={redeemPromotionCode} onManualPayment={submitManualPayment} onReviewPayment={reviewManualPayment}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Votre profil et la configuration de cette installation.</p></div></div><SettingsView currentUser={currentUser} onUpdateProfile={updateProfile}/></>
         : !active ? <Empty canCreate={permissions.createProject} canInvite={permissions.inviteMembers} onCreate={()=>setModal('project')} onInvite={()=>setModal('invite-member')} onProfile={()=>setView('settings')}/> : <>
           <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} canManage={permissions.manageProject} canInvite={permissions.inviteMembers} onNavigate={openProjectView} onShare={()=>setModal('invite-member')} onBranding={()=>setModal('branding')}/>
@@ -313,9 +318,10 @@ function SubscriptionNotice({workspace,onOpen}){
   const days=end?Math.ceil((new Date(end)-new Date())/86400000):null
   if(!workspace||subscription.plan_code==='discovery'||subscription.status==='preview')return null
   const graceDays=days===null?null:days+3
+  const promotionEnded=subscription.provider==='promotion'&&days!==null&&days<=0
   const manuallySuspended=subscription.status==='past_due'&&(days===null||days>0)
-  const locked=['canceled','suspended'].includes(subscription.status)||manuallySuspended||(days!==null&&graceDays<=0)
-  const grace=days!==null&&days<=0&&!locked
+  const locked=['canceled','suspended'].includes(subscription.status)||promotionEnded||manuallySuspended||(days!==null&&graceDays<=0)
+  const grace=subscription.provider!=='promotion'&&days!==null&&days<=0&&!locked
   if(!locked&&!grace&&(days===null||days>7))return null
   const title=locked?'Espace en lecture seule':grace?'Délai de grâce en cours':'Votre abonnement arrive à échéance'
   const message=locked

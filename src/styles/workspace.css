@@ -81,6 +81,7 @@
 .usage-meter i { height: 4px; overflow: hidden; border-radius: 4px; background: #eceef3; }
 .usage-meter em { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#5d55e3,#28a6b8); }
 .plan-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; padding: 3px 19px 19px; }
+.promotion-redemption{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:11px;margin:0 19px 16px;padding:13px 14px;border:1px solid #dddaf8;border-radius:11px;background:#f8f7ff;color:#5b54d8}.promotion-redemption>svg{width:38px;height:38px;padding:9px;border-radius:10px;background:#ebe9ff}.promotion-redemption>div{display:grid;gap:3px}.promotion-redemption b{color:#30384d;font-size:10px}.promotion-redemption small{color:#7d8598;font-size:8px;line-height:1.45}.promotion-redemption em{color:#1b8368;font-size:8px;font-style:normal;font-weight:700}.promotion-redemption form{display:flex;gap:7px}.promotion-redemption input{width:150px;height:34px;padding:0 10px;border:1px solid #d8d5f6;border-radius:8px;background:#fff;color:#2e374b;font-size:9px;font-weight:750;letter-spacing:.05em;outline:0}.promotion-redemption input:focus{border-color:#6d65df;box-shadow:0 0 0 3px #eae8ff}.promotion-redemption button{height:34px;border:0;border-radius:8px;padding:0 12px;background:#554dd8;color:#fff;font-size:8px;font-weight:750}.promotion-redemption.active{border-color:#bde4d5;background:#eff9f5;color:#208269}.promotion-redemption.active>svg{background:#dff3eb}
 .plan-grid article { display: flex; flex-direction: column; min-height: 230px; padding: 14px; border: 1px solid #e5e8ef; border-radius: 12px; background: #fff; }
 .plan-grid article.current { border-color: #7770e7; box-shadow: 0 0 0 3px #efeeff; }
 .plan-grid article > div > span { color: #9299aa; font-size: 7px; font-weight: 800; letter-spacing: .8px; }
@@ -153,4 +154,5 @@
   .manual-admin-card article { grid-template-columns: 1fr auto; }.manual-admin-card article input { grid-column: 1/-1; }.manual-admin-card article button { justify-content: center; }
 }
 @media (max-width: 700px) { .manual-payment-grid,.deposit-details { grid-template-columns: 1fr; }.deposit-details p { grid-column: 1; } }
+@media (max-width:700px){.promotion-redemption{grid-template-columns:38px 1fr}.promotion-redemption form{grid-column:1/-1}.promotion-redemption input{width:100%;flex:1}}
 .plan-saving{display:block;margin-top:5px;color:#24836d;font-size:8px;font-style:normal;font-weight:700}

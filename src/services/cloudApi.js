@@ -150,6 +150,8 @@ export const cloudApi = {
   admin: {
     dashboard: async () => unwrap(await supabase.rpc('platform_admin_dashboard')),
     manageSubscription: async data => unwrap(await supabase.rpc('platform_admin_manage_subscription',data)),
+    createPromotionCode: async data => unwrap(await supabase.rpc('platform_admin_create_promotion_code',data)),
+    setPromotionCodeActive: async data => unwrap(await supabase.rpc('platform_admin_set_promotion_code_active',data)),
     updateChannel: async (channel,data) => {
       const user=await currentUser()
       return unwrap(await supabase.from('notification_channel_settings').update({...data,updated_by:user.id,last_checked_at:new Date().toISOString()}).eq('channel',channel).select().single())
@@ -164,6 +166,11 @@ export const cloudApi = {
     },
   },
   billing: {
+    redeemPromotionCode: async code => {
+      const id=await workspaceId()
+      const result=unwrap(await supabase.rpc('redeem_promotion_code',{p_workspace_id:id,p_code:code}))
+      return {...result,workspace:await workspaceState()}
+    },
     createCheckout: async data => {
       const id=await workspaceId()
       const provider=String(data.provider||'jeko')
