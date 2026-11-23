@@ -136,9 +136,9 @@ function AuthScreen({ cloudReady, onBack, onPreview, desktop=false, onPublicPage
 function PublicPage({page,supportEmail,onBack,onConnect}){
   const pricing=[
     {name:'Découverte',price:'Gratuit',annual:'Sans limite de durée',details:'2 projets · 1 utilisateur · 250 Mo · Pilotage individuel'},
-    {name:'Personnel Pro',price:'3 500 FCFA / mois',annual:'35 000 FCFA par an',details:'Projets illimités · Rappels e-mail · Exports · 2 Go'},
-    {name:'Équipe',price:'4 500 FCFA / membre / mois',annual:'45 000 FCFA par membre et par an',details:'3 membres minimum · Collaboration temps réel · Audit · 10 Go'},
-    {name:'Business',price:'7 500 FCFA / membre / mois',annual:'75 000 FCFA par membre et par an',details:'10 membres minimum · Automatisation · Assistant · 50 Go · Support prioritaire'},
+    {name:'Personnel Pro',price:'5 000 FCFA / mois',annual:'50 000 FCFA par an',details:'Projets illimités · Rappels e-mail · Exports · 2 Go'},
+    {name:'Équipe',price:'6 000 FCFA / membre / mois',annual:'60 000 FCFA par membre et par an',details:'3 membres minimum · Collaboration temps réel · Audit · 10 Go'},
+    {name:'Business',price:'9 000 FCFA / membre / mois',annual:'90 000 FCFA par membre et par an',details:'10 membres minimum · Automatisation · Assistant · 50 Go · Support prioritaire'},
     {name:'Entreprise',price:'Sur devis',annual:'Contrat et accompagnement personnalisés',details:'Hébergement dédié · SSO · Capacité et support sur mesure'},
   ]
   const title={pricing:'Tarifs Jalonis',terms:"Conditions générales d’utilisation",privacy:'Politique de confidentialité',support:'Support Jalonis'}[page]||'Jalonis'

@@ -29,9 +29,9 @@ Ces tarifs constituent la grille de lancement en francs CFA. L’abonnement annu
 | Offre | Prix mensuel | Prix annuel | Utilisateurs | Cible |
 |---|---:|---:|---:|---|
 | Découverte | Gratuit | Gratuit | 1 | Découverte, deux projets personnels |
-| Personnel Pro | 3 500 FCFA | 35 000 FCFA | 1 | Chef de projet indépendant |
-| Équipe | 4 500 FCFA par membre actif | 45 000 FCFA par membre | 3 minimum | PME et équipes projet |
-| Business | 7 500 FCFA par membre actif | 75 000 FCFA par membre | 10 minimum | Organisations avec automatisations et assistance intelligente |
+| Personnel Pro | 5 000 FCFA | 50 000 FCFA | 1 | Chef de projet indépendant |
+| Équipe | 6 000 FCFA par membre actif | 60 000 FCFA par membre | 3 minimum | PME et équipes projet |
+| Business | 9 000 FCFA par membre actif | 90 000 FCFA par membre | 10 minimum | Organisations avec automatisations et assistance intelligente |
 | Entreprise | Sur devis | Sur devis | Selon contrat | Hébergement dédié, SSO, sauvegardes et accompagnement |
 
 Les observateurs en lecture seule et les fournisseurs externes ne consomment pas de siège payant. Les coûts variables de WhatsApp et certains usages intensifs d’assistance intelligente restent encadrés par les quotas de l’offre.
