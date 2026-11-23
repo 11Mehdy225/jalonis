@@ -6,7 +6,12 @@ const requiredFunctions=['create-workspace','invite-member','create-billing-chec
 const failures=[]
 
 const envFile=path.join(root,'.env.local')
-if(!fs.existsSync(envFile))failures.push('Le fichier .env.local est absent.')
+if(process.env.VITE_SUPABASE_URL&&process.env.VITE_SUPABASE_ANON_KEY){
+  const url=process.env.VITE_SUPABASE_URL.trim()
+  const key=process.env.VITE_SUPABASE_ANON_KEY.trim()
+  if(!/https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(url))failures.push('VITE_SUPABASE_URL est absente ou invalide.')
+  if(key.length<40)failures.push('VITE_SUPABASE_ANON_KEY est absente ou invalide.')
+}else if(!fs.existsSync(envFile))failures.push('Le fichier .env.local est absent.')
 else{
   const env=fs.readFileSync(envFile,'utf8')
   const url=env.match(/^VITE_SUPABASE_URL=(.+)$/m)?.[1]?.trim()
