@@ -311,9 +311,19 @@ function Empty({onCreate,onInvite,onProfile,canCreate=true,canInvite=false}){ret
 function SubscriptionNotice({workspace,onOpen}){
   const subscription=workspace?.subscription||{},end=subscription.current_period_end||workspace?.workspace?.trial_ends_at
   const days=end?Math.ceil((new Date(end)-new Date())/86400000):null
-  if(!workspace||['active','preview'].includes(subscription.status)||days===null||days>7)return null
-  const expired=days<=0
-  return <button className={`subscription-notice ${expired?'expired':''}`} onClick={onOpen}><ShieldAlert size={16}/><span><b>{expired?'Votre période d’essai est terminée':'Votre essai se termine bientôt'}</b>{expired?' Choisissez une offre pour continuer à créer des projets.':` Il reste ${days} jour${days>1?'s':''}.`}</span><ChevronRight size={16}/></button>
+  if(!workspace||subscription.plan_code==='discovery'||subscription.status==='preview')return null
+  const graceDays=days===null?null:days+3
+  const manuallySuspended=subscription.status==='past_due'&&(days===null||days>0)
+  const locked=['canceled','suspended'].includes(subscription.status)||manuallySuspended||(days!==null&&graceDays<=0)
+  const grace=days!==null&&days<=0&&!locked
+  if(!locked&&!grace&&(days===null||days>7))return null
+  const title=locked?'Espace en lecture seule':grace?'Délai de grâce en cours':'Votre abonnement arrive à échéance'
+  const message=locked
+    ? ' Vos données restent accessibles. Renouvelez l’abonnement pour reprendre les modifications.'
+    : grace
+      ? ` Il reste ${Math.max(1,graceDays)} jour${graceDays>1?'s':''} avant le passage en lecture seule.`
+      : ` Il reste ${Math.max(0,days)} jour${days>1?'s':''}.`
+  return <button className={`subscription-notice ${locked?'locked':grace?'expired':''}`} onClick={onOpen}><ShieldAlert size={16}/><span><b>{title}</b>{message}</span><ChevronRight size={16}/></button>
 }
 
 function Dashboard({active,entities,stats,setView,setAgileTab}){

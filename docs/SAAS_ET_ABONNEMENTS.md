@@ -1,5 +1,13 @@
 # Jalonis SaaS — comptes et abonnements
 
+## Échéance et protection des données
+
+- L’offre Découverte est gratuite et n’expire pas.
+- Les offres payantes déclenchent des rappels avant l’échéance (J-7, J-3 et le jour même).
+- Un délai de grâce de trois jours maintient toutes les fonctions actives après l’échéance.
+- Après ce délai, l’espace passe en lecture seule : consultation et export restent possibles, mais les créations, modifications, suppressions, invitations et téléversements sont bloqués côté serveur.
+- Le paiement confirmé par Jèko ou la réactivation par l’administration rend immédiatement les écritures possibles, sans perte de données.
+
 ## Positionnement
 
 Jalonis conservera une seule expérience produit sur trois canaux :
