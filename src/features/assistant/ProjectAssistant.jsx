@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { AlertTriangle, ArrowRight, Bot, CalendarClock, CheckCircle2, CircleDollarSign, Clock3, LockKeyhole, Send, ShieldAlert, Sparkles, UserRoundX } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Bot, Building2, CalendarClock, CheckCircle2, CircleDollarSign, Clock3, GitBranch, HeartPulse, LockKeyhole, Send, ShieldAlert, Sparkles, UserRoundX } from 'lucide-react'
 import '../../styles/assistant.css'
 import '../../styles/assistant-theme.css'
 
@@ -60,6 +60,10 @@ function buildReport(project,entities){
   const unassigned=items.filter(item=>!item.assignee&&!item.assignee_id)
   const critical=entities.risks.filter(item=>item.status!=='Fermé'&&Number(item.probability)*Number(item.impact)>=15)
   const unresolvedIssues=entities.issues.filter(item=>!['Résolu','Fermé'].includes(item.status))
+  const hybridGaps=project.methodology==='Hybride'?entities.backlog_items.filter(item=>item.item_type!=='Epic'&&item.status!=='Terminé'&&!item.linked_task_id):[]
+  const supplierAlerts=entities.supplier_contracts.filter(item=>item.status==='Actif'&&item.end_date&&dayKey(item.end_date)<today)
+  const humanAlerts=entities.conflicts.filter(item=>!['Résolu','Clos','Fermé'].includes(item.status)&&['Haute','Critique'].includes(item.severity))
+  const explicitImpacts=entities.project_links.filter(item=>['Haute','Critique'].includes(item.severity))
   const costs=entities.cost_entries.reduce((sum,item)=>sum+Number(item.actual_amount||item.committed_amount||0),0)
   const budget=Number(project.budget)||0,budgetUse=budget?Math.round(costs/budget*100):0
   const priorities=[]
@@ -69,7 +73,11 @@ function buildReport(project,entities){
   if(budgetUse>=90)priorities.push({id:'budget',tone:budgetUse>100?'danger':'warning',icon:CircleDollarSign,target:'finance',title:budgetUse>100?'Arbitrer le dépassement budgétaire':'Sécuriser le budget restant',reason:`${budgetUse}% du budget de référence est déjà engagé.`,evidence:`${money(costs,project.currency)} engagés sur ${money(budget,project.currency)}.`})
   if(unassigned.length)priorities.push({id:'unassigned',tone:'neutral',icon:UserRoundX,target:isScrum?'scrum':'tasks',title:`Attribuer ${unassigned.length} élément${unassigned.length>1?'s':''}`,reason:'Sans responsable explicite, le suivi et l’escalade deviennent ambigus.',evidence:`Exemple : ${unassigned[0]?.title}.`})
   if(unresolvedIssues.length)priorities.push({id:'issues',tone:'warning',icon:AlertTriangle,target:'governance',title:`Décider sur ${unresolvedIssues.length} problème${unresolvedIssues.length>1?'s ouverts':' ouvert'}`,reason:'Les problèmes non arbitrés peuvent se transformer en retard, coût ou conflit.',evidence:`À examiner : ${unresolvedIssues[0]?.title}.`})
-  const penalty=Math.min(75,overdue.length*7+blocked.length*9+critical.length*10+unassigned.length*2+(budgetUse>=90?12:0)+(budgetUse>100?8:0)+unresolvedIssues.length*3)
+  if(hybridGaps.length)priorities.push({id:'hybrid',tone:'neutral',icon:GitBranch,target:'impact',title:`Relier ${hybridGaps.length} élément${hybridGaps.length>1?'s':''} Scrum au WBS`,reason:'Une liaison explicite permet de traduire la valeur agile en impact sur les jalons prédictifs.',evidence:`Premier écart : ${hybridGaps[0]?.title}.`})
+  if(supplierAlerts.length)priorities.push({id:'suppliers',tone:'warning',icon:Building2,target:'impact',title:`Sécuriser ${supplierAlerts.length} engagement${supplierAlerts.length>1?'s fournisseurs':' fournisseur'}`,reason:'Un contrat actif arrivé à échéance peut interrompre la chaîne allant du besoin au livrable.',evidence:`À traiter : ${supplierAlerts[0]?.title}.`})
+  if(humanAlerts.length)priorities.push({id:'human',tone:'danger',icon:HeartPulse,target:'impact',title:`Arbitrer ${humanAlerts.length} tension${humanAlerts.length>1?'s humaines':' humaine'}`,reason:'Un conflit majeur non résolu fragilise la capacité de livraison et la qualité des décisions.',evidence:`Signal : ${humanAlerts[0]?.title}.`})
+  if(explicitImpacts.length)priorities.push({id:'impacts',tone:'warning',icon:GitBranch,target:'impact',title:`Examiner ${explicitImpacts.length} impact${explicitImpacts.length>1?'s transverses':' transverse'}`,reason:'Ces relations métier relient plusieurs domaines du projet et peuvent provoquer un effet en cascade.',evidence:`${explicitImpacts[0]?.impact_area} · ${explicitImpacts[0]?.relationship}.`})
+  const penalty=Math.min(75,overdue.length*7+blocked.length*9+critical.length*10+unassigned.length*2+(budgetUse>=90?12:0)+(budgetUse>100?8:0)+unresolvedIssues.length*3+supplierAlerts.length*5+humanAlerts.length*7+explicitImpacts.length*3)
   const score=Math.max(25,100-penalty)
   const headline=score>=85?'Le projet est maîtrisé.':score>=70?'Quelques arbitrages protégeront la trajectoire.':score>=55?'La trajectoire demande une intervention rapide.':'Le projet nécessite un plan de redressement.'
   const summary=priorities.length?`${priorities.length} action${priorities.length>1?'s':''} prioritaire${priorities.length>1?'s':''} ressortent des données actuelles. Commencez par « ${priorities[0].title} ».`:'Aucun signal majeur ne ressort des données actuelles. Continuez le suivi régulier.'

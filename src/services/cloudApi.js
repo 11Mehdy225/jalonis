@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 
 let cachedWorkspaceId = null
 let cachedUserId = null
-const realtimeProjectTables=['tasks','task_dependencies','work_calendars','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries','cost_entries','change_requests','issues','decisions','stakeholders','raci_assignments','conflicts','communication_plans','custom_fields','custom_field_values']
+const realtimeProjectTables=['tasks','task_dependencies','work_calendars','risks','team','meetings','sprints','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries','cost_entries','change_requests','issues','decisions','stakeholders','raci_assignments','conflicts','communication_plans','custom_fields','custom_field_values','project_links']
 
 const unwrap = ({ data, error }) => {
   if (error) throw error

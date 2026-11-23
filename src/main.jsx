@@ -20,5 +20,6 @@ import './styles/mobile.css'
 import './styles/admin.css'
 import './styles/public-pages.css'
 import './styles/onboarding.css'
+import './styles/impact-center.css'
 
 createRoot(document.getElementById('root')).render(<React.StrictMode><ErrorBoundary><AuthGate><App /></AuthGate></ErrorBoundary></React.StrictMode>)
