@@ -11,7 +11,9 @@ const required=[
 ]
 for(const file of required)if(!fs.existsSync(path.join(root,file)))failures.push(`Fichier requis absent : ${file}`)
 const auth=fs.readFileSync(path.join(root,'src/features/auth/AuthGate.jsx'),'utf8')
-for(const marker of ['pricing','terms','privacy','licenses','support','termsAccepted','Ronna Group'])if(!auth.includes(marker))failures.push(`Parcours public incomplet : ${marker}`)
+for(const marker of ['pricing','legal','terms','sales','privacy','licenses','support','termsAccepted','Ronna Group'])if(!auth.includes(marker))failures.push(`Parcours public incomplet : ${marker}`)
+const legal=fs.readFileSync(path.join(root,'src/features/auth/legalContent.jsx'),'utf8')
+for(const marker of ['CI-ABJ-03-2025-B13-12416','2707190F','CI-2025-0046896 V','+225 07 12 12 12 67','1 000 000 FCFA','Konan Ndassenan Loïc Harold Mehdy','conditions de vente et d’abonnement','trente jours'])if(!legal.includes(marker))failures.push(`Informations juridiques incomplètes : ${marker}`)
 const app=fs.readFileSync(path.join(root,'src/App.jsx'),'utf8')
 for(const marker of ['Administration SaaS','SubscriptionNotice','onboarding-steps','Déconnexion'])if(!app.includes(marker))failures.push(`Parcours applicatif incomplet : ${marker}`)
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'))

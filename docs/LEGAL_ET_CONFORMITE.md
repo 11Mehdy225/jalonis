@@ -4,11 +4,11 @@ Jalonis est conçu et édité par Ronna Group. Le présent document recense les 
 
 ## Informations officielles à fournir
 
-- raison sociale complète et forme juridique de Ronna Group ;
-- adresse complète de l’établissement et du siège social ;
-- numéro de téléphone professionnel ;
-- numéro RCCM, capital social et numéro d’identification fiscale ;
-- identité du représentant légal et du directeur de publication ;
+- raison sociale : RONNA GROUP ; forme juridique : SARLU ;
+- siège : local situé à Abidjan, Cocody, quartier Angré, non loin du rond-point de la CNPS 9e Tranche, lots 30 et 32, îlot 1 ;
+- RCCM : CI-ABJ-03-2025-B13-12416 ; capital social : 1 000 000 FCFA entièrement libéré en numéraire ;
+- représentant légal et directeur de publication : Konan Ndassenan Loïc Harold Mehdy ;
+- NCC : 2707190F ; IDU : CI-2025-0046896 V ; téléphones : +225 07 12 12 12 67 / +225 01 51 70 44 44 ;
 - adresse dédiée aux demandes relatives aux données personnelles ;
 - références d’une éventuelle déclaration ou autorisation ARTCI ;
 - règles applicables aux taxes dans les prix affichés.
