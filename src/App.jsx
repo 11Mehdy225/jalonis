@@ -273,7 +273,7 @@ export default function App() {
           {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView} setAgileTab={setAgileTab}/>}
           {view==='impact'&&<ImpactCenter project={active} entities={entities} onCreate={addEntity} onDelete={removeEntity} onNavigate={target=>{if(target==='scrum')setAgileTab('backlog');setView(target)}}/>}
           {view==='assistant'&&<ProjectAssistant project={active} entities={entities} advancedAvailable={advancedAssistant} onAnalyze={analyzeProject} onNavigate={target=>{if(target==='scrum')setAgileTab('backlog');setView(target)}}/>}
-          {view==='charter'&&<Charter project={active} onSave={updateCharter}/>} 
+          {view==='charter'&&<Charter project={active} onSave={updateCharter}/>}
           {view==='tasks'&&<Tasks methodology={active.methodology} rows={entities.tasks} dependencies={entities.task_dependencies} calendars={entities.work_calendars} items={entities.backlog_items} sprints={entities.sprints} team={entities.team} members={workspace?.members||[]} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} customFields={entities.custom_fields} customValues={entities.custom_field_values} currentUser={currentUser} query={query} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onSaveCustomValue={saveCustomValue} onCreateDependency={data=>addEntity('task_dependencies',data)} onDeleteDependency={id=>removeEntity('task_dependencies',id)} onSaveCalendar={async data=>{const current=entities.work_calendars[0];return current?updateEntity('work_calendars',current.id,data):addEntity('work_calendars',data)}} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
           {view==='scrum'&&<ScrumView
             project={active} sprints={entities.sprints} events={entities.scrum_events} eventEntries={entities.scrum_event_entries}
@@ -285,15 +285,15 @@ export default function App() {
             onDeleteChecklist={id=>removeEntity('checklist_items',id)} onSaveCustomValue={saveCustomValue} onSnapshot={createSprintSnapshot}
             onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity} onUpdateProject={updateCharter}
           />}
-          {view==='suppliers'&&<SupplierManagement projectId={activeId} data={entities} tasks={entities.tasks} risks={entities.risks} onCreate={addEntity} onDelete={removeEntity} onReload={()=>loadEntities(activeId)}/>} 
+          {view==='suppliers'&&<SupplierManagement projectId={activeId} currency={active.currency||'XOF'} data={entities} tasks={entities.tasks} risks={entities.risks} onCreate={addEntity} onDelete={removeEntity} onReload={()=>loadEntities(activeId)}/>}
           {view==='finance'&&<FinancialView project={active} costs={entities.cost_entries} team={entities.team} tasks={entities.tasks} timeEntries={entities.time_entries} suppliers={entities.suppliers} onCreate={data=>addEntity('cost_entries',data)} onDelete={id=>removeEntity('cost_entries',id)} onUpdateProject={updateCharter}/>}
           {view==='governance'&&<GovernanceView project={active} changes={entities.change_requests} issues={entities.issues} decisions={entities.decisions} tasks={entities.tasks} risks={entities.risks} meetings={entities.meetings} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity}/>}
           {view==='stakeholders'&&<StakeholderManagement stakeholders={entities.stakeholders} raci={entities.raci_assignments} conflicts={entities.conflicts} communications={entities.communication_plans} tasks={entities.tasks} team={entities.team} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity}/>}
           {view==='reports'&&<ReportCenter project={active} entities={entities} onImport={importProjectArchive}/>}
           {view==='custom-fields'&&<CustomFieldsView fields={entities.custom_fields} canEdit={permissions.manageProject} onCreate={data=>addEntity('custom_fields',data)} onDelete={id=>removeEntity('custom_fields',id)}/>}
-          {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>} 
+          {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>}
           {view==='team'&&<ResourceManagement members={entities.team} tasks={entities.tasks} entries={entities.time_entries} query={query} onCreateEntry={data=>addEntity('time_entries',data)} onUpdateEntry={(id,data)=>updateEntity('time_entries',id,data)} onDeleteEntry={id=>removeEntity('time_entries',id)} onDeleteMember={id=>removeEntity('team',id)}/>}
-          {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('meetings',id)}/>} 
+          {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('meetings',id)}/>}
           {view==='activity'&&<ActivityView project={active} comments={entities.comments} activities={entities.activities} members={workspace?.members||[]} currentUser={currentUser} onComment={data=>addEntity('comments',data)}/>}
         </>}
       </section>

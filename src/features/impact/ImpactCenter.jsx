@@ -7,6 +7,7 @@ const LINKABLE=Object.keys(TYPE_LABELS)
 const severityRank={Critique:4,Haute:3,Moyenne:2,Faible:1}
 const today=()=>new Date().toISOString().slice(0,10)
 const titleOf=row=>row?.title||row?.name||row?.description||row?.reference||row?.contract_number||'Élément sans titre'
+const money=(value,currency='XOF')=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:currency||'XOF',maximumFractionDigits:0}).format(Number(value)||0)
 
 export default function ImpactCenter({project,entities,onCreate,onDelete,onNavigate}){
   const [tab,setTab]=useState('impact'),[showLink,setShowLink]=useState(false)
@@ -16,10 +17,10 @@ export default function ImpactCenter({project,entities,onCreate,onDelete,onNavig
     <section className="impact-kpis"><Metric icon={GitBranch} label="Relations actives" value={model.links.length}/><Metric icon={Boxes} label="Couverture hybride" value={`${model.hybrid.coverage}%`}/><Metric icon={Building2} label="Chaînes fournisseurs" value={model.supplierChains.length}/><Metric icon={HeartPulse} label="Alertes humaines" value={model.human.filter(row=>row.tone!=='good').length}/></section>
     <nav className="impact-tabs">{[['impact','Impacts',Workflow],['hybrid','Mode hybride',GitBranch],['supplier','Fournisseurs',Building2],['human','Pilotage humain',HeartPulse]].map(([id,label,Icon])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><Icon size={15}/>{label}</button>)}<button className="impact-link-button" onClick={()=>setShowLink(value=>!value)}><Plus size={14}/>Liaison manuelle</button></nav>
     {showLink&&<LinkForm entities={entities} onCancel={()=>setShowLink(false)} onSubmit={async data=>{await onCreate('project_links',data);setShowLink(false)}}/>}
-    {tab==='impact'&&<ImpactSignals model={model} entities={entities} onDelete={id=>onDelete('project_links',id)} onNavigate={onNavigate}/>} 
-    {tab==='hybrid'&&<HybridBridge project={project} model={model} onNavigate={onNavigate}/>} 
-    {tab==='supplier'&&<SupplierTraceability model={model} onNavigate={onNavigate}/>} 
-    {tab==='human'&&<HumanPulse model={model} onNavigate={onNavigate}/>} 
+    {tab==='impact'&&<ImpactSignals model={model} entities={entities} onDelete={id=>onDelete('project_links',id)} onNavigate={onNavigate}/>}
+    {tab==='hybrid'&&<HybridBridge project={project} model={model} onNavigate={onNavigate}/>}
+    {tab==='supplier'&&<SupplierTraceability model={model} currency={project.currency||'XOF'} onNavigate={onNavigate}/>}
+    {tab==='human'&&<HumanPulse model={model} onNavigate={onNavigate}/>}
   </div>
 }
 
@@ -32,8 +33,8 @@ function HybridBridge({project,model,onNavigate}){
   return <div className="hybrid-cockpit"><section className="card hybrid-summary"><div><small>COUVERTURE DE LIVRAISON</small><b>{model.hybrid.coverage}%</b><p>{model.hybrid.linkedStories} élément(s) Scrum relié(s) sur {model.hybrid.totalStories}.</p></div><i><span style={{width:`${model.hybrid.coverage}%`}}/></i><button onClick={()=>onNavigate('scrum')}>Compléter les liaisons</button></section><section className="card hybrid-map"><header><div><h3>Du jalon à l’incrément</h3><p>Les dépendances restent prédictives ; les Stories réalisent la valeur attendue.</p></div></header>{model.hybrid.rows.map(row=><article key={row.task.id}><div className="hybrid-task"><span>{row.task.wbs_code||'WBS'}</span><b>{row.task.title}</b><small>{row.task.progress||0}% planifié</small></div><ArrowRight size={16}/><div className="hybrid-stories">{row.stories.map(story=><span key={story.id} className={story.status==='Terminé'?'done':''}><b>{story.title}</b><small>{story.item_type} · {story.status}</small></span>)}{!row.stories.length&&<em>Aucun incrément Scrum relié</em>}</div><strong>{row.storyProgress}%</strong></article>)}</section></div>
 }
 
-function SupplierTraceability({model,onNavigate}){
-  return <section className="card supplier-trace"><header><div><h3>Du besoin au livrable</h3><p>Chaque dossier montre son origine, la décision d’achat et son effet sur le projet.</p></div><button onClick={()=>onNavigate('suppliers')}>Ouvrir les achats</button></header>{model.supplierChains.map(chain=><article key={chain.procurement.id}><div className="trace-step"><small>BESOIN</small><b>{chain.task?.title||chain.procurement.title}</b><span>{chain.risk?`Risque · ${chain.risk.title}`:'Origine WBS'}</span></div><ArrowRight/><div className="trace-step"><small>{chain.procurement.request_type||'RFQ'}</small><b>{chain.procurement.title}</b><span>{chain.quotes.length} offre(s)</span></div><ArrowRight/><div className="trace-step"><small>ATTRIBUTION</small><b>{chain.winner?.supplierName||'À décider'}</b><span>{chain.winner?`${Number(chain.winner.amount||0).toLocaleString('fr-FR')} ${chain.winner.currency}`:'Comparaison en cours'}</span></div><ArrowRight/><div className="trace-step"><small>CONTRAT / LIVRAISON</small><b>{chain.contract?.title||'Contrat à formaliser'}</b><span>{chain.contract?.status||'Non engagé'}</span></div></article>)}{!model.supplierChains.length&&<div className="impact-empty"><Building2 size={28}/><b>Aucune chaîne fournisseur complète</b><p>Créez une consultation liée à une activité WBS ou à un risque.</p></div>}</section>
+function SupplierTraceability({model,currency,onNavigate}){
+  return <section className="card supplier-trace"><header><div><h3>Du besoin au livrable</h3><p>Chaque dossier montre son origine, la décision d’achat et son effet sur le projet.</p></div><button onClick={()=>onNavigate('suppliers')}>Ouvrir les achats</button></header>{model.supplierChains.map(chain=><article key={chain.procurement.id}><div className="trace-step"><small>BESOIN</small><b>{chain.task?.title||chain.procurement.title}</b><span>{chain.risk?`Risque · ${chain.risk.title}`:'Origine WBS'}</span></div><ArrowRight/><div className="trace-step"><small>{chain.procurement.request_type||'RFQ'}</small><b>{chain.procurement.title}</b><span>{chain.quotes.length} offre(s)</span></div><ArrowRight/><div className="trace-step"><small>ATTRIBUTION</small><b>{chain.winner?.supplierName||'À décider'}</b><span>{chain.winner?money(chain.winner.amount,currency):'Comparaison en cours'}</span></div><ArrowRight/><div className="trace-step"><small>CONTRAT / LIVRAISON</small><b>{chain.contract?.title||'Contrat à formaliser'}</b><span>{chain.contract?.status||'Non engagé'}</span></div></article>)}{!model.supplierChains.length&&<div className="impact-empty"><Building2 size={28}/><b>Aucune chaîne fournisseur complète</b><p>Créez une consultation liée à une activité WBS ou à un risque.</p></div>}</section>
 }
 
 function HumanPulse({model,onNavigate}){

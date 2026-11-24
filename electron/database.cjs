@@ -172,7 +172,7 @@ class JalonisDatabase {
       CREATE TABLE IF NOT EXISTS procurements (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         reference TEXT, title TEXT NOT NULL, request_type TEXT DEFAULT 'RFQ', category TEXT, description TEXT,
-        issue_date TEXT, deadline TEXT, status TEXT DEFAULT 'Brouillon', currency TEXT DEFAULT 'EUR',
+        issue_date TEXT, deadline TEXT, status TEXT DEFAULT 'Brouillon', currency TEXT DEFAULT 'XOF',
         estimated_budget REAL DEFAULT 0, owner TEXT, linked_task_id TEXT, linked_risk_id TEXT,
         evaluation_method TEXT, technical_weight REAL DEFAULT 60, financial_weight REAL DEFAULT 40,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
@@ -180,7 +180,7 @@ class JalonisDatabase {
       CREATE TABLE IF NOT EXISTS supplier_quotes (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         procurement_id TEXT, supplier_id TEXT, quote_reference TEXT, submission_date TEXT,
-        amount REAL DEFAULT 0, currency TEXT DEFAULT 'EUR', lead_time_days INTEGER DEFAULT 0,
+        amount REAL DEFAULT 0, currency TEXT DEFAULT 'XOF', lead_time_days INTEGER DEFAULT 0,
         validity_date TEXT, technical_score REAL DEFAULT 0, financial_score REAL DEFAULT 0,
         compliance_score REAL DEFAULT 0, total_score REAL DEFAULT 0, status TEXT DEFAULT 'Reçue', notes TEXT,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
@@ -188,7 +188,7 @@ class JalonisDatabase {
       CREATE TABLE IF NOT EXISTS supplier_contracts (
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         supplier_id TEXT, procurement_id TEXT, contract_number TEXT, title TEXT NOT NULL,
-        start_date TEXT, end_date TEXT, amount REAL DEFAULT 0, currency TEXT DEFAULT 'EUR',
+        start_date TEXT, end_date TEXT, amount REAL DEFAULT 0, currency TEXT DEFAULT 'XOF',
         status TEXT DEFAULT 'Brouillon', owner TEXT, payment_terms TEXT, deliverables TEXT,
         renewal_notice_days INTEGER DEFAULT 30, linked_task_id TEXT,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
@@ -354,6 +354,9 @@ class JalonisDatabase {
     ensureColumn('custom_fields', 'rank', 'INTEGER DEFAULT 0')
     ensureColumn('custom_fields', 'updated_at', 'TEXT')
     this.db.exec("UPDATE custom_fields SET updated_at=created_at WHERE updated_at IS NULL")
+    for (const table of ['procurements','supplier_quotes','supplier_contracts']) {
+      this.db.exec(`UPDATE ${table} SET currency=COALESCE((SELECT currency FROM projects WHERE projects.id=${table}.project_id),'XOF')`)
+    }
     this.ensureLocalWorkspace()
     const palette = ['#4f46e5','#0f9f8f','#e46c45','#2878c7','#9b51c7','#cf4f83','#ca8a04','#475569']
     const colorless = this.db.prepare("SELECT id FROM tasks WHERE color IS NULL OR color = ''").all()
@@ -514,6 +517,10 @@ class JalonisDatabase {
     if (!entries.length) return this.db.prepare('SELECT * FROM projects WHERE id=?').get(id)
     const sql = `UPDATE projects SET ${entries.map(([key]) => `${key}=?`).join(',')}, updated_at=? WHERE id=?`
     this.db.prepare(sql).run(...entries.map(([,v]) => sqlValue(v)), new Date().toISOString(), id)
+    if ('currency' in data) {
+      const currency = data.currency || 'XOF'
+      for (const table of ['procurements','supplier_quotes','supplier_contracts']) this.db.prepare(`UPDATE ${table} SET currency=?,updated_at=? WHERE project_id=?`).run(currency,new Date().toISOString(),id)
+    }
     return this.db.prepare('SELECT * FROM projects WHERE id=?').get(id)
   }
 
@@ -528,6 +535,7 @@ class JalonisDatabase {
     const columns = ENTITY_TABLES[type]
     if (!columns) throw new Error('Type non autorisé')
     const id = crypto.randomUUID(); const now = new Date().toISOString()
+    if (['procurements','supplier_quotes','supplier_contracts'].includes(type)) data.currency = this.db.prepare('SELECT currency FROM projects WHERE id=?').get(data.project_id)?.currency || 'XOF'
     if (type === 'tasks' && !data.color) {
       const palette = ['#4f46e5','#0f9f8f','#e46c45','#2878c7','#9b51c7','#cf4f83','#ca8a04','#475569']
       data.color = palette[crypto.randomInt(palette.length)]
@@ -545,6 +553,10 @@ class JalonisDatabase {
   updateEntity(type, id, data) {
     const allowed = ENTITY_TABLES[type]
     if (!allowed) throw new Error('Type non autorisé')
+    if (['procurements','supplier_quotes','supplier_contracts'].includes(type)) {
+      const row=this.db.prepare(`SELECT project_id FROM ${type} WHERE id=?`).get(id)
+      data={...data,currency:this.db.prepare('SELECT currency FROM projects WHERE id=?').get(row?.project_id)?.currency||'XOF'}
+    }
     const entries = Object.entries(data).filter(([key]) => allowed.includes(key))
     if (entries.length) this.db.prepare(`UPDATE ${type} SET ${entries.map(([key])=>`${key}=?`).join(',')},updated_at=? WHERE id=?`).run(...entries.map(([,v])=>sqlValue(v)),new Date().toISOString(),id)
     return this.db.prepare(`SELECT * FROM ${type} WHERE id=?`).get(id)

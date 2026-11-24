@@ -39,7 +39,11 @@ const previewApi = {
   projects: {
     list: async () => memory.projects,
     create: async (data) => { const now = new Date().toISOString(); const item = { ...data, id: crypto.randomUUID(), status: 'Initialisation', health: 'good', progress: 0, task_count: 0, open_risks: 0, created_at: now, updated_at: now }; memory.projects.push(item); browserWorkspace.usage.projects = memory.projects.length; return item },
-    update: async (id, data) => Object.assign(memory.projects.find(x => x.id === id), data, { updated_at: new Date().toISOString() }),
+    update: async (id, data) => {
+      const project=Object.assign(memory.projects.find(x => x.id === id), data, { updated_at: new Date().toISOString() })
+      if ('currency' in data) ['procurements','supplier_quotes','supplier_contracts'].forEach(type=>memory[type].filter(row=>row.project_id===id).forEach(row=>{row.currency=project.currency||'XOF'}))
+      return project
+    },
     uploadLogo: async id => { const [file]=await chooseImages(false);if(!file)return null;return Object.assign(memory.projects.find(x=>x.id===id),{logo_url:await asDataUrl(file),logo_path:file.name}) },
   },
   media: {
@@ -47,8 +51,8 @@ const previewApi = {
   },
   entities: {
     list: async (type, projectId) => memory[type].filter(x => x.project_id === projectId),
-    create: async (type, data) => { const now = new Date().toISOString(); const item = { ...data, id: crypto.randomUUID(), created_at: now, updated_at: now }; memory[type].push(item); return item },
-    update: async (type, id, data) => Object.assign(memory[type].find(x => x.id === id), data, { updated_at: new Date().toISOString() }),
+    create: async (type, data) => { const now = new Date().toISOString(); const project=memory.projects.find(item=>item.id===data.project_id);const payload=['procurements','supplier_quotes','supplier_contracts'].includes(type)?{...data,currency:project?.currency||'XOF'}:data; const item = { ...payload, id: crypto.randomUUID(), created_at: now, updated_at: now }; memory[type].push(item); return item },
+    update: async (type, id, data) => { const current=memory[type].find(x => x.id === id);const project=memory.projects.find(item=>item.id===current?.project_id);const payload=['procurements','supplier_quotes','supplier_contracts'].includes(type)?{...data,currency:project?.currency||'XOF'}:data;return Object.assign(current,payload,{ updated_at:new Date().toISOString() }) },
     remove: async (type, id) => { memory[type] = memory[type].filter(x => x.id !== id);if(type==='tasks')memory.task_dependencies=memory.task_dependencies.filter(link=>link.task_id!==id&&link.predecessor_task_id!==id);if(type==='custom_fields')memory.custom_field_values=memory.custom_field_values.filter(value=>value.field_id!==id);return { ok: true } },
   },
   supplierDocuments: {
