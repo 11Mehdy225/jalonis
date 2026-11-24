@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /*?preview=
+Disallow: /*?reset=
+Disallow: /*?invited=
 
 Sitemap: https://jalonis.ronnagroup.net/sitemap.xml

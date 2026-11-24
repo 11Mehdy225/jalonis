@@ -12,6 +12,11 @@ const journey = [
 ]
 const supportEmail=import.meta.env.VITE_SUPPORT_EMAIL||'contact@ronnagroup.net'
 const siteUrl=(import.meta.env.VITE_SITE_URL||'https://jalonis.ronnagroup.net').replace(/\/$/,'')
+const defaultSeo={
+  title:'Jalonis | Logiciel de gestion de projet hybride, Agile et PMP',
+  description:'Jalonis est le logiciel SaaS de gestion de projet hybride pour planifier, collaborer et piloter équipes, sprints, budgets, risques et fournisseurs.',
+}
+const setMeta=(selector,value)=>document.querySelector(selector)?.setAttribute('content',value)
 
 export default function AuthGate({ children }) {
   const desktop = Boolean(window.jalonis)
@@ -40,6 +45,12 @@ export default function AuthGate({ children }) {
     const { data } = cloudAuth.onChange((value,event) => { setSession(value);if(event==='PASSWORD_RECOVERY')setResetSetup(true);setChecking(false) })
     return () => data.subscription.unsubscribe()
   }, [localDesktop])
+
+  useEffect(()=>{
+    const parameters=new URLSearchParams(window.location.search)
+    const technical=['preview','reset','invited'].some(name=>parameters.has(name))
+    setMeta('meta[name="robots"]',technical?'noindex,nofollow':'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1')
+  },[preview,inviteSetup,resetSetup])
 
   if(desktop&&!desktopMode)return <DesktopModeScreen/>
   if(session&&inviteSetup)return <InvitationPasswordScreen onComplete={()=>{const url=new URL(window.location.href);url.searchParams.delete('invited');window.history.replaceState({},'',url);setInviteSetup(false)}}/>
@@ -148,11 +159,15 @@ function PublicPage({page,supportEmail,onBack,onConnect,onNavigate}){
     const descriptions={pricing:'Découvrez les offres Jalonis en francs CFA pour piloter vos projets seul ou en équipe.',terms:"Conditions d’utilisation du logiciel de gestion de projets Jalonis.",privacy:'Politique de confidentialité et protection des données Jalonis.',licenses:'Droits, licences et propriété intellectuelle de Jalonis.',support:'Contactez le support Jalonis pour vos comptes, projets, paiements et équipes.'}
     const canonical=`${siteUrl}/?page=${encodeURIComponent(page)}`
     document.title=`${title} — Ronna Group`
-    document.querySelector('meta[name="description"]')?.setAttribute('content',descriptions[page]||'Jalonis — plateforme de pilotage de projets.')
-    document.querySelector('meta[property="og:title"]')?.setAttribute('content',title)
-    document.querySelector('meta[property="og:url"]')?.setAttribute('content',canonical)
+    const description=descriptions[page]||defaultSeo.description
+    setMeta('meta[name="description"]',description)
+    setMeta('meta[property="og:title"]',title)
+    setMeta('meta[property="og:description"]',description)
+    setMeta('meta[property="og:url"]',canonical)
+    setMeta('meta[name="twitter:title"]',title)
+    setMeta('meta[name="twitter:description"]',description)
     document.querySelector('link[rel="canonical"]')?.setAttribute('href',canonical)
-    return ()=>{document.title='Jalonis — Pilotage de projets';document.querySelector('link[rel="canonical"]')?.setAttribute('href',`${siteUrl}/`)}
+    return ()=>{document.title=defaultSeo.title;setMeta('meta[name="description"]',defaultSeo.description);setMeta('meta[property="og:title"]','Jalonis | Logiciel de gestion de projet hybride');setMeta('meta[property="og:description"]','Planifiez, collaborez et pilotez vos projets prédictifs, Agile et Scrum dans un espace unique conçu par Ronna Group.');setMeta('meta[property="og:url"]',`${siteUrl}/`);setMeta('meta[name="twitter:title"]','Jalonis | Logiciel de gestion de projet hybride');setMeta('meta[name="twitter:description"]','Planifiez, collaborez et pilotez projets, équipes, sprints, budgets, risques et fournisseurs avec Jalonis.');document.querySelector('link[rel="canonical"]')?.setAttribute('href',`${siteUrl}/`)}
   },[page,title])
   return <main className="public-page"><header><button onClick={onBack}><ArrowLeft size={16}/>Accueil</button><div><img src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><b>Jalonis</b></div><button className="public-connect" onClick={onConnect}>Se connecter</button></header><article><span>JALONIS · RONNA GROUP</span><h1>{title}</h1>{page==='pricing'?<><p className="public-lead">Commencez gratuitement, puis choisissez l’offre adaptée à votre équipe. Les offres annuelles comprennent deux mois gratuits. Les prix sont affichés en francs CFA.</p><div className="public-pricing">{pricing.map((offer,index)=><section key={offer.name} className={index===2?'featured':''}><i><ShieldCheck/></i>{index===2&&<em className="pricing-badge">RECOMMANDÉ</em>}<h2>{offer.name}</h2><strong>{offer.price}</strong><small>{offer.annual}</small><p>{offer.details}</p><button onClick={onConnect}>{index===0?'Commencer gratuitement':index===4?'Nous contacter':'Choisir cette offre'}</button></section>)}</div><p className="pricing-note">Les membres Observateur et Fournisseur externe ne consomment pas de siège payant. L’offre annuelle est réglée en une fois.</p></>:page==='terms'?<LegalTerms supportEmail={supportEmail}/>:page==='privacy'?<Privacy supportEmail={supportEmail}/>:page==='licenses'?<Licenses supportEmail={supportEmail}/>:<Support supportEmail={supportEmail}/>}</article><footer><strong>Jalonis est conçu et édité par Ronna Group.</strong><nav><button onClick={()=>onNavigate('terms')}>Conditions</button><button onClick={()=>onNavigate('privacy')}>Confidentialité</button><button onClick={()=>onNavigate('licenses')}>Droits & licences</button><button onClick={()=>window.location.href=`mailto:${supportEmail}`}>{supportEmail}</button></nav><small>© 2026 Ronna Group · Tous droits réservés.</small></footer></main>
 }
