@@ -15,14 +15,22 @@ Deno.serve(async request=>{
     const {data:platformAdmin}=await admin.from('platform_admins').select('user_id').eq('user_id',user.id).eq('active',true).maybeSingle()
     if(!platformAdmin)return json({error:'Accès réservé à l’administration Jalonis.'},403)
     if(request.method==='POST'){
-      const body=await request.json(),id=String(body.incident_id||''),status=String(body.status||''),allowed=new Set(['open','investigating','resolved','ignored'])
+      const body=await request.json()
+      if(body.action==='record_backup_check'){
+        const allowedScopes=new Set(['database','storage','project_export']),allowedStatuses=new Set(['passed','failed','pending'])
+        if(!allowedScopes.has(body.scope)||!allowedStatuses.has(body.status))return json({error:'Contrôle de sauvegarde invalide.'},400)
+        const {data,error}=await admin.from('backup_verifications').insert({scope:body.scope,status:body.status,restore_tested:Boolean(body.restore_tested),details:String(body.details||'').slice(0,1000)||null,checked_by:user.id}).select().single()
+        if(error)throw error
+        return json({ok:true,backup_check:data})
+      }
+      const id=String(body.incident_id||''),status=String(body.status||''),allowed=new Set(['open','investigating','resolved','ignored'])
       if(!id||!allowed.has(status))return json({error:'Mise à jour invalide.'},400)
       const {data,error}=await admin.from('platform_incidents').update({status,resolution:String(body.resolution||'').slice(0,1000)||null,assigned_to:body.assigned_to||null}).eq('id',id).select().single()
       if(error)throw error
       return json({ok:true,incident:data})
     }
     const since24=new Date(Date.now()-86400000).toISOString(),since7=new Date(Date.now()-7*86400000).toISOString()
-    const [eventsResult,incidentsResult,transactionsResult,billingEventsResult,emailResult,whatsappResult,rateResult,counts]=await Promise.all([
+    const [eventsResult,incidentsResult,transactionsResult,billingEventsResult,emailResult,whatsappResult,rateResult,backupResult,counts]=await Promise.all([
       admin.from('platform_telemetry').select('event_type,severity,user_id,source,route,message,created_at').gte('created_at',since7).order('created_at',{ascending:false}).limit(5000),
       admin.from('platform_incidents').select('*').order('last_seen_at',{ascending:false}).limit(100),
       admin.from('billing_transactions').select('status,provider,amount,currency,created_at').gte('created_at',since7),
@@ -30,18 +38,21 @@ Deno.serve(async request=>{
       admin.from('email_deliveries').select('status,created_at').gte('created_at',since7),
       admin.from('whatsapp_deliveries').select('status,created_at').gte('created_at',since7),
       admin.from('api_rate_limits').select('scope,request_count,updated_at').gte('updated_at',since24).order('request_count',{ascending:false}).limit(100),
+      admin.from('backup_verifications').select('*').order('checked_at',{ascending:false}).limit(20),
       Promise.all([admin.from('profiles').select('id',{count:'exact',head:true}),admin.from('workspaces').select('id',{count:'exact',head:true}),admin.from('projects').select('id',{count:'exact',head:true})]),
     ])
     const events=eventsResult.data||[],last24=events.filter(row=>row.created_at>=since24),active24=new Set(last24.map(row=>row.user_id).filter(Boolean)).size,active7=new Set(events.map(row=>row.user_id).filter(Boolean)).size
     const topRoutes=Object.entries(events.filter(row=>row.event_type==='page_view'&&row.route).reduce((map:any,row:any)=>{map[row.route]=(map[row.route]||0)+1;return map},{})).sort((a:any,b:any)=>b[1]-a[1]).slice(0,8).map(([route,count])=>({route,count}))
     const errors24=last24.filter(row=>['client_error','api_error'].includes(row.event_type)).length,security24=last24.filter(row=>row.event_type==='security').length
     const transactions=transactionsResult.data||[],emails=emailResult.data||[],whatsapp=whatsappResult.data||[]
+    const backupChecks=backupResult.data||[],latestBackup=backupChecks[0]
     const services=[
       {id:'supabase',label:'Supabase',status:'operational',detail:`Base joignable · ${Math.round(performance.now()-started)} ms`},
       {id:'jeko',label:'Jèko',status:transactions.some(row=>row.status==='failed')?'degraded':'operational',detail:`${transactions.length} transaction(s) · ${(billingEventsResult.data||[]).length} événement(s) sur 7 j`},
       {id:'email',label:'E-mails',status:emails.some(row=>row.status==='failed')?'degraded':'operational',detail:`${emails.filter(row=>row.status==='sent').length} envoyé(s) · ${emails.filter(row=>row.status==='failed').length} échec(s)`},
       {id:'whatsapp',label:'WhatsApp',status:whatsapp.some(row=>row.status==='failed')?'degraded':'operational',detail:`${whatsapp.filter(row=>row.status==='sent').length} envoyé(s) · ${whatsapp.filter(row=>row.status==='failed').length} échec(s)`},
+      {id:'backups',label:'Sauvegardes',status:latestBackup?.status==='passed'?'operational':'degraded',detail:latestBackup?`Dernier contrôle ${new Date(latestBackup.checked_at).toLocaleDateString('fr-FR')} · restauration ${latestBackup.restore_tested?'testée':'non testée'}`:'Aucun contrôle enregistré'},
     ]
-    return json({generated_at:new Date().toISOString(),metrics:{active_24h:active24,active_7d:active7,page_views_7d:events.filter(row=>row.event_type==='page_view').length,errors_24h:errors24,security_24h:security24,accounts:counts[0].count||0,workspaces:counts[1].count||0,projects:counts[2].count||0},services,top_routes:topRoutes,incidents:incidentsResult.data||[],recent_events:events.filter(row=>row.event_type!=='page_view').slice(0,40),security_signals:(rateResult.data||[]).filter(row=>Number(row.request_count)>5).slice(0,20)})
+    return json({generated_at:new Date().toISOString(),metrics:{active_24h:active24,active_7d:active7,page_views_7d:events.filter(row=>row.event_type==='page_view').length,errors_24h:errors24,security_24h:security24,accounts:counts[0].count||0,workspaces:counts[1].count||0,projects:counts[2].count||0},services,backup_checks:backupChecks,top_routes:topRoutes,incidents:incidentsResult.data||[],recent_events:events.filter(row=>row.event_type!=='page_view').slice(0,40),security_signals:(rateResult.data||[]).filter(row=>Number(row.request_count)>5).slice(0,20)})
   }catch(error){return json({error:error instanceof Error?error.message:'Supervision indisponible.'},500)}
 })

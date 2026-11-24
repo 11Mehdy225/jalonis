@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const root=process.cwd()
-const requiredFunctions=['create-workspace','invite-member','create-billing-checkout','create-jeko-checkout','flutterwave-webhook','jeko-webhook','submit-manual-payment','review-manual-payment','process-email-queue','process-whatsapp-queue','project-assistant','platform-readiness','platform-monitoring','telemetry-ingest','whatsapp-webhook']
+const requiredFunctions=['create-workspace','invite-member','create-billing-checkout','create-jeko-checkout','flutterwave-webhook','jeko-webhook','submit-manual-payment','review-manual-payment','process-email-queue','process-whatsapp-queue','project-assistant','platform-readiness','platform-monitoring','privacy-operations','telemetry-ingest','whatsapp-webhook']
 const failures=[]
 
 const envFile=path.join(root,'.env.local')
@@ -21,7 +21,7 @@ else{
 }
 
 const migrations=fs.readdirSync(path.join(root,'supabase','migrations')).filter(file=>file.endsWith('.sql')).sort()
-if(migrations.length!==38)failures.push(`38 migrations attendues, ${migrations.length} trouvée(s).`)
+if(migrations.length!==39)failures.push(`39 migrations attendues, ${migrations.length} trouvée(s).`)
 for(const name of requiredFunctions){
   if(!fs.existsSync(path.join(root,'supabase','functions',name,'index.ts')))failures.push(`Fonction manquante : ${name}.`)
 }

@@ -152,6 +152,8 @@ export const cloudApi = {
     readiness: async () => {const {data,error}=await supabase.functions.invoke('platform-readiness');if(error)throw error;return data},
     monitoring: async () => {const {data,error}=await supabase.functions.invoke('platform-monitoring');if(error)throw error;return data},
     manageIncident: async payload => {const {data,error}=await supabase.functions.invoke('platform-monitoring',{body:payload});if(error)throw error;return data},
+    privacyRequests: async () => unwrap(await supabase.from('privacy_requests').select('*').order('requested_at',{ascending:false}).limit(250)),
+    managePrivacyRequest: async payload => {const {data,error}=await supabase.functions.invoke('privacy-operations',{body:payload});if(error){let message=error.message;try{message=(await error.context?.json())?.error||message}catch{}throw new Error(message)}return data},
     manageSubscription: async data => unwrap(await supabase.rpc('platform_admin_manage_subscription',data)),
     createPromotionCode: async data => unwrap(await supabase.rpc('platform_admin_create_promotion_code',data)),
     setPromotionCodeActive: async data => unwrap(await supabase.rpc('platform_admin_set_promotion_code_active',data)),
@@ -159,6 +161,12 @@ export const cloudApi = {
       const user=await currentUser()
       return unwrap(await supabase.from('notification_channel_settings').update({...data,updated_by:user.id,last_checked_at:new Date().toISOString()}).eq('channel',channel).select().single())
     },
+  },
+  privacy: {
+    list: async () => unwrap(await supabase.from('privacy_requests').select('*').order('requested_at',{ascending:false})),
+    export: async () => unwrap(await supabase.rpc('export_my_personal_data')),
+    submit: async data => unwrap(await supabase.rpc('submit_privacy_request',{p_request_type:data.request_type,p_details:data.details||null})),
+    cancel: async id => unwrap(await supabase.rpc('cancel_privacy_request',{p_request_id:id})),
   },
   assistant: {
     analyze: async (projectId, question) => {
