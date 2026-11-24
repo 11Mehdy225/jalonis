@@ -5,7 +5,7 @@ const company={
   form:'Société à responsabilité limitée unipersonnelle (SARLU)',
   capital:'1 000 000 FCFA, entièrement libéré en numéraire',
   rccm:'CI-ABJ-03-2025-B13-12416',
-  ncc:'2707190F',
+  ncc:'2507190F',
   idu:'CI-2025-0046896 V',
   phones:'+225 07 12 12 12 67 / +225 01 51 70 44 44',
   address:'Local situé à Abidjan, Cocody, quartier Angré, non loin du rond-point de la CNPS 9e Tranche, lots 30 et 32, îlot 1, Côte d’Ivoire',
