@@ -8,7 +8,7 @@ const layout=(content:string)=>`<!doctype html><html><body style="margin:0;backg
 
 Deno.serve(async request=>{
   try{
-    const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),resendKey=Deno.env.get('RESEND_API_KEY'),cronSecret=Deno.env.get('JALONIS_CRON_SECRET'),from=Deno.env.get('JALONIS_EMAIL_FROM')
+    const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),resendKey=Deno.env.get('RESEND_API_KEY'),cronSecret=Deno.env.get('JALONIS_CRON_SECRET'),from=Deno.env.get('JALONIS_EMAIL_FROM'),replyTo=Deno.env.get('JALONIS_EMAIL_REPLY_TO')
     if(!url||!serviceKey||!resendKey||!cronSecret||!from)return Response.json({error:'Configuration e-mail incomplète.'},{status:503})
     if(request.headers.get('x-jalonis-cron-secret')!==cronSecret)return Response.json({error:'Accès refusé.'},{status:401})
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}})
@@ -23,7 +23,7 @@ Deno.serve(async request=>{
       if(delivery.email_type==='notification'&&withinQuietHours(localTime,String(profile.quiet_start||''),String(profile.quiet_end||''))){skipped++;continue}
       await admin.from('email_deliveries').update({status:'sending',attempts:Number(delivery.attempts||0)+1}).eq('id',delivery.id).eq('status','pending')
       const content=delivery.email_type==='daily_digest'?renderDigest(delivery.template_data,profile.full_name):card(delivery.template_data?.title||delivery.subject,delivery.template_data?.body||'')
-      const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${resendKey}`,'Content-Type':'application/json','Idempotency-Key':delivery.dedupe_key},body:JSON.stringify({from,to:[profile.email],subject:delivery.subject,html:layout(content)})})
+      const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${resendKey}`,'Content-Type':'application/json','Idempotency-Key':delivery.dedupe_key},body:JSON.stringify({from,to:[profile.email],subject:delivery.subject,html:layout(content),...(replyTo?{reply_to:replyTo}:{})})})
       const result=await response.json()
       if(response.ok){sent++;await admin.from('email_deliveries').update({status:'sent',provider_id:result.id||null,sent_at:new Date().toISOString(),last_error:null}).eq('id',delivery.id)}
       else{failed++;await admin.from('email_deliveries').update({status:Number(delivery.attempts||0)>=2?'failed':'pending',last_error:String(result.message||'Erreur Resend').slice(0,500),scheduled_for:new Date(Date.now()+15*60000).toISOString()}).eq('id',delivery.id)}

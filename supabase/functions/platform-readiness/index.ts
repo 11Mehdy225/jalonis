@@ -23,7 +23,7 @@ Deno.serve(async request=>{
       admin.from('billing_transactions').select('status,created_at').eq('provider','jeko').order('created_at',{ascending:false}).limit(1).maybeSingle(),
     ])
     const jekoSecrets=configured('JEKO_API_KEY','JEKO_API_KEY_ID','JEKO_STORE_ID','JEKO_WEBHOOK_SECRET','SITE_URL')
-    const emailSecrets=configured('RESEND_API_KEY','JALONIS_EMAIL_FROM','JALONIS_CRON_SECRET')
+    const emailSecrets=configured('RESEND_API_KEY','JALONIS_EMAIL_FROM','JALONIS_EMAIL_REPLY_TO','JALONIS_CRON_SECRET')
     const whatsappSecrets=configured('WHATSAPP_ACCESS_TOKEN','WHATSAPP_PHONE_NUMBER_ID','JALONIS_CRON_SECRET')
     const checks=[
       {id:'jeko-secrets',group:'Paiement',label:'Secrets Jèko',ready:jekoSecrets,detail:jekoSecrets?'Clé API, identifiant, magasin, signature et adresse publique présents.':'Un ou plusieurs secrets Jèko manquent.'},
@@ -31,7 +31,7 @@ Deno.serve(async request=>{
       {id:'jeko-prices',group:'Paiement',label:'Tarifs Jèko',ready:(prices||[]).length===6,detail:`${(prices||[]).length}/6 tarifs actifs.`},
       {id:'jeko-webhook',group:'Paiement',label:'Webhook reçu',ready:Boolean(lastJekoEvent),detail:lastJekoEvent?`${lastJekoEvent.event_type} · ${lastJekoEvent.processed_at}`:'Aucun événement reçu — normal avant le premier paiement.'},
       {id:'jeko-payment',group:'Paiement',label:'Paiement réel confirmé',ready:lastPayment?.status==='successful',detail:lastPayment?`${lastPayment.status} · ${lastPayment.created_at}`:'Aucune tentative enregistrée.'},
-      {id:'email',group:'Notifications',label:'Envoi e-mail',ready:emailSecrets,detail:emailSecrets?'Resend, expéditeur et secret de planification présents.':'Configuration Resend ou planification incomplète.'},
+      {id:'email',group:'Notifications',label:'Envoi e-mail',ready:emailSecrets,detail:emailSecrets?'Resend, expéditeur, adresse de réponse et secret de planification présents.':'Configuration Resend ou planification incomplète.'},
       {id:'whatsapp',group:'Notifications',label:'WhatsApp',ready:whatsappSecrets,optional:true,detail:whatsappSecrets?'Meta Cloud API configurée.':'Facultatif · identifiants Meta non complets.'},
       {id:'assistant',group:'Intelligence',label:'Copilote avancé',ready:configured('OPENAI_API_KEY'),optional:true,detail:configured('OPENAI_API_KEY')?'Clé serveur présente.':'Facultatif · le copilote local reste disponible.'},
     ]
