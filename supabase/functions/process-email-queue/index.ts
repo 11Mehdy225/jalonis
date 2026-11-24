@@ -49,7 +49,7 @@ async function queueDailyDigests(admin:any){
       admin.from('risks').select('title,probability,impact,project_id').in('project_id',projectIds).neq('status','Fermé'),
     ])
     const critical=(risks||[]).filter((risk:any)=>Number(risk.probability)*Number(risk.impact)>=15)
-    await admin.from('email_deliveries').insert({recipient_id:profile.id,email_type:'daily_digest',dedupe_key:dedupeKey,subject:`Jalonis · Votre point projet du ${today}`,template_data:{date:today,tasks:tasks||[],meetings:meetings||[],risks:critical}})
+    await admin.from('email_deliveries').upsert({recipient_id:profile.id,email_type:'daily_digest',dedupe_key:dedupeKey,subject:`Jalonis · Votre point projet du ${today}`,template_data:{date:today,tasks:tasks||[],meetings:meetings||[],risks:critical}},{onConflict:'dedupe_key',ignoreDuplicates:true})
   }
 }
 
