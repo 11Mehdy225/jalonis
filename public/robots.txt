@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jalonis.onrender.com/sitemap.xml
+Sitemap: https://jalonis.ronnagroup.net/sitemap.xml

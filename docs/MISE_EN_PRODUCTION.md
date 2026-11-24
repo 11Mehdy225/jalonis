@@ -2,7 +2,7 @@
 
 ## Adresses publiques
 
-- Application actuelle : `https://jalonis.onrender.com`
+- Application actuelle : `https://jalonis.ronnagroup.net`
 - Domaine conseillé : `app.jalonis.com` ou un sous-domaine appartenant à l’entreprise
 - Assistance : variable Render `VITE_SUPPORT_EMAIL` (valeur actuelle par défaut : `contact@ronnagroup.net`)
 
@@ -50,7 +50,7 @@ Les installateurs sont produits avec `npm run build:mac` et `npm run build:win`.
 
 ## Référencement public
 
-La version web publie les métadonnées sociales, une adresse canonique, des données structurées `SoftwareApplication`, un fichier `robots.txt` et un sitemap incluant l’accueil, les tarifs, le support et les pages juridiques. Après adoption d’un domaine définitif, remplacer `jalonis.onrender.com` dans ces éléments puis déclarer le domaine et le sitemap dans Google Search Console et Bing Webmaster Tools.
+La version web publie les métadonnées sociales, l’adresse canonique `jalonis.ronnagroup.net`, des données structurées `SoftwareApplication`, un fichier `robots.txt` et un sitemap incluant l’accueil, les tarifs, le support et les pages juridiques. Déclarer maintenant ce domaine et son sitemap dans Google Search Console et Bing Webmaster Tools.
 
 ## Codes promotionnels
 

@@ -25,7 +25,7 @@ Deno.serve(async request=>{
       const {data:claimed}=await admin.from('whatsapp_deliveries').update({status:'sending',attempts:Number(delivery.attempts||0)+1}).eq('id',delivery.id).eq('status','pending').select('id').maybeSingle()
       if(!claimed){skipped++;continue}
       const values=delivery.message_type==='daily_digest'
-        ? [profile.full_name||'membre',delivery.template_data?.tasks||0,delivery.template_data?.meetings||0,delivery.template_data?.risks||0,Deno.env.get('SITE_URL')||'https://jalonis.onrender.com']
+        ? [profile.full_name||'membre',delivery.template_data?.tasks||0,delivery.template_data?.meetings||0,delivery.template_data?.risks||0,Deno.env.get('SITE_URL')||'https://jalonis.ronnagroup.net']
         : [delivery.template_data?.title||'Mise à jour du projet',delivery.template_data?.body||'Consultez Jalonis pour les détails.']
       const response=await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({messaging_product:'whatsapp',recipient_type:'individual',to:phoneDigits(profile.phone),type:'template',template:{name:delivery.template_name,language:{code:language},components:[{type:'body',parameters:values.map(textParameter)}]}})})
       const result=await response.json(),messageId=result.messages?.[0]?.id

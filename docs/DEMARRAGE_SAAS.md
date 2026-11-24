@@ -55,14 +55,14 @@ Créer un compte de validation, confirmer l’adresse e-mail, puis vérifier :
 
 Vercel et Netlify sont préconfigurés. Dans l’hébergeur choisi, ajouter les deux variables `VITE_SUPABASE_*`, puis déployer la branche `main`.
 
-Ajouter l’URL publique dans Supabase : Authentication → URL Configuration → Site URL et Redirect URLs. Ajouter l’URL du site ainsi que sa variante de récupération, par exemple `https://jalonis.onrender.com/?reset=1`. Le même réglage permet aux liens de confirmation, d’invitation et de mot de passe oublié de revenir dans Jalonis.
+Ajouter l’URL publique dans Supabase : Authentication → URL Configuration → Site URL et Redirect URLs. Ajouter l’URL du site ainsi que sa variante de récupération, par exemple `https://jalonis.ronnagroup.net/?reset=1`. Le même réglage permet aux liens de confirmation, d’invitation et de mot de passe oublié de revenir dans Jalonis.
 
 Déployer ensuite les fonctions de création d’espace et d’invitation, puis définir l’URL publique utilisée dans les e-mails :
 
 ```bash
 supabase functions deploy create-workspace
 supabase functions deploy invite-member
-supabase secrets set SITE_URL=https://jalonis.onrender.com
+supabase secrets set SITE_URL=https://jalonis.ronnagroup.net
 ```
 
 Un compte peut posséder jusqu’à cinq espaces et un seul espace Personnel. La sélection active est mémorisée sur l’appareil, mais chaque changement est revérifié côté serveur. Les projets, membres, fichiers, abonnement et facturation restent rattachés à leur espace respectif.
@@ -117,7 +117,7 @@ JEKO_API_KEY
 JEKO_API_KEY_ID
 JEKO_STORE_ID
 JEKO_WEBHOOK_SECRET
-SITE_URL=https://jalonis.onrender.com
+SITE_URL=https://jalonis.ronnagroup.net
 ```
 
 Déploiement des fonctions :

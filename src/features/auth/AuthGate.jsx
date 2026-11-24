@@ -11,6 +11,7 @@ const journey = [
   { step: '05', title: 'Livraison' },
 ]
 const supportEmail=import.meta.env.VITE_SUPPORT_EMAIL||'contact@ronnagroup.net'
+const siteUrl=(import.meta.env.VITE_SITE_URL||'https://jalonis.ronnagroup.net').replace(/\/$/,'')
 
 export default function AuthGate({ children }) {
   const desktop = Boolean(window.jalonis)
@@ -145,13 +146,13 @@ function PublicPage({page,supportEmail,onBack,onConnect,onNavigate}){
   const title={pricing:'Tarifs Jalonis',terms:"Conditions générales d’utilisation",privacy:'Politique de confidentialité',licenses:'Droits et licences',support:'Support Jalonis'}[page]||'Jalonis'
   useEffect(()=>{
     const descriptions={pricing:'Découvrez les offres Jalonis en francs CFA pour piloter vos projets seul ou en équipe.',terms:"Conditions d’utilisation du logiciel de gestion de projets Jalonis.",privacy:'Politique de confidentialité et protection des données Jalonis.',licenses:'Droits, licences et propriété intellectuelle de Jalonis.',support:'Contactez le support Jalonis pour vos comptes, projets, paiements et équipes.'}
-    const canonical=`https://jalonis.onrender.com/?page=${encodeURIComponent(page)}`
+    const canonical=`${siteUrl}/?page=${encodeURIComponent(page)}`
     document.title=`${title} — Ronna Group`
     document.querySelector('meta[name="description"]')?.setAttribute('content',descriptions[page]||'Jalonis — plateforme de pilotage de projets.')
     document.querySelector('meta[property="og:title"]')?.setAttribute('content',title)
     document.querySelector('meta[property="og:url"]')?.setAttribute('content',canonical)
     document.querySelector('link[rel="canonical"]')?.setAttribute('href',canonical)
-    return ()=>{document.title='Jalonis — Pilotage de projets';document.querySelector('link[rel="canonical"]')?.setAttribute('href','https://jalonis.onrender.com/')}
+    return ()=>{document.title='Jalonis — Pilotage de projets';document.querySelector('link[rel="canonical"]')?.setAttribute('href',`${siteUrl}/`)}
   },[page,title])
   return <main className="public-page"><header><button onClick={onBack}><ArrowLeft size={16}/>Accueil</button><div><img src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><b>Jalonis</b></div><button className="public-connect" onClick={onConnect}>Se connecter</button></header><article><span>JALONIS · RONNA GROUP</span><h1>{title}</h1>{page==='pricing'?<><p className="public-lead">Commencez gratuitement, puis choisissez l’offre adaptée à votre équipe. Les offres annuelles comprennent deux mois gratuits. Les prix sont affichés en francs CFA.</p><div className="public-pricing">{pricing.map((offer,index)=><section key={offer.name} className={index===2?'featured':''}><i><ShieldCheck/></i>{index===2&&<em className="pricing-badge">RECOMMANDÉ</em>}<h2>{offer.name}</h2><strong>{offer.price}</strong><small>{offer.annual}</small><p>{offer.details}</p><button onClick={onConnect}>{index===0?'Commencer gratuitement':index===4?'Nous contacter':'Choisir cette offre'}</button></section>)}</div><p className="pricing-note">Les membres Observateur et Fournisseur externe ne consomment pas de siège payant. L’offre annuelle est réglée en une fois.</p></>:page==='terms'?<LegalTerms supportEmail={supportEmail}/>:page==='privacy'?<Privacy supportEmail={supportEmail}/>:page==='licenses'?<Licenses supportEmail={supportEmail}/>:<Support supportEmail={supportEmail}/>}</article><footer><strong>Jalonis est conçu et édité par Ronna Group.</strong><nav><button onClick={()=>onNavigate('terms')}>Conditions</button><button onClick={()=>onNavigate('privacy')}>Confidentialité</button><button onClick={()=>onNavigate('licenses')}>Droits & licences</button><button onClick={()=>window.location.href=`mailto:${supportEmail}`}>{supportEmail}</button></nav><small>© 2026 Ronna Group · Tous droits réservés.</small></footer></main>
 }

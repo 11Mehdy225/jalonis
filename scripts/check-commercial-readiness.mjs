@@ -17,6 +17,7 @@ for(const marker of ['JEKO_API_KEY','JEKO_WEBHOOK_SECRET','RESEND_API_KEY','WHAT
 assert(readiness.includes("select('event_type,processed_at')")&&readiness.includes("lastPayment?.status==='successful'"),'Le diagnostic Jèko doit suivre les colonnes et statuts réels du registre de paiement.')
 assert(workspace.includes('Vous avez un code promotionnel ?'),'Le parcours d’activation client est absent.')
 for(const marker of ['canonical','application/ld+json','twitter:card','name="robots"'])assert(html.includes(marker),`Métadonnée SEO absente : ${marker}`)
+for(const content of [html,robots,sitemap])assert(content.includes('jalonis.ronnagroup.net'),'Le domaine public Jalonis doit être utilisé dans toutes les métadonnées.')
 assert(robots.includes('Sitemap:'),'Le fichier robots.txt ne référence pas le sitemap.')
 assert(sitemap.includes('?page=pricing'),'La page des tarifs manque dans le sitemap.')
 
