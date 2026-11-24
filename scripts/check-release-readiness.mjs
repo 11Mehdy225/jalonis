@@ -3,7 +3,7 @@ import path from 'node:path'
 
 const root=process.cwd(),failures=[]
 const required=[
-  'src/features/admin/AdminView.jsx','src/features/auth/AuthGate.jsx','src/styles/mobile.css',
+  'src/features/admin/AdminView.jsx','src/features/auth/AuthGate.jsx','src/styles/mobile.css','src/styles/sidebar-account.css',
   'supabase/functions/process-email-queue/index.ts','supabase/functions/process-whatsapp-queue/index.ts',
   'supabase/migrations/202611230002_platform_operations.sql','docs/MISE_EN_PRODUCTION.md','docs/LEGAL_ET_CONFORMITE.md',
   'supabase/templates/confirmation.html','supabase/templates/invite.html','supabase/templates/recovery.html',
@@ -13,7 +13,7 @@ for(const file of required)if(!fs.existsSync(path.join(root,file)))failures.push
 const auth=fs.readFileSync(path.join(root,'src/features/auth/AuthGate.jsx'),'utf8')
 for(const marker of ['pricing','terms','privacy','licenses','support','termsAccepted','Ronna Group'])if(!auth.includes(marker))failures.push(`Parcours public incomplet : ${marker}`)
 const app=fs.readFileSync(path.join(root,'src/App.jsx'),'utf8')
-for(const marker of ['Administration SaaS','SubscriptionNotice','onboarding-steps'])if(!app.includes(marker))failures.push(`Parcours applicatif incomplet : ${marker}`)
+for(const marker of ['Administration SaaS','SubscriptionNotice','onboarding-steps','Déconnexion'])if(!app.includes(marker))failures.push(`Parcours applicatif incomplet : ${marker}`)
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'))
 if(!pkg.build?.mac?.icon||!pkg.build?.win?.icon)failures.push('Icônes Desktop non configurées.')
 if(!pkg.build?.dmg?.contents||!pkg.build?.nsis)failures.push('Installateurs macOS ou Windows incomplets.')

@@ -1,0 +1,36 @@
+.user-chip {
+  padding-bottom: 9px;
+}
+
+.sidebar-signout {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #8f9ab3;
+  font-size: 11px;
+  text-align: left;
+  transition: background-color .18s ease, color .18s ease;
+}
+
+.sidebar-signout:hover {
+  background: #2b1f31;
+  color: #ffaaa3;
+}
+
+.sidebar-signout svg {
+  flex: none;
+}
+
+@media (max-width: 760px) {
+  .sidebar-signout {
+    min-height: 46px;
+    margin-bottom: max(0px, env(safe-area-inset-bottom));
+    font-size: 14px;
+  }
+}

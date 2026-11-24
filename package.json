@@ -1,6 +1,6 @@
 {
   "name": "jalonis",
-  "version": "0.18.1",
+  "version": "0.18.2",
   "private": true,
   "type": "module",
   "description": "Jalonis — pilotage de projet SaaS et local pour le web, macOS et Windows",
