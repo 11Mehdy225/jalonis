@@ -8,3 +8,4 @@ release/
 .env.*.local
 .supabase/
 supabase/.temp/
+tmp/
