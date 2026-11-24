@@ -49,3 +49,7 @@ RACI, parties prenantes, engagement, conflits, compétences, charge et plans de 
 ### Version 1.0 — commercialisation SaaS
 
 Comptes personnels et organisations, abonnements par siège, application web, synchronisation Desktop, sauvegardes chiffrées, import/export, signature et notarisation Apple, tests automatisés et mises à jour sécurisées.
+
+### Sauvegardes et portabilité — intégrées
+
+Chaque projet peut être exporté dans une sauvegarde protégée par mot de passe avec chiffrement AES-256-GCM et dérivation PBKDF2-SHA-256. La restauration crée une copie indépendante du projet et conserve les relations entre ses données. Les registres principaux restent également exportables en CSV compatible Excel.

@@ -80,6 +80,7 @@ Le fichier d’installation `.exe` sera créé dans `release/`. Les versions de 
 - Registre des risques avec score probabilité × impact
 - Équipe, rôles, compétences et disponibilités
 - Réunions, décisions et actions
+- Rapports imprimables, exports CSV et sauvegardes projet chiffrées par mot de passe
 - Stockage SQLite local et hors ligne
 
 ## Arborescence
