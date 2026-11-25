@@ -269,7 +269,9 @@ export const cloudApi = {
     setAccess: async (projectId,data) => unwrap(await supabase.rpc('set_project_access',{p_project_id:projectId,p_access_mode:data.access_mode,p_members:data.members})),
     create: async data => {
       const id = await workspaceId()
-      return unwrap(await supabase.from('projects').insert({ ...projectPayload(data), workspace_id: id, status: 'Initialisation', health: 'good' }).select().single())
+      const projectId=crypto.randomUUID()
+      unwrap(await supabase.from('projects').insert({ ...projectPayload(data), id:projectId, workspace_id: id, status: 'Initialisation', health: 'good' }))
+      return unwrap(await supabase.from('projects').select('*').eq('id',projectId).single())
     },
     update: async (id, data) => unwrap(await supabase.from('projects').update(projectPayload(data)).eq('id', id).select().single()),
     uploadLogo: async projectId => {

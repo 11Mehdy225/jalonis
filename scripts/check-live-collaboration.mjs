@@ -95,9 +95,25 @@ async function main(){
   assert.equal(invitation.status,'member_added','Le compte existant doit être ajouté immédiatement.')
   const membership=unwrap(await memberClient.from('workspace_members').select('role,status').eq('workspace_id',ownerWorkspaceId).eq('user_id',memberId).single(),'Accès du collaborateur')
   assert.deepEqual(membership,{role:'Membre',status:'Actif'})
+  const ownerMembership=unwrap(await ownerClient.from('workspace_members').select('role,status').eq('workspace_id',ownerWorkspaceId).eq('user_id',ownerId).single(),'Accès du propriétaire')
+  assert.deepEqual(ownerMembership,{role:'Propriétaire',status:'Actif'})
+  const ownerCanCreate=unwrap(await ownerClient.rpc('has_workspace_role',{target_workspace:ownerWorkspaceId,allowed_roles:['Propriétaire','Administrateur','Chef de projet']}),'Contrôle du rôle créateur')
+  assert.equal(ownerCanCreate,true,'Le propriétaire doit être reconnu comme créateur de projet.')
 
-  const project=unwrap(await ownerClient.from('projects').insert({workspace_id:ownerWorkspaceId,name:'Projet collaboratif automatisé',code:'AUTO-COLLAB',methodology:'Hybride',budget:100000,start_date:'2026-11-22',end_date:'2026-11-30'}).select().single(),'Création du projet partagé')
-  const privateProject=unwrap(await memberClient.from('projects').insert({workspace_id:memberWorkspaceId,name:'Projet privé du collaborateur',code:'AUTO-PRIVATE',budget:0}).select().single(),'Création du projet privé')
+  const projectId=crypto.randomUUID()
+  unwrap(await ownerClient.from('projects').insert({id:projectId,workspace_id:ownerWorkspaceId,name:'Projet collaboratif automatisé',code:'AUTO-COLLAB',methodology:'Hybride',budget:100000,start_date:'2026-11-22',end_date:'2026-11-30'}),'Création du projet partagé')
+  const project=unwrap(await ownerClient.from('projects').select('*').eq('id',projectId).single(),'Lecture du projet partagé créé')
+  const hiddenWorkspaceProjectId=crypto.randomUUID()
+  unwrap(await ownerClient.from('projects').insert({id:hiddenWorkspaceProjectId,workspace_id:ownerWorkspaceId,name:'Projet client confidentiel',code:'AUTO-HIDDEN',methodology:'Hybride',budget:50000}),'Création du projet restreint')
+  const hiddenWorkspaceProject=unwrap(await ownerClient.from('projects').select('*').eq('id',hiddenWorkspaceProjectId).single(),'Lecture du projet restreint créé')
+  const hiddenInSameWorkspace=unwrap(await memberClient.from('projects').select('id').eq('id',hiddenWorkspaceProject.id).maybeSingle(),'Contrôle de confidentialité dans le même espace')
+  assert.equal(hiddenInSameWorkspace,null,'Le collaborateur ne doit pas voir un autre projet restreint du même espace.')
+  unwrap(await ownerClient.rpc('set_project_access',{p_project_id:project.id,p_access_mode:'restricted',p_members:[{user_id:memberId,access_role:'contributor'}]}),'Affectation au projet partagé')
+  const visibleSharedProject=unwrap(await memberClient.from('projects').select('id,name').eq('id',project.id).single(),'Lecture du projet autorisé')
+  assert.equal(visibleSharedProject.id,project.id,'Le collaborateur doit voir le projet auquel il est affecté.')
+  const privateProjectId=crypto.randomUUID()
+  unwrap(await memberClient.from('projects').insert({id:privateProjectId,workspace_id:memberWorkspaceId,name:'Projet privé du collaborateur',code:'AUTO-PRIVATE',budget:0}),'Création du projet privé')
+  const privateProject=unwrap(await memberClient.from('projects').select('*').eq('id',privateProjectId).single(),'Lecture du projet privé créé')
   const hidden=unwrap(await ownerClient.from('projects').select('id').eq('id',privateProject.id).maybeSingle(),'Contrôle d’isolation')
   assert.equal(hidden,null,'Le propriétaire ne doit pas voir le projet privé du collaborateur.')
 
@@ -105,9 +121,10 @@ async function main(){
   const realtimeEvent=new Promise((resolve,reject)=>{realtimeResolve=resolve;realtimeReject=reject})
   const channel=memberClient.channel(`collaboration-test-${crypto.randomUUID()}`).on('postgres_changes',{event:'INSERT',schema:'public',table:'tasks',filter:`project_id=eq.${project.id}`},payload=>realtimeResolve(payload.new))
   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Abonnement Realtime non établi.')),10000);channel.subscribe(status=>{if(status==='SUBSCRIBED'){clearTimeout(timer);resolve()}else if(['CHANNEL_ERROR','TIMED_OUT'].includes(status)){clearTimeout(timer);reject(new Error(`Realtime ${status}`))}})})
+  await wait(1000)
 
   const task=unwrap(await ownerClient.from('tasks').insert({project_id:project.id,title:'Tâche partagée',assignee_id:memberId,status:'À faire',progress:0}).select().single(),'Création de la tâche partagée')
-  const received=await Promise.race([realtimeEvent,new Promise((_,reject)=>setTimeout(()=>{realtimeReject?.(new Error('Événement Realtime absent.'));reject(new Error('Événement Realtime absent.'))},10000))])
+  const received=await Promise.race([realtimeEvent,new Promise((_,reject)=>setTimeout(()=>{realtimeReject?.(new Error('Événement Realtime absent.'));reject(new Error('Événement Realtime absent.'))},30000))])
   assert.equal(received.id,task.id,'Le collaborateur reçoit une mauvaise tâche en temps réel.')
   unwrap(await memberClient.from('tasks').update({status:'Terminé',progress:100}).eq('id',task.id),'Mise à jour par le collaborateur')
   const ownerTask=unwrap(await ownerClient.from('tasks').select('status,progress').eq('id',task.id).single(),'Lecture de la mise à jour')
@@ -118,9 +135,15 @@ async function main(){
   const notification=unwrap(await ownerClient.from('notifications').select('event_type,is_read').eq('project_id',project.id).eq('recipient_id',ownerId).single(),'Lecture de la notification')
   assert.deepEqual(notification,{event_type:'mention.created',is_read:false})
 
+  unwrap(await ownerClient.rpc('set_project_access',{p_project_id:project.id,p_access_mode:'restricted',p_members:[]}),'Retrait de l’accès au projet')
+  const revokedProject=unwrap(await memberClient.from('projects').select('id').eq('id',project.id).maybeSingle(),'Contrôle du retrait de projet')
+  assert.equal(revokedProject,null,'Le projet doit disparaître après le retrait de l’accès.')
+  const revokedTask=unwrap(await memberClient.from('tasks').select('id').eq('id',task.id).maybeSingle(),'Contrôle du retrait des données du projet')
+  assert.equal(revokedTask,null,'Les tâches doivent devenir inaccessibles après le retrait du projet.')
+
   await memberClient.removeChannel(channel)
   await Promise.all([ownerClient.auth.signOut(),memberClient.auth.signOut()])
-  console.log('Collaboration réelle validée : 2 comptes, invitation, RLS, tâche temps réel, mise à jour, mention et notification.')
+  console.log('Collaboration réelle validée : 2 comptes, projet autorisé, projet caché dans le même espace, temps réel et révocation complète.')
 }
 
 try{
