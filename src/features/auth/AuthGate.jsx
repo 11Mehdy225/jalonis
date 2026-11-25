@@ -82,34 +82,51 @@ function ResetPasswordScreen({onComplete}){
 
 function WelcomeScreen({ onConnect, onPreview, onPublicPage }) {
   return <main className="welcome-page">
-    <div className="welcome-aurora welcome-aurora-one"/>
-    <div className="welcome-aurora welcome-aurora-two"/>
-    <header className="welcome-header">
-      <div className="welcome-brand"><img src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><b>Jalonis</b></div>
-      <button className="welcome-login-top" onClick={onConnect}>Se connecter <ArrowRight size={15}/></button>
-    </header>
+    <div className="welcome-intro">
+      <div className="welcome-aurora welcome-aurora-one"/>
+      <div className="welcome-aurora welcome-aurora-two"/>
+      <header className="welcome-header">
+        <div className="welcome-brand"><img src="./assets/jalonis-logo.png" alt="Logo Jalonis"/><b>Jalonis</b></div>
+        <nav className="welcome-main-nav" aria-label="Navigation principale"><a href="#fonctionnalites">Fonctionnalités</a><button onClick={()=>onPublicPage('pricing')}>Tarifs</button></nav>
+        <button className="welcome-login-top" onClick={onConnect}>Se connecter <ArrowRight size={15}/></button>
+      </header>
 
-    <section className="welcome-hero">
-      <div className="welcome-kicker"><span/><Sparkles size={14}/> Le projet, de l’idée à l’impact</div>
-      <h1>Chaque étape avance.<br/><em>Tout reste lié.</em></h1>
-      <p>Le poste de pilotage conçu pour réunir stratégie, exécution et collaboration — sans perdre le fil de votre projet.</p>
-    </section>
+      <section className="welcome-hero">
+        <div className="welcome-kicker"><span/><Sparkles size={14}/> Le projet, de l’idée à l’impact</div>
+        <h1>Le logiciel de gestion de projet<br/><em>qui relie chaque étape.</em></h1>
+        <p>Planifiez, collaborez et pilotez vos projets prédictifs, Agile et Scrum. Jalonis réunit équipes, tâches, sprints, budgets, risques, fournisseurs et décisions dans un espace sécurisé.</p>
+      </section>
 
-    <section className="chain-stage" aria-label="Réaction en chaîne du cycle de projet">
-      <img className="office-fresco" src="./assets/jalonis-office-fresco.png" alt=""/>
-      <div className="chain-floor"/>
-      {journey.map(({ step, title }, index) => <div className={`chain-box chain-box-${index + 1}`} key={title} style={{ '--relay': index }}>
-        <span>{step}</span><b>{title}</b><i/>
-      </div>)}
-      <div className="chain-finish"><i/><span>Projet livré</span></div>
-    </section>
+      <section className="chain-stage" aria-label="Réaction en chaîne du cycle de projet">
+        <img className="office-fresco" src="./assets/jalonis-office-fresco.png" alt=""/>
+        <div className="chain-floor"/>
+        {journey.map(({ step, title }, index) => <div className={`chain-box chain-box-${index + 1}`} key={title} style={{ '--relay': index }}>
+          <span>{step}</span><b>{title}</b><i/>
+        </div>)}
+        <div className="chain-finish"><i/><span>Projet livré</span></div>
+      </section>
 
-    <section className="welcome-actions">
-      <button className="welcome-primary" onClick={onConnect}>Se connecter à Jalonis <ArrowRight size={17}/></button>
-      <button className="welcome-secondary" onClick={onPreview}>Parcourir l’interface en mode aperçu</button>
-      <small>Le mode aperçu vous permet de découvrir Jalonis sans créer de compte.</small>
-      <p className="welcome-publisher">Jalonis est conçu et édité par Ronna Group.</p>
-      <nav className="welcome-footer-links"><button onClick={()=>onPublicPage('pricing')}>Tarifs</button><button onClick={()=>onPublicPage('legal')}>Mentions légales</button><button onClick={()=>onPublicPage('terms')}>Conditions d’utilisation</button><button onClick={()=>onPublicPage('sales')}>Vente & abonnements</button><button onClick={()=>onPublicPage('privacy')}>Confidentialité</button><button onClick={()=>onPublicPage('licenses')}>Droits & licences</button><button onClick={()=>onPublicPage('support')}>Support</button></nav>
+      <section className="welcome-actions">
+        <button className="welcome-primary" onClick={onConnect}>Commencer avec Jalonis <ArrowRight size={17}/></button>
+        <button className="welcome-secondary" onClick={onPreview}>Parcourir l’interface en mode aperçu</button>
+        <small>Découvrez Jalonis sans créer de compte.</small>
+      </section>
+    </div>
+
+    <section className="welcome-seo" id="fonctionnalites">
+      <div className="welcome-seo-heading"><span>UNE PLATEFORME, TOUT LE PROJET</span><h2>Pilotez les projets simples comme les plus exigeants</h2><p>Jalonis associe la souplesse d’un outil collaboratif à la rigueur des méthodes professionnelles de gestion de projet.</p></div>
+      <div className="welcome-feature-grid">
+        <article><b>Planification et exécution</b><p>Structurez les jalons, tâches, dépendances, calendriers, charges et livrables. Suivez l’avancement dans des vues adaptées au travail quotidien.</p></article>
+        <article><b>Agile, Scrum et Kanban</b><p>Gérez le backlog produit, les sprints, les user stories, le Daily Scrum, le refinement, la Sprint Review et la rétrospective.</p></article>
+        <article><b>Budget, risques et décisions</b><p>Contrôlez les coûts, engagements, risques, arbitrages et indicateurs pour décider avec une vision consolidée du projet.</p></article>
+        <article><b>Équipes et collaboration</b><p>Invitez chaque membre avec son propre compte, attribuez des rôles et limitez l’accès aux projets autorisés sans partager les mots de passe.</p></article>
+        <article><b>Fournisseurs et achats</b><p>Reliez consultations, contrats, paiements, évaluations et livrables fournisseurs à la trajectoire réelle du projet.</p></article>
+        <article><b>Chaîne d’impact Jalonis</b><p>Reliez planning, équipe, coûts, risques et fournisseurs afin d’identifier les conséquences d’un retard avant qu’il ne devienne critique.</p></article>
+      </div>
+      <div className="welcome-methods"><div><span>HYBRIDE PAR CONCEPTION</span><h2>Prédictif, Agile ou mixte : la méthode s’adapte au projet</h2><p>Utilisez une approche PMP classique, un cadre Scrum, un tableau Kanban ou combinez-les dans le même portefeuille. Jalonis convient aux consultants, PME, équipes internes et organisations qui pilotent plusieurs projets en parallèle.</p></div><button className="welcome-primary" onClick={onPreview}>Voir l’application en aperçu <ArrowRight size={17}/></button></div>
+      <div className="welcome-faq"><h2>Questions fréquentes</h2><details><summary>À quoi sert un logiciel de gestion de projet ?</summary><p>Il centralise la planification, les responsabilités, les échéances, les documents, les budgets, les risques et les échanges afin que l’équipe travaille avec une information commune et à jour.</p></details><details><summary>Jalonis permet-il de travailler en équipe ?</summary><p>Oui. Chaque collaborateur possède son propre compte et ses propres droits. Le responsable peut donner accès à un ou plusieurs projets sans communiquer son mot de passe.</p></details><details><summary>Peut-on gérer des projets Agile et Scrum ?</summary><p>Oui. Jalonis prend en charge le backlog, les sprints, les user stories, le Kanban et les événements Scrum, tout en permettant de les combiner avec une planification prédictive.</p></details><details><summary>Jalonis convient-il aux entreprises en Côte d’Ivoire et en Afrique francophone ?</summary><p>Oui. La plateforme est en français, ses offres sont en francs CFA et elle est conçue par Ronna Group pour servir aussi bien les professionnels indépendants que les équipes et organisations.</p></details></div>
+      <div className="welcome-seo-cta"><span>PRÊT À PILOTER AUTREMENT ?</span><h2>Créez votre espace de gestion de projet</h2><div><button className="welcome-primary" onClick={onConnect}>Commencer maintenant <ArrowRight size={17}/></button><button className="welcome-secondary" onClick={()=>onPublicPage('pricing')}>Consulter les tarifs</button></div></div>
+      <footer className="welcome-seo-footer"><p className="welcome-publisher">Jalonis est conçu et édité par Ronna Group.</p><nav className="welcome-footer-links"><button onClick={()=>onPublicPage('pricing')}>Tarifs</button><button onClick={()=>onPublicPage('legal')}>Mentions légales</button><button onClick={()=>onPublicPage('terms')}>Conditions d’utilisation</button><button onClick={()=>onPublicPage('sales')}>Vente & abonnements</button><button onClick={()=>onPublicPage('privacy')}>Confidentialité</button><button onClick={()=>onPublicPage('licenses')}>Droits & licences</button><button onClick={()=>onPublicPage('support')}>Support</button></nav><small>© 2026 Ronna Group · Tous droits réservés.</small></footer>
     </section>
   </main>
 }
