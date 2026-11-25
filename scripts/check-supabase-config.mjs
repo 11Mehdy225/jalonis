@@ -21,7 +21,7 @@ else{
 }
 
 const migrations=fs.readdirSync(path.join(root,'supabase','migrations')).filter(file=>file.endsWith('.sql')).sort()
-if(migrations.length!==39)failures.push(`39 migrations attendues, ${migrations.length} trouvée(s).`)
+if(migrations.length!==40)failures.push(`40 migrations attendues, ${migrations.length} trouvée(s).`)
 for(const name of requiredFunctions){
   if(!fs.existsSync(path.join(root,'supabase','functions',name,'index.ts')))failures.push(`Fonction manquante : ${name}.`)
 }

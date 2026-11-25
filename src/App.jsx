@@ -23,11 +23,12 @@ import ProjectAssistant from './features/assistant/ProjectAssistant'
 import AdminView from './features/admin/AdminView'
 import ImpactCenter from './features/impact/ImpactCenter'
 import PrivacyCenter from './features/privacy/PrivacyCenter'
+import ProjectAccessManager from './features/workspace/ProjectAccessManager'
 import { trackTelemetry } from './services/telemetry'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { permissionsFor } from './services/permissions'
-import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond, Sparkles, Menu, X, Shield, Workflow, LogOut } from 'lucide-react'
+import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond, Sparkles, Menu, X, Shield, Workflow, LogOut, LockKeyhole } from 'lucide-react'
 
 const money = (n,currency='XOF') => new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0)
 const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)) : '—'
@@ -51,6 +52,7 @@ export default function App() {
   const [agileTab,setAgileTab]=useState('board'), [dark,setDark]=useState(()=>localStorage.getItem('jalonis-theme')==='dark')
   const [notificationOpen,setNotificationOpen]=useState(false)
   const [mobileNav,setMobileNav]=useState(false)
+  const [projectAccess,setProjectAccess]=useState(null),[inviteProject,setInviteProject]=useState(null)
   const [online,setOnline]=useState(()=>navigator.onLine)
   const active=projects.find(p=>p.id===activeId)
 
@@ -62,6 +64,7 @@ export default function App() {
   useEffect(()=>{const connected=()=>setOnline(true),disconnected=()=>setOnline(false);window.addEventListener('online',connected);window.addEventListener('offline',disconnected);return()=>{window.removeEventListener('online',connected);window.removeEventListener('offline',disconnected)}},[])
   useEffect(()=>{const params=new URLSearchParams(window.location.search);if(params.get('billing')==='return'){const status=params.get('status');setNotice(status==='successful'?'Paiement reçu. La vérification sécurisée de votre abonnement est en cours.':status==='cancelled'?'Paiement annulé. Aucun changement n’a été appliqué.':'Le paiement n’a pas été finalisé.');params.delete('billing');params.delete('status');params.delete('tx_ref');params.delete('transaction_id');window.history.replaceState({},'',`${window.location.pathname}${params.size?`?${params}`:''}`)}},[])
   useEffect(()=>{loadEntities(activeId)},[activeId])
+  useEffect(()=>{if(!activeId||!api.projects.access){setProjectAccess(null);return}api.projects.access(activeId).then(setProjectAccess).catch(reason=>setError(reason.message||'Impossible de charger les accès du projet.'))},[activeId])
   useEffect(()=>{if(!activeId||!api.realtime?.subscribeProject)return;const timers=new Map();const unsubscribe=api.realtime.subscribeProject(activeId,({table})=>{clearTimeout(timers.get(table));timers.set(table,setTimeout(()=>reloadProjectTable(table,activeId).catch(reason=>setError(reason.message||'Synchronisation interrompue.')),120))});return()=>{timers.forEach(clearTimeout);unsubscribe?.()}},[activeId])
   useEffect(()=>{if(!active)return;if(active.methodology==='Scrum'&&view==='tasks'){setView('scrum');setAgileTab('backlog')}if(active.methodology==='Prédictif'&&view==='scrum')setView('tasks')},[active?.methodology,view])
   useEffect(()=>{if(workspace?.current_user)trackTelemetry('page_view',{route:`/${view}`})},[view,workspace?.current_user?.id])
@@ -223,7 +226,7 @@ export default function App() {
   async function analyzeProject(question){return api.assistant.analyze(activeId,question)}
   async function inviteMember(data){
     if(!permissions.inviteMembers)return deny('Votre rôle ne permet pas d’inviter des membres.')
-    try { setError('');const next=await api.workspace.invite(data);setWorkspace(next);setNotice(next?.invite_result?.message||'Invitation créée.');setModal(null) }
+    try { setError('');const next=await api.workspace.invite(data);setWorkspace(next);if(activeId&&data.project_ids?.includes(activeId)&&api.projects.access)setProjectAccess(await api.projects.access(activeId));setNotice(next?.invite_result?.message||'Invitation créée.');setInviteProject(null);setModal(null) }
     catch (reason) { setError(reason.message || "Impossible de créer l’invitation") }
   }
   async function removeMember(id){
@@ -233,9 +236,13 @@ export default function App() {
   }
   const currentUser=workspace?.current_user
   const permissions=permissionsFor(currentUser?.role)
+  const visibleProjectMembers=active?.access_mode==='restricted'
+    ? (workspace?.members||[]).filter(member=>['Propriétaire','Administrateur'].includes(member.role)||(projectAccess?.members||[]).some(access=>access.user_id===member.id))
+    : (workspace?.members||[])
   function deny(message){setError(message);return null}
   async function signOut(){try{setError('');setMobileNav(false);await cloudAuth.signOut()}catch(reason){setError(reason.message||'Impossible de vous déconnecter.')}}
   async function updateMemberRole(id,role){if(!permissions.manageWorkspace)return deny('Seuls le propriétaire et les administrateurs peuvent modifier les rôles.');try{setError('');setWorkspace(await api.workspace.updateMemberRole(id,role))}catch(reason){setError(reason.message||'Impossible de modifier ce rôle')}}
+  async function saveProjectAccess(data){try{setError('');const next=await api.projects.setAccess(activeId,data);setProjectAccess(next);setProjects(rows=>rows.map(project=>project.id===activeId?{...project,access_mode:next.access_mode}:project));setNotice('Accès au projet mis à jour.');setModal(null)}catch(reason){setError(reason.message||'Impossible de modifier les accès.');throw reason}}
   function toggleTheme(){setDark(value=>{const next=!value;localStorage.setItem('jalonis-theme',next?'dark':'light');return next})}
   function openProjectView(nextView,nextAgileTab){if(nextAgileTab)setAgileTab(nextAgileTab);setView(nextView);setMobileNav(false)}
   async function readNotification(id){await api.entities.update('notifications',id,{is_read:true});await loadEntities(activeId)}
@@ -265,10 +272,10 @@ export default function App() {
         {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
         {notice&&<div className="app-notice">{notice}<button onClick={()=>setNotice('')}>×</button></div>}
         {view==='admin'&&workspace?.is_platform_admin ? <><div className="page-title"><div><span className="eyebrow">EXPLOITATION JALONIS</span><h1>Administration SaaS</h1><p>Supervisez les comptes, abonnements, paiements et notifications.</p></div></div><AdminView plans={workspace.plans||[]} onLoad={api.admin.dashboard} onReadiness={api.admin.readiness} onMonitoring={api.admin.monitoring} onManageIncident={api.admin.manageIncident} onPrivacyRequests={api.admin.privacyRequests} onManagePrivacyRequest={api.admin.managePrivacyRequest} onManage={api.admin.manageSubscription} onCreatePromotion={api.admin.createPromotionCode} onSetPromotionActive={api.admin.setPromotionCodeActive} onUpdateChannel={api.admin.updateChannel}/></>
-        : view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>setModal('invite-member')} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout} onRedeemPromotion={redeemPromotionCode} onManualPayment={submitManualPayment} onReviewPayment={reviewManualPayment}/></>
+        : view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>{setInviteProject(null);setModal('invite-member')}} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout} onRedeemPromotion={redeemPromotionCode} onManualPayment={submitManualPayment} onReviewPayment={reviewManualPayment}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Votre profil et la configuration de cette installation.</p></div></div><SettingsView currentUser={currentUser} onUpdateProfile={updateProfile}/></>
         : !active ? <Empty canCreate={permissions.createProject} canInvite={permissions.inviteMembers} onCreate={()=>setModal('project')} onInvite={()=>setModal('invite-member')} onProfile={()=>setView('settings')}/> : <>
-          <ProjectHeader active={active} view={view} agileTab={agileTab} members={workspace?.members||[]} canManage={permissions.manageProject} canInvite={permissions.inviteMembers} onNavigate={openProjectView} onShare={()=>setModal('invite-member')} onBranding={()=>setModal('branding')}/>
+          <ProjectHeader active={active} view={view} agileTab={agileTab} members={visibleProjectMembers} canManage={Boolean(projectAccess?.can_manage)} canInvite={permissions.inviteMembers&&Boolean(projectAccess?.can_manage)} onNavigate={openProjectView} onAccess={()=>setModal('project-access')} onShare={()=>{setInviteProject(active);setModal('invite-member')}} onBranding={()=>setModal('branding')}/>
           {permissions.readOnly&&<div className="read-only-banner"><ShieldAlert size={15}/><span><b>Mode lecture seule</b> Votre rôle « {currentUser?.role} » permet de consulter le projet sans le modifier.</span></div>}
           {view!=='scrum'&&<div className="page-title compact-title"><div><span className="eyebrow">{active.code||'PROJET'}</span><h1>{view==='dashboard'?'Vue d’ensemble':view==='activity'?'Activité du projet':NAV.find(n=>n[0]===view)?.[1]||'Paramètres'}</h1><p>{view==='dashboard'?'Les signaux essentiels pour prendre les bonnes décisions.':view==='activity'?'Messages, notifications et historique des changements.':active.name}</p></div>{permissions.editProject&&['tasks','risks','team','meetings'].includes(view)&&<button className="btn primary" onClick={()=>setModal(view)}><Plus size={17}/>Ajouter</button>}</div>}
           {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView} setAgileTab={setAgileTab}/>}
@@ -304,7 +311,8 @@ export default function App() {
     {modal==='workspace-switcher'&&<Modal title="Espaces de travail" onClose={()=>setModal(null)}><WorkspaceSwitcher items={workspaceOptions} currentId={workspace?.workspace?.id} onSelect={switchWorkspace} onCreate={api.workspace.create?()=>setModal('new-workspace'):null}/><div className="form-actions"><button className="btn ghost" onClick={()=>setModal('projects')}><FolderKanban size={16}/>Projets de cet espace</button></div></Modal>}
     {modal==='new-workspace'&&<Modal title="Créer un espace de travail" onClose={()=>setModal(null)}><CreateWorkspaceForm allowPersonal={!workspaceOptions.some(item=>item.account_type==='Personnel'&&item.role==='Propriétaire')} onSubmit={createWorkspace} onCancel={()=>setModal('workspace-switcher')}/></Modal>}
     {['tasks','risks','team','meetings'].includes(modal)&&<Modal title={configs[modal].title} onClose={()=>setModal(null)}><EntityForm type={modal} tasks={entities.tasks} members={workspace?.members||[]} onSubmit={d=>addEntity(modal,d)} onCancel={()=>setModal(null)}/></Modal>}
-    {modal==='invite-member'&&<Modal title="Inviter un membre" onClose={()=>setModal(null)}><InviteMemberForm onSubmit={inviteMember} onCancel={()=>setModal(null)}/></Modal>}
+    {modal==='invite-member'&&<Modal title={inviteProject?`Partager « ${inviteProject.name} »`:'Inviter un membre'} onClose={()=>{setInviteProject(null);setModal(null)}}><InviteMemberForm project={inviteProject} onSubmit={inviteMember} onCancel={()=>{setInviteProject(null);setModal(null)}}/></Modal>}
+    {modal==='project-access'&&<Modal title="Accès au projet" onClose={()=>setModal(null)}><ProjectAccessManager project={active} members={workspace?.members||[]} access={projectAccess} onSave={saveProjectAccess} onCancel={()=>setModal(null)}/></Modal>}
     {modal==='branding'&&<Modal title="Identité du projet" onClose={()=>setModal(null)}><ProjectBrandingForm project={active} onSubmit={updateBranding} onCancel={()=>setModal(null)}/></Modal>}
   </div>
 }
@@ -314,12 +322,12 @@ const PROJECT_TABS=[
   ['suppliers',null,'Fournisseurs',Truck],['finance',null,'Budget',CircleDollarSign],['reports',null,'Rapports',FileDown],['governance',null,'Gouvernance',Gavel],['stakeholders',null,'Parties prenantes',Building2],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
 ]
 
-function ProjectHeader({active,view,agileTab,members,canManage,canInvite,onNavigate,onShare,onBranding}){
+function ProjectHeader({active,view,agileTab,members,canManage,canInvite,onNavigate,onShare,onAccess,onBranding}){
   const tabs=PROJECT_TABS.filter(([target])=>moduleAllowed(active.methodology,target))
   return <div className="project-context">
     <div className="project-context-main">
       <div><span className="project-breadcrumb">Projets <ChevronRight size={13}/> {active.code||'Projet actif'}</span><div className="project-heading">{active.logo_url?<img className="project-mark project-logo" src={active.logo_url} alt={`Logo ${active.name}`}/>:<span className="project-mark">{active.name?.[0]||'J'}</span>}<div><h1>{active.name}</h1><p>{active.methodology||'Hybride'} · {active.status||'En cours'}</p></div></div></div>
-      <div className="project-actions"><div className="member-stack">{members.slice(0,4).map((member,index)=><span key={member.id||index} title={member.full_name}>{(member.full_name||'M').split(' ').map(part=>part[0]).slice(0,2).join('')}</span>)}{members.length>4&&<em>+{members.length-4}</em>}</div>{canManage&&<button className="btn ghost" onClick={onBranding}><Palette size={15}/>Personnaliser</button>}{canInvite&&<button className="btn ghost" onClick={onShare}><Share2 size={15}/>Partager</button>}</div>
+      <div className="project-actions"><div className="member-stack">{members.slice(0,4).map((member,index)=><span key={member.id||index} title={member.full_name}>{(member.full_name||'M').split(' ').map(part=>part[0]).slice(0,2).join('')}</span>)}{members.length>4&&<em>+{members.length-4}</em>}</div>{canManage&&<button className="btn ghost" onClick={onAccess}><LockKeyhole size={15}/>Accès</button>}{canManage&&<button className="btn ghost" onClick={onBranding}><Palette size={15}/>Personnaliser</button>}{canInvite&&<button className="btn ghost" onClick={onShare}><Share2 size={15}/>Partager</button>}</div>
     </div>
     <nav className="project-tabs">{tabs.map(([target,subtab,label,Icon])=>{const selected=view===target&&(!subtab||agileTab===subtab);return <button key={`${target}-${subtab||''}`} className={selected?'active':''} onClick={()=>onNavigate(target,subtab)}><Icon size={15}/>{label}</button>})}<button className="project-tab-more"><MoreHorizontal size={16}/></button></nav>
   </div>

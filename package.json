@@ -21,6 +21,7 @@
     "supabase:check": "node scripts/check-supabase-config.mjs",
     "test:production": "node scripts/check-production.mjs",
     "test:permissions": "node scripts/check-permissions.mjs",
+    "test:project-access": "node scripts/check-project-access.mjs",
     "test:isolation": "node scripts/check-workspace-isolation.cjs",
     "test:collaboration": "node scripts/check-collaboration.mjs",
     "test:collaboration:live": "JALONIS_ALLOW_LIVE_TEST=1 node scripts/check-live-collaboration.mjs",
@@ -33,7 +34,7 @@
     "test:observability": "node scripts/check-observability.mjs",
     "test:backups": "node scripts/check-encrypted-backups.mjs",
     "test:release": "node scripts/check-release-readiness.mjs",
-    "test": "npm run test:permissions && npm run test:isolation && npm run test:collaboration && npm run test:billing && npm run test:subscription && npm run test:commercial && npm run test:security && npm run test:impact && npm run test:scrum-events && npm run test:observability && npm run test:backups && npm run test:release && npm run supabase:check"
+    "test": "npm run test:permissions && npm run test:project-access && npm run test:isolation && npm run test:collaboration && npm run test:billing && npm run test:subscription && npm run test:commercial && npm run test:security && npm run test:impact && npm run test:scrum-events && npm run test:observability && npm run test:backups && npm run test:release && npm run supabase:check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.1",

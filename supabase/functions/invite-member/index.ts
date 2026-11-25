@@ -23,10 +23,24 @@ Deno.serve(async request=>{
     const workspaceId=String(body.workspace_id||'')
     const email=String(body.email||'').trim().toLowerCase()
     const role=roles.includes(body.role)?body.role:'Membre'
+    const requestedProjectIds=Array.isArray(body.project_ids)?[...new Set(body.project_ids.map(String).filter(Boolean))].slice(0,50):[]
     if(!workspaceId||!email)return json({error:'L’espace et l’adresse e-mail sont obligatoires.'},400)
 
     const {data:caller}=await admin.from('workspace_members').select('role,status').eq('workspace_id',workspaceId).eq('user_id',user.id).maybeSingle()
     if(!caller||caller.status!=='Actif'||!['Propriétaire','Administrateur','Chef de projet'].includes(caller.role))return json({error:'Vous ne pouvez pas inviter de membre dans cet espace.'},403)
+
+    let projectIds:string[]=[]
+    if(requestedProjectIds.length){
+      const {data:projects,error:projectsError}=await admin.from('projects').select('id,created_by').eq('workspace_id',workspaceId).in('id',requestedProjectIds)
+      if(projectsError)throw projectsError
+      if((projects||[]).length!==requestedProjectIds.length)return json({error:'Un projet sélectionné est invalide.'},400)
+      if(!['Propriétaire','Administrateur'].includes(caller.role)){
+        const {data:managed}=await admin.from('project_members').select('project_id').eq('user_id',user.id).eq('access_role','manager').in('project_id',requestedProjectIds)
+        const allowed=new Set([...(projects||[]).filter(project=>project.created_by===user.id).map(project=>project.id),...(managed||[]).map(row=>row.project_id)])
+        if(requestedProjectIds.some(id=>!allowed.has(id)))return json({error:'Vous ne pouvez pas partager l’un des projets sélectionnés.'},403)
+      }
+      projectIds=requestedProjectIds
+    }
 
     const [{data:workspace},{data:activeMembers}]=await Promise.all([
       admin.from('workspaces').select('seat_limit').eq('id',workspaceId).single(),
@@ -39,7 +53,7 @@ Deno.serve(async request=>{
     const invitationUsesSeat=!['Observateur','Fournisseur externe'].includes(role)
     if(invitationUsesSeat&&billableRoles>=Number(workspace.seat_limit))return json({error:`La limite de ${workspace.seat_limit} siège(s) actif(s) est atteinte pour cet abonnement.`},409)
 
-    const {data:invitation,error:inviteError}=await admin.from('workspace_invitations').insert({workspace_id:workspaceId,email,full_name:body.full_name||null,phone:body.phone||null,role,invited_by:user.id}).select().single()
+    const {data:invitation,error:inviteError}=await admin.from('workspace_invitations').insert({workspace_id:workspaceId,email,full_name:body.full_name||null,phone:body.phone||null,role,invited_by:user.id,project_ids:projectIds}).select().single()
     if(inviteError){
       if(inviteError.code==='23505')return json({error:'Une invitation est déjà en attente pour cette adresse.'},409)
       throw inviteError
@@ -48,6 +62,10 @@ Deno.serve(async request=>{
     if(existingProfile){
       const {error:memberError}=await admin.from('workspace_members').upsert({workspace_id:workspaceId,user_id:existingProfile.id,role,status:'Actif'},{onConflict:'workspace_id,user_id'})
       if(memberError){await admin.from('workspace_invitations').delete().eq('id',invitation.id);throw memberError}
+      if(projectIds.length){
+        const {error:projectMemberError}=await admin.from('project_members').upsert(projectIds.map(project_id=>({project_id,user_id:existingProfile.id,access_role:'contributor',added_by:user.id})),{onConflict:'project_id,user_id'})
+        if(projectMemberError){await admin.from('workspace_members').delete().eq('workspace_id',workspaceId).eq('user_id',existingProfile.id);await admin.from('workspace_invitations').delete().eq('id',invitation.id);throw projectMemberError}
+      }
       await admin.from('workspace_invitations').update({status:'Acceptée'}).eq('id',invitation.id)
       return json({ok:true,status:'member_added',message:'Le compte existant a été ajouté à l’organisation.'})
     }

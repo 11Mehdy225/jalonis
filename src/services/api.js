@@ -39,7 +39,9 @@ const previewApi = {
   },
   projects: {
     list: async () => memory.projects,
-    create: async (data) => { const now = new Date().toISOString(); const item = { ...data, id: crypto.randomUUID(), status: 'Initialisation', health: 'good', progress: 0, task_count: 0, open_risks: 0, created_at: now, updated_at: now }; memory.projects.push(item); browserWorkspace.usage.projects = memory.projects.length; return item },
+    create: async (data) => { const now = new Date().toISOString(); const item = { ...data, created_by:browserUser.id, project_access:[{user_id:browserUser.id,access_role:'manager',full_name:browserUser.full_name}], id: crypto.randomUUID(), status: 'Initialisation', health: 'good', progress: 0, task_count: 0, open_risks: 0, created_at: now, updated_at: now }; memory.projects.push(item); browserWorkspace.usage.projects = memory.projects.length; return item },
+    access: async id => {const project=memory.projects.find(item=>item.id===id);return {project_id:id,access_mode:project?.access_mode||'restricted',can_manage:true,members:project?.project_access||[]}},
+    setAccess: async (id,data) => {const project=memory.projects.find(item=>item.id===id);project.access_mode=data.access_mode;project.project_access=data.members.map(member=>({...member,full_name:browserWorkspace.members.find(row=>row.id===member.user_id)?.full_name}));return {project_id:id,access_mode:project.access_mode,can_manage:true,members:project.project_access}},
     update: async (id, data) => {
       const project=Object.assign(memory.projects.find(x => x.id === id), data, { updated_at: new Date().toISOString() })
       if ('currency' in data) ['procurements','supplier_quotes','supplier_contracts'].forEach(type=>memory[type].filter(row=>row.project_id===id).forEach(row=>{row.currency=project.currency||'XOF'}))
