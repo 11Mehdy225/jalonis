@@ -361,22 +361,37 @@
 .app-shell .task-list-bulk { border: 0; border-bottom: 1px solid #45495a; border-radius: 0; }
 .app-shell .task-list-bulk select { margin-left: auto; }
 .app-shell .task-list-scroll { overflow: auto; max-height: min(68vh,780px); }
-.app-shell .task-rich-list { width: 100%; min-width: 1900px; border-collapse: separate; border-spacing: 0; }
+.app-shell .task-rich-list { width: 100%; min-width: 1900px; border-collapse: separate; border-spacing: 0; background: #fff; }
 .app-shell .task-rich-list th { position: sticky; top: 0; z-index: 2; height: 48px; background: #17191d; color: #bec4cf; text-align: left; border-right: 1px solid #343842; border-bottom: 1px solid #3d414a; white-space: nowrap; }
-.app-shell .task-rich-list td { height: 62px; border-right: 1px solid #343842; border-bottom: 1px solid #343842; color: #c7cbd3; }
+.app-shell .task-rich-list td { height: 62px; border-right: 1px solid #dfe3ea; border-bottom: 1px solid #dfe3ea; color: #526076; }
 .app-shell .task-rich-list th:first-child,.app-shell .task-rich-list td:first-child { width: 43px; text-align: center; }
 .app-shell .task-rich-list th:nth-child(2) { width: 390px; }
 .app-shell .task-rich-list tr { cursor: pointer; }
-.app-shell .task-rich-list tbody tr:hover,.app-shell .task-rich-list tbody tr.selected { background: #282b32; }
-.app-shell .task-title-cell { display: flex; align-items: center; gap: 7px; color: #e5e8ee; text-align: left; }
-.app-shell .task-title-cell>span { color: #74a8ff; white-space: nowrap; }
+.app-shell .task-rich-list tbody tr { background: #fff; }
+.app-shell .task-rich-list tbody tr:nth-child(even) { background: #fbfcfe; }
+.app-shell .task-rich-list tbody tr:hover { background: #f3f5ff; }
+.app-shell .task-rich-list tbody tr.selected { background: #ecebff; }
+.app-shell .task-title-cell { display: flex; align-items: center; gap: 7px; color: #273247; text-align: left; }
+.app-shell .task-title-cell>span { color: #3979d3; white-space: nowrap; }
 .app-shell .table-person { max-width: 210px; }
 .app-shell .table-person.reporter i { background: #0d9cbc; }
-.app-shell .inline-status { min-height: 34px; border: 1px solid #596170; border-radius: 7px; background: #272a31; color: #e2e5eb; padding: 0 8px; }
-.app-shell .inline-status.en-cours { border-color: #397bd3; background: #19355d; color: #c7ddff; }
-.app-shell .inline-status.terminé { border-color: #598525; background: #293d18; color: #d6f2a8; }
-.app-shell .inline-status.bloqué { border-color: #b85a52; background: #462321; color: #ffc0ba; }
-.app-shell .empty-date { color: #8e96a5; }
+.app-shell .inline-status { min-height: 34px; border: 1px solid #cbd2dd; border-radius: 7px; background: #f7f8fa; color: #39455a; padding: 0 8px; }
+.app-shell .inline-status.en-cours { border-color: #6ea3e8; background: #eaf3ff; color: #285f9f; }
+.app-shell .inline-status.terminé { border-color: #8fbd59; background: #edf8e2; color: #416c18; }
+.app-shell .inline-status.bloqué { border-color: #e0958e; background: #fff0ed; color: #a64138; }
+.app-shell .empty-date { color: #7b8494; }
+.app-shell.dark .task-rich-list { background: #202329; }
+.app-shell.dark .task-rich-list td { border-color: #343842; color: #c7cbd3; }
+.app-shell.dark .task-rich-list tbody tr,
+.app-shell.dark .task-rich-list tbody tr:nth-child(even) { background: #202329; }
+.app-shell.dark .task-rich-list tbody tr:hover,
+.app-shell.dark .task-rich-list tbody tr.selected { background: #282b32; }
+.app-shell.dark .task-title-cell { color: #e5e8ee; }
+.app-shell.dark .task-title-cell>span { color: #74a8ff; }
+.app-shell.dark .inline-status { border-color: #596170; background: #272a31; color: #e2e5eb; }
+.app-shell.dark .inline-status.en-cours { border-color: #397bd3; background: #19355d; color: #c7ddff; }
+.app-shell.dark .inline-status.terminé { border-color: #598525; background: #293d18; color: #d6f2a8; }
+.app-shell.dark .inline-status.bloqué { border-color: #b85a52; background: #462321; color: #ffc0ba; }
 
 /* Dark Gantt, clickable rows and discreet warnings */
 .app-shell .gantt-list-row { width: 100%; padding: 0; border: 0; border-bottom: 1px solid #343842; background: transparent; text-align: left; cursor: pointer; }
