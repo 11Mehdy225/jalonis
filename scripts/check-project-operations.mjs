@@ -13,6 +13,7 @@ const expectations=[
   ['export PowerPoint','exportWeeklyPowerPoint'],['bibliothèque PowerPoint','pptxgenjs'],['sécurité cloud','action_items_member_select'],
   ['mode hors ligne','CREATE TABLE IF NOT EXISTS action_items'],
   ['rattrapage du résumé quotidien','localTime<digestTime'],['actions dans le résumé','Actions à suivre'],
+  ['compatibilité du planificateur après renommage','x-jalonis-cron-secret'],
 ]
 const missing=expectations.filter(([,marker])=>!source.includes(marker))
 if(missing.length){console.error(`Contrôles manquants : ${missing.map(([label])=>label).join(', ')}`);process.exit(1)}

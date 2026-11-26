@@ -10,7 +10,7 @@ Deno.serve(async request=>{
     const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),cronSecret=Deno.env.get('KAVELYO_CRON_SECRET')||Deno.env.get('JALONIS_CRON_SECRET')
     const token=Deno.env.get('WHATSAPP_ACCESS_TOKEN'),phoneNumberId=Deno.env.get('WHATSAPP_PHONE_NUMBER_ID'),language=Deno.env.get('WHATSAPP_TEMPLATE_LANGUAGE')||'fr',apiVersion=Deno.env.get('WHATSAPP_API_VERSION')||'v27.0'
     if(!url||!serviceKey||!cronSecret||!token||!phoneNumberId)return Response.json({error:'Configuration WhatsApp incomplète.'},{status:503})
-    if(request.headers.get('x-kavelyo-cron-secret')!==cronSecret)return Response.json({error:'Accès refusé.'},{status:401})
+    if((request.headers.get('x-kavelyo-cron-secret')||request.headers.get('x-jalonis-cron-secret'))!==cronSecret)return Response.json({error:'Accès refusé.'},{status:401})
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}})
     await admin.from('whatsapp_deliveries').update({status:'pending',scheduled_for:new Date().toISOString(),last_error:'Nouvelle tentative après interruption.'}).eq('status','sending').lt('updated_at',new Date(Date.now()-15*60000).toISOString())
     await queueDailyReminders(admin)

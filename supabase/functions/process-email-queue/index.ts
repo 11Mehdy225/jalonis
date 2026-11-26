@@ -10,7 +10,7 @@ Deno.serve(async request=>{
   try{
     const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),resendKey=Deno.env.get('RESEND_API_KEY'),cronSecret=Deno.env.get('KAVELYO_CRON_SECRET')||Deno.env.get('JALONIS_CRON_SECRET'),from=Deno.env.get('KAVELYO_EMAIL_FROM')||Deno.env.get('JALONIS_EMAIL_FROM'),replyTo=Deno.env.get('KAVELYO_EMAIL_REPLY_TO')||Deno.env.get('JALONIS_EMAIL_REPLY_TO')
     if(!url||!serviceKey||!resendKey||!cronSecret||!from)return Response.json({error:'Configuration e-mail incomplète.'},{status:503})
-    if(request.headers.get('x-kavelyo-cron-secret')!==cronSecret)return Response.json({error:'Accès refusé.'},{status:401})
+    if((request.headers.get('x-kavelyo-cron-secret')||request.headers.get('x-jalonis-cron-secret'))!==cronSecret)return Response.json({error:'Accès refusé.'},{status:401})
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}})
     await queueDailyDigests(admin)
     const {data:pending,error:queueError}=await admin.from('email_deliveries').select('*').eq('status','pending').lte('scheduled_for',new Date().toISOString()).order('created_at').limit(50)
