@@ -1,6 +1,6 @@
 {
   "name": "kavelyo",
-  "version": "0.18.2",
+  "version": "0.19.0",
   "private": true,
   "type": "module",
   "description": "Kavelyo — pilotage de projet SaaS et local pour le web, macOS et Windows",
@@ -33,13 +33,15 @@
     "test:scrum-events": "node scripts/check-scrum-events.mjs",
     "test:observability": "node scripts/check-observability.mjs",
     "test:backups": "node scripts/check-encrypted-backups.mjs",
+    "test:operations": "node scripts/check-project-operations.mjs",
     "test:release": "node scripts/check-release-readiness.mjs",
-    "test": "npm run test:permissions && npm run test:project-access && npm run test:isolation && npm run test:collaboration && npm run test:billing && npm run test:subscription && npm run test:commercial && npm run test:security && npm run test:impact && npm run test:scrum-events && npm run test:observability && npm run test:backups && npm run test:release && npm run supabase:check"
+    "test": "npm run test:permissions && npm run test:project-access && npm run test:isolation && npm run test:collaboration && npm run test:billing && npm run test:subscription && npm run test:commercial && npm run test:security && npm run test:impact && npm run test:scrum-events && npm run test:observability && npm run test:backups && npm run test:operations && npm run test:release && npm run supabase:check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.1",
     "@vitejs/plugin-react": "latest",
     "lucide-react": "latest",
+    "pptxgenjs": "^4.0.1",
     "react": "latest",
     "react-dom": "latest",
     "vite": "^8.3.8"

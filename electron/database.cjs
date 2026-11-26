@@ -52,6 +52,8 @@ const ENTITY_TABLES = {
     'resolution_strategy', 'resolution', 'linked_task_id'],
   communication_plans: ['audience', 'objective', 'content', 'channel', 'frequency', 'owner', 'next_date',
     'status', 'stakeholder_id'],
+  action_items: ['title', 'description', 'source_type', 'source_label', 'owner', 'due_date', 'priority',
+    'status', 'progress', 'linked_task_id', 'linked_risk_id'],
   custom_fields: ['entity_type', 'label', 'field_type', 'options', 'is_required', 'rank'],
   custom_field_values: ['field_id', 'entity_type', 'entity_id', 'value_text'],
 }
@@ -301,6 +303,13 @@ class KavelyoDatabase {
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         audience TEXT NOT NULL, objective TEXT, content TEXT, channel TEXT DEFAULT 'Réunion', frequency TEXT,
         owner TEXT, next_date TEXT, status TEXT DEFAULT 'Actif', stakeholder_id TEXT,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS action_items (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        title TEXT NOT NULL, description TEXT, source_type TEXT DEFAULT 'Manuel', source_label TEXT,
+        owner TEXT, due_date TEXT, priority TEXT DEFAULT 'Moyenne', status TEXT DEFAULT 'À faire',
+        progress INTEGER DEFAULT 0, linked_task_id TEXT, linked_risk_id TEXT,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
     `)

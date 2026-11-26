@@ -1,0 +1,2 @@
+.report-hero-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:760px){.report-hero{align-items:flex-start;flex-direction:column;gap:14px}.report-hero-actions{justify-content:flex-start}}

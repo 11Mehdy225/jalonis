@@ -1,11 +1,13 @@
 import { useState } from 'react'
+import { PROJECT_TEMPLATES } from '../../data/projectTemplates'
 
 export default function ProjectForm({ onSubmit, onCancel }) {
-  const [form, setForm] = useState({ name: '', code: '', manager: '', methodology: 'Hybride', access_mode: 'restricted', theme_color: '#4f46e5', start_date: '', end_date: '', budget: '', currency: 'XOF', description: '' })
-  const change = e => setForm({ ...form, [e.target.name]: e.target.value })
+  const [form, setForm] = useState({ name: '', code: '', manager: '', template_id: 'blank', methodology: 'Hybride', access_mode: 'restricted', theme_color: '#4f46e5', start_date: '', end_date: '', budget: '', currency: 'XOF', description: '' })
+  const change = e => {const next={ ...form, [e.target.name]: e.target.value };if(e.target.name==='template_id'){const template=PROJECT_TEMPLATES.find(item=>item.id===e.target.value);if(template)next.methodology=template.methodology}setForm(next)}
   return <form onSubmit={e => { e.preventDefault(); onSubmit(form) }}>
     <div className="form-grid">
       <label className="span-2">Nom du projet<input required autoFocus name="name" value={form.name} onChange={change} placeholder="Ex. Transformation digitale" /></label>
+      <label className="span-2">Modèle de démarrage<select name="template_id" value={form.template_id} onChange={change}>{PROJECT_TEMPLATES.map(template=><option key={template.id} value={template.id}>{template.name} — {template.description}</option>)}</select></label>
       <label>Code<input name="code" value={form.code} onChange={change} placeholder="TR-2026" /></label>
       <label>Chef de projet<input name="manager" value={form.manager} onChange={change} /></label>
       <label>Mode de pilotage<select name="methodology" value={form.methodology} onChange={change}><option>Hybride</option><option>Scrum</option><option>Prédictif</option></select></label>

@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
-import { ArchiveRestore, BarChart3, Download, FileSpreadsheet, KeyRound, LockKeyhole, Printer, ShieldCheck, Upload } from 'lucide-react'
+import { ArchiveRestore, BarChart3, Download, Presentation, FileSpreadsheet, KeyRound, LockKeyhole, Printer, ShieldCheck, Upload } from 'lucide-react'
 import { decryptProjectArchive, encryptProjectArchive, isEncryptedProjectArchive } from '../../services/backupCrypto'
+import { exportWeeklyPowerPoint } from '../../services/weeklyPowerPoint'
 import '../../styles/reports.css'
+import '../../styles/report-actions.css'
 
 const exportSets=[
   ['tasks','Planning','planning'],['backlog_items','Backlog Scrum','backlog'],['risks','Risques','risques'],['cost_entries','Coûts','couts'],
@@ -58,8 +60,9 @@ export default function ReportCenter({project,entities,onImport}){
   const restoreEncrypted=async()=>{
     try{setWorking(true);setError('');setMessage('');const backup=await decryptProjectArchive(pendingBackup.envelope,restorePassword);await restoreBackup(backup);setPendingBackup(null);setRestorePassword('')}catch(reason){setError(reason.message||'Impossible de restaurer cette sauvegarde.')}finally{setWorking(false)}
   }
+  const exportPowerPoint=async()=>{try{setWorking(true);setError('');setMessage('');await exportWeeklyPowerPoint(project,entities);setMessage('Rapport PowerPoint hebdomadaire téléchargé.')}catch(reason){setError(reason.message||'Impossible de générer le PowerPoint.')}finally{setWorking(false)}}
   return <div className="report-center">
-    <section className="report-hero card"><div><span>RAPPORT DE PILOTAGE</span><h2>{project.name}</h2><p>Situation consolidée au {new Intl.DateTimeFormat('fr-FR',{dateStyle:'long'}).format(new Date())}</p></div><button className="btn primary" onClick={()=>window.print()}><Printer size={16}/>Imprimer / PDF</button></section>
+    <section className="report-hero card"><div><span>RAPPORT DE PILOTAGE</span><h2>{project.name}</h2><p>Situation consolidée au {new Intl.DateTimeFormat('fr-FR',{dateStyle:'long'}).format(new Date())}</p></div><div className="report-hero-actions"><button className="btn ghost" disabled={working} onClick={exportPowerPoint}><Presentation size={16}/>{working?'Génération…':'PowerPoint hebdo'}</button><button className="btn primary" onClick={()=>window.print()}><Printer size={16}/>Imprimer / PDF</button></div></section>
     <div className="report-kpis"><ReportKpi label="Avancement" value={`${metrics.progress}%`} note={`${metrics.done}/${metrics.total} tâches terminées`}/><ReportKpi label="Budget" value={money(project.budget)} note={`${money(metrics.actual)} consommés`}/><ReportKpi label="Risques critiques" value={metrics.critical} note={`${(entities.risks||[]).filter(r=>r.status!=='Fermé').length} risques ouverts`}/><ReportKpi label="Points de gouvernance" value={metrics.openIssues+metrics.openChanges} note={`${metrics.openIssues} problèmes · ${metrics.openChanges} changements`}/></div>
     <div className="report-grid">
       <section className="card report-section"><header><BarChart3 size={18}/><div><h3>État d’avancement</h3><p>Progression moyenne du planning.</p></div></header><div className="report-progress"><div><i style={{width:`${metrics.progress}%`}}/></div><b>{metrics.progress}%</b></div><ReportRows rows={[

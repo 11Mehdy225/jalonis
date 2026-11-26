@@ -22,25 +22,28 @@ import CustomFieldsView from './features/projects/CustomFieldsView'
 import ProjectAssistant from './features/assistant/ProjectAssistant'
 import AdminView from './features/admin/AdminView'
 import ImpactCenter from './features/impact/ImpactCenter'
+import ActionTracker from './features/actions/ActionTracker'
+import RaidCenter from './features/raid/RaidCenter'
+import { seedProjectTemplate } from './data/projectTemplates'
 import PrivacyCenter from './features/privacy/PrivacyCenter'
 import ProjectAccessManager from './features/workspace/ProjectAccessManager'
 import { trackTelemetry } from './services/telemetry'
 import './styles/workspace.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { permissionsFor } from './services/permissions'
-import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond, Sparkles, Menu, X, Shield, Workflow, LogOut, LockKeyhole } from 'lucide-react'
+import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond, Sparkles, Menu, X, Shield, Workflow, LogOut, LockKeyhole, ListChecks, Grid2X2 } from 'lucide-react'
 
 const money = (n,currency='XOF') => new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0)
 const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)) : '—'
 
 const NAV = [
   ['dashboard','Vue d’ensemble',LayoutDashboard],['charter','Charte du projet',FileText],['tasks','Planning prédictif',CalendarRange],['scrum','Scrum & Sprints',Columns3],
-  ['impact','Chaîne d’impact',Workflow],['assistant','Assistant de pilotage',Sparkles],['team','Équipe',Users],['stakeholders','Parties prenantes & RACI',Building2],['suppliers','Fournisseurs & Achats',Truck],['finance','Budget & Coûts',CircleDollarSign],['reports','Rapports & Exports',FileDown],['governance','Gouvernance',Gavel],['custom-fields','Champs personnalisés',List],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
+  ['impact','Chaîne d’impact',Workflow],['assistant','Assistant de pilotage',Sparkles],['actions','Actions',ListChecks],['raid','Registre RAID',Grid2X2],['team','Équipe',Users],['stakeholders','Parties prenantes & RACI',Building2],['suppliers','Fournisseurs & Achats',Truck],['finance','Budget & Coûts',CircleDollarSign],['reports','Rapports & Exports',FileDown],['governance','Gouvernance',Gavel],['custom-fields','Champs personnalisés',List],['risks','Risques',ShieldAlert],['meetings','Réunions',MessageSquareText],
 ]
 const moduleAllowed=(methodology,view)=>methodology==='Scrum'?view!=='tasks':methodology==='Prédictif'?view!=='scrum':true
 
-const ENTITY_TYPES=['tasks','task_dependencies','work_calendars','risks','team','meetings','sprints','scrum_events','scrum_event_entries','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries','cost_entries','change_requests','issues','decisions','stakeholders','raci_assignments','conflicts','communication_plans','custom_fields','custom_field_values','project_links']
-const ENTITY_LABELS={tasks:'Tâche',task_dependencies:'Dépendance',work_calendars:'Calendrier de travail',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',scrum_events:'Événement Scrum',scrum_event_entries:'Contribution Daily',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message',time_entries:'Temps saisi',cost_entries:'Coût',change_requests:'Demande de changement',issues:'Problème',decisions:'Décision',stakeholders:'Partie prenante',raci_assignments:'Attribution RACI',conflicts:'Conflit',communication_plans:'Communication',custom_fields:'Champ personnalisé',custom_field_values:'Valeur personnalisée',project_links:'Liaison d’impact'}
+const ENTITY_TYPES=['tasks','task_dependencies','work_calendars','risks','team','meetings','sprints','scrum_events','scrum_event_entries','backlog_items','attachments','suppliers','procurements','supplier_quotes','supplier_contracts','supplier_evaluations','supplier_documents','comments','activities','notifications','checklist_items','sprint_snapshots','time_entries','cost_entries','change_requests','issues','decisions','stakeholders','raci_assignments','conflicts','communication_plans','custom_fields','custom_field_values','project_links','action_items']
+const ENTITY_LABELS={tasks:'Tâche',task_dependencies:'Dépendance',work_calendars:'Calendrier de travail',risks:'Risque',team:'Membre',meetings:'Réunion',sprints:'Sprint',scrum_events:'Événement Scrum',scrum_event_entries:'Contribution Daily',backlog_items:'Élément du backlog',suppliers:'Fournisseur',procurements:'Demande fournisseur',supplier_quotes:'Devis',supplier_contracts:'Contrat',comments:'Message',time_entries:'Temps saisi',cost_entries:'Coût',change_requests:'Demande de changement',issues:'Problème',decisions:'Décision',stakeholders:'Partie prenante',raci_assignments:'Attribution RACI',conflicts:'Conflit',communication_plans:'Communication',custom_fields:'Champ personnalisé',custom_field_values:'Valeur personnalisée',project_links:'Liaison d’impact',action_items:'Action'}
 const emptyEntities=()=>Object.fromEntries(ENTITY_TYPES.map(type=>[type,[]]))
 
 export default function App() {
@@ -78,7 +81,7 @@ export default function App() {
 
   async function createProject(data){
     if(!permissions.createProject)return deny('Votre rôle ne permet pas de créer un projet.')
-    try { setError('');const item=await api.projects.create(data);setModal(null);await loadProjects(false);setActiveId(item.id);setView('dashboard') }
+    try { setError('');const {template_id,...projectData}=data;const item=await api.projects.create(projectData);await seedProjectTemplate(template_id,item,api);setModal(null);await loadProjects(false);setActiveId(item.id);setView('dashboard');setNotice(template_id&&template_id!=='blank'?'Projet créé avec son plan de démarrage.':'Projet créé.') }
     catch(reason){setError(reason.message||'Impossible de créer ce projet avec l’offre actuelle.')}
   }
   async function switchWorkspace(id){
@@ -281,6 +284,14 @@ export default function App() {
           {view==='dashboard'&&<Dashboard active={active} entities={entities} stats={stats} setView={setView} setAgileTab={setAgileTab}/>}
           {view==='impact'&&<ImpactCenter project={active} entities={entities} onCreate={addEntity} onDelete={removeEntity} onNavigate={target=>{if(target==='scrum')setAgileTab('backlog');setView(target)}}/>}
           {view==='assistant'&&<ProjectAssistant project={active} entities={entities} advancedAvailable={advancedAssistant} onAnalyze={analyzeProject} onNavigate={target=>{if(target==='scrum')setAgileTab('backlog');setView(target)}}/>}
+          {view==='actions'&&<ActionTracker
+            actions={entities.action_items} tasks={entities.tasks} risks={entities.risks}
+            onCreate={data=>addEntity('action_items',data)} onUpdate={(id,data)=>updateEntity('action_items',id,data)} onDelete={id=>removeEntity('action_items',id)}/>
+          }
+          {view==='raid'&&<RaidCenter
+            risks={entities.risks} issues={entities.issues} decisions={entities.decisions}
+            dependencies={entities.task_dependencies} tasks={entities.tasks}/>
+          }
           {view==='charter'&&<Charter project={active} onSave={updateCharter}/>}
           {view==='tasks'&&<Tasks methodology={active.methodology} rows={entities.tasks} dependencies={entities.task_dependencies} calendars={entities.work_calendars} items={entities.backlog_items} sprints={entities.sprints} team={entities.team} members={workspace?.members||[]} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} customFields={entities.custom_fields} customValues={entities.custom_field_values} currentUser={currentUser} query={query} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onSaveCustomValue={saveCustomValue} onCreateDependency={data=>addEntity('task_dependencies',data)} onDeleteDependency={id=>removeEntity('task_dependencies',id)} onSaveCalendar={async data=>{const current=entities.work_calendars[0];return current?updateEntity('work_calendars',current.id,data):addEntity('work_calendars',data)}} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
           {view==='scrum'&&<ScrumView
@@ -318,7 +329,7 @@ export default function App() {
 }
 
 const PROJECT_TABS=[
-  ['dashboard',null,'Résumé',LayoutDashboard],['impact',null,'Impacts',Workflow],['assistant',null,'Assistant',Sparkles],['tasks',null,'Planning prédictif',ChartNoAxesGantt],['scrum','board','Tableau Scrum',Columns3],['scrum','backlog','Backlog',ClipboardList],
+  ['dashboard',null,'Résumé',LayoutDashboard],['impact',null,'Impacts',Workflow],['assistant',null,'Assistant',Sparkles],['actions',null,'Actions',ListChecks],['raid',null,'RAID',Grid2X2],['tasks',null,'Planning prédictif',ChartNoAxesGantt],['scrum','board','Tableau Scrum',Columns3],['scrum','backlog','Backlog',ClipboardList],
   ['suppliers',null,'Fournisseurs',Truck],['finance',null,'Budget',CircleDollarSign],['reports',null,'Rapports',FileDown],['governance',null,'Gouvernance',Gavel],['stakeholders',null,'Parties prenantes',Building2],['risks',null,'Risques',ShieldAlert],['team',null,'Équipe',Users],['meetings',null,'Réunions',MessageSquareText],['activity',null,'Activité',Bell],
 ]
 
