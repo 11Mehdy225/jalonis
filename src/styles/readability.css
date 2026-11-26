@@ -37,17 +37,37 @@
 }
 
 /* Scrum and backlog */
-.app-shell .backlog-section-title b { font-size: 14px; }
-.app-shell .backlog-section-title em { min-width: 24px; height: 24px; font-size: 11px; }
-.app-shell .backlog-section-title > span { font-size: 11px; }
-.app-shell .backlog-head,
-.app-shell .backlog-row {
-  grid-template-columns: 32px 96px minmax(300px, 2fr) 64px 88px 64px 74px 74px 84px;
+.app-shell .backlog-sections { gap: 10px; }
+.app-shell .backlog-section-title {
+  width: 100%;
+  min-height: 62px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  text-align: left;
 }
+.app-shell .backlog-table.collapsed .backlog-section-title { border-bottom: 0; }
+.app-shell .backlog-section-title > div > svg:first-child { transition: transform .18s ease; }
+.app-shell .backlog-table.expanded .backlog-section-title > div > svg:first-child { transform: rotate(90deg); }
+.app-shell .backlog-section-title b { font-size: 15px; }
+.app-shell .backlog-section-title em { width: auto; min-width: 28px; height: 25px; padding-inline: 8px; font-size: 11px; }
+.app-shell .backlog-section-title > span { font-size: 11px; }
+.app-shell .backlog-table .backlog-head,
+.app-shell .backlog-table .backlog-row {
+  grid-template-columns: 34px 96px minmax(360px, 2fr) 105px 90px 64px minmax(120px, .7fr) 108px;
+}
+.app-shell .backlog-head { height: 40px; font-size: 10px; }
 .app-shell .backlog-row { min-height: 58px; font-size: 12px; }
 .app-shell .backlog-title b { white-space: normal; line-height: 1.35; }
 .app-shell .backlog-title small,
 .app-shell .epic-link { font-size: 11px; }
+.app-shell .story-type { font-size: 10px !important; padding: 5px 7px; }
+.app-shell .work-item-key { color: #78aaff; margin-right: 9px; font-weight: 700; white-space: nowrap; }
+.app-shell .backlog-status { justify-self: start; padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--soft); font-weight: 650; white-space: nowrap; }
+.app-shell .backlog-status.en-cours { border-color: #397bd3; background: #19355d; color: #b9d6ff; }
+.app-shell .backlog-status.terminé { border-color: #598525; background: #293d18; color: #d6f2a8; }
+.app-shell .backlog-actions button { width: 30px; height: 30px; display: grid; place-items: center; }
+.app-shell .backlog-actions button em { position: absolute; right: 0; top: -2px; min-width: 14px; height: 14px; display: grid; place-items: center; border-radius: 7px; background: var(--project-color,#4f46e5); color: white; font-size: 8px; font-style: normal; }
 .app-shell .board-filters input,
 .app-shell .board-filter-group,
 .app-shell .board-filter-group select,
@@ -160,7 +180,7 @@
 .app-shell.dark .calendar-week { border-color: #39414e; }
 
 @media (max-width: 1250px) {
-  .app-shell .backlog-head,
-  .app-shell .backlog-row { grid-template-columns: 28px 82px minmax(250px, 1fr) 54px 76px 54px 62px 62px 72px; }
+  .app-shell .backlog-table .backlog-head,
+  .app-shell .backlog-table .backlog-row { min-width: 1050px; grid-template-columns: 30px 86px minmax(320px, 1fr) 96px 82px 58px 118px 96px; }
 }
 
