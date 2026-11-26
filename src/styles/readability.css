@@ -414,3 +414,56 @@
 .app-shell.dark .detail-visuals>button { background: #252931; border-color: #4a515e; color: #b7bfcb; }
 .app-shell.dark .work-item-detail label { color: #c5cbd6; }
 
+/* Full work-item window: fixed compact header, independently scrolling body */
+.app-shell .modal:has(.work-item-detail) {
+  width: min(1120px,calc(100vw - 48px));
+  height: min(90dvh,920px);
+  max-height: 90dvh;
+  padding: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0,1fr);
+}
+.app-shell .modal:has(.work-item-detail) .modal-head {
+  position: relative;
+  inset: auto;
+  z-index: 6;
+  min-height: 86px;
+  margin: 0;
+  padding: 17px 24px;
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 5px 18px #17213c0a;
+}
+.app-shell .modal:has(.work-item-detail) .modal-head h2 { margin-top: 3px; font-size: 21px; }
+.app-shell .modal:has(.work-item-detail) .modal-head .icon-btn { flex: 0 0 42px; width: 42px; height: 42px; }
+.app-shell .modal:has(.work-item-detail) .work-item-detail {
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 24px 32px;
+  scrollbar-gutter: stable;
+}
+.app-shell .work-item-form,
+.app-shell .work-item-form>section,
+.app-shell .work-item-form .form-grid,
+.app-shell .work-item-form .form-grid>* { min-width: 0; }
+.app-shell .work-item-form :is(input,select,textarea) { max-width: 100%; }
+.app-shell .work-item-form textarea { overflow-wrap: anywhere; white-space: pre-wrap; }
+.app-shell.dark .modal:has(.work-item-detail) .modal-head { background: #202228; border-color: #343842; box-shadow: 0 5px 18px #0003; }
+
+@media (max-width:760px) {
+  .app-shell .modal:has(.work-item-detail) {
+    width: 100%;
+    height: 92dvh;
+    max-height: 92dvh;
+    border-radius: 20px 20px 0 0;
+  }
+  .app-shell .modal:has(.work-item-detail) .modal-head { min-height: 74px; padding: 13px 16px; }
+  .app-shell .modal:has(.work-item-detail) .modal-head h2 { font-size: 19px; }
+  .app-shell .modal:has(.work-item-detail) .work-item-detail { padding: 0 14px 24px; }
+}
+
