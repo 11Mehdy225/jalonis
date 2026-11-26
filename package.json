@@ -1,6 +1,6 @@
 {
   "name": "kavelyo",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "private": true,
   "type": "module",
   "description": "Kavelyo — pilotage de projet SaaS et local pour le web, macOS et Windows",
@@ -34,8 +34,9 @@
     "test:observability": "node scripts/check-observability.mjs",
     "test:backups": "node scripts/check-encrypted-backups.mjs",
     "test:operations": "node scripts/check-project-operations.mjs",
+    "test:jira": "node scripts/check-jira-import.mjs",
     "test:release": "node scripts/check-release-readiness.mjs",
-    "test": "npm run test:permissions && npm run test:project-access && npm run test:isolation && npm run test:collaboration && npm run test:billing && npm run test:subscription && npm run test:commercial && npm run test:security && npm run test:impact && npm run test:scrum-events && npm run test:observability && npm run test:backups && npm run test:operations && npm run test:release && npm run supabase:check"
+    "test": "npm run test:permissions && npm run test:project-access && npm run test:isolation && npm run test:collaboration && npm run test:billing && npm run test:subscription && npm run test:commercial && npm run test:security && npm run test:impact && npm run test:scrum-events && npm run test:observability && npm run test:backups && npm run test:operations && npm run test:jira && npm run test:release && npm run supabase:check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.1",

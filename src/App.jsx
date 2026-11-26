@@ -25,6 +25,7 @@ import ImpactCenter from './features/impact/ImpactCenter'
 import ActionTracker from './features/actions/ActionTracker'
 import RaidCenter from './features/raid/RaidCenter'
 import { seedProjectTemplate } from './data/projectTemplates'
+import { jiraTargets } from './services/jiraImport'
 import PrivacyCenter from './features/privacy/PrivacyCenter'
 import ProjectAccessManager from './features/workspace/ProjectAccessManager'
 import { trackTelemetry } from './services/telemetry'
@@ -127,6 +128,22 @@ export default function App() {
     }
     await loadProjects(false);setActiveId(restored.id);setView('dashboard');await loadEntities(restored.id)
     return restored
+  }
+  async function importJiraProject({name,methodology,issues,prefix}){
+    if(!permissions.createProject)return deny('Votre rôle ne permet pas d’importer un projet Jira.')
+    const project=await api.projects.create({name:name.trim(),code:prefix||'JIRA',description:'Projet migré depuis un export CSV Jira.',methodology,status:'Planification',health:'good',budget:0})
+    const assignees=[...new Set(issues.map(row=>row.assignee).filter(Boolean))]
+    for(const person of assignees)await api.entities.create('team',{project_id:project.id,name:person,role:'Membre importé depuis Jira',availability:100})
+    const sprintIds=new Map()
+    for(const sprint of [...new Set(issues.map(row=>row.sprint).filter(Boolean))]){const created=await api.entities.create('sprints',{project_id:project.id,name:sprint,status:'Planifié',capacity_points:0});sprintIds.set(sprint,created.id)}
+    const createdByKey=new Map(),ordered=[...issues].sort((a,b)=>(a.type==='Epic'?-1:1)-(b.type==='Epic'?-1:1))
+    for(const [rank,issue] of ordered.entries()){
+      const target=jiraTargets(issue,methodology),title=`${issue.key} · ${issue.summary}`,trace=[issue.description,issue.reporter&&`Rapporteur Jira : ${issue.reporter}`,issue.labels&&`Étiquettes Jira : ${issue.labels}`,issue.parent_key&&`Parent Jira : ${issue.parent_key}`].filter(Boolean).join('\n\n')
+      const payload=target==='backlog_items'?{project_id:project.id,title,item_type:issue.type,status:issue.status==='À faire'?'Backlog':issue.status,priority:issue.priority,description:trace,story_points:issue.story_points,sprint_id:sprintIds.get(issue.sprint)||null,assignee:issue.assignee||null,epic:issue.epic_key||null,rank}: {project_id:project.id,title,wbs_code:issue.key,status:issue.status,priority:issue.priority,assignee:issue.assignee||null,start_date:issue.created,due_date:issue.due_date,work_hours:issue.estimate_hours,progress:issue.status==='Terminé'?100:issue.status==='En cours'?50:0,notes:trace}
+      const created=await api.entities.create(target,payload);createdByKey.set(issue.key,{...created,target})
+    }
+    for(const issue of issues){const created=createdByKey.get(issue.key),parent=createdByKey.get(issue.epic_key||issue.parent_key);if(created?.target==='backlog_items'&&parent?.target==='backlog_items'&&parent.id!==created.id)await api.entities.update('backlog_items',created.id,{parent_epic_id:parent.id})}
+    await loadProjects(false);setActiveId(project.id);setView('dashboard');await loadEntities(project.id);setNotice(`${issues.length} ticket(s) Jira importé(s) dans « ${project.name} ».`);return project
   }
   async function recordEvent({projectId=activeId,eventType,entityType,entityId,title,description,notify=true,recipientId}){
     if(!projectId)return
@@ -319,7 +336,7 @@ export default function App() {
           {view==='finance'&&<FinancialView project={active} costs={entities.cost_entries} team={entities.team} tasks={entities.tasks} timeEntries={entities.time_entries} suppliers={entities.suppliers} onCreate={data=>addEntity('cost_entries',data)} onDelete={id=>removeEntity('cost_entries',id)} onUpdateProject={updateCharter}/>}
           {view==='governance'&&<GovernanceView project={active} changes={entities.change_requests} issues={entities.issues} decisions={entities.decisions} tasks={entities.tasks} risks={entities.risks} meetings={entities.meetings} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity}/>}
           {view==='stakeholders'&&<StakeholderManagement stakeholders={entities.stakeholders} raci={entities.raci_assignments} conflicts={entities.conflicts} communications={entities.communication_plans} tasks={entities.tasks} team={entities.team} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity}/>}
-          {view==='reports'&&<ReportCenter project={active} entities={entities} onImport={importProjectArchive}/>}
+          {view==='reports'&&<ReportCenter project={active} entities={entities} onImport={importProjectArchive} onJiraImport={importJiraProject}/>}
           {view==='custom-fields'&&<CustomFieldsView fields={entities.custom_fields} canEdit={permissions.manageProject} onCreate={data=>addEntity('custom_fields',data)} onDelete={id=>removeEntity('custom_fields',id)}/>}
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>}
           {view==='team'&&<ResourceManagement members={entities.team} tasks={entities.tasks} entries={entities.time_entries} query={query} onCreateEntry={data=>addEntity('time_entries',data)} onUpdateEntry={(id,data)=>updateEntity('time_entries',id,data)} onDeleteEntry={id=>removeEntity('time_entries',id)} onDeleteMember={id=>removeEntity('team',id)}/>}

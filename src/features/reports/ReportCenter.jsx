@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { ArchiveRestore, BarChart3, CalendarDays, Download, Presentation, FileSpreadsheet, KeyRound, LockKeyhole, Printer, ShieldCheck, Upload } from 'lucide-react'
 import { decryptProjectArchive, encryptProjectArchive, isEncryptedProjectArchive } from '../../services/backupCrypto'
 import { exportWeeklyPowerPoint } from '../../services/weeklyPowerPoint'
+import JiraImportPanel from './JiraImportPanel'
 import '../../styles/reports.css'
 import '../../styles/report-actions.css'
 
@@ -17,7 +18,7 @@ const safe=value=>String(value??'').replaceAll('"','""').replaceAll('\n',' ')
 const slug=value=>String(value||'projet').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase()
 const saveBlob=(name,content,type)=>{const url=URL.createObjectURL(new Blob([content],{type}));const link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 
-export default function ReportCenter({project,entities,onImport}){
+export default function ReportCenter({project,entities,onImport,onJiraImport}){
   const inputRef=useRef(null),[message,setMessage]=useState(''),[error,setError]=useState('')
   const [backupPassword,setBackupPassword]=useState(''),[restorePassword,setRestorePassword]=useState(''),[pendingBackup,setPendingBackup]=useState(null),[working,setWorking]=useState(false)
   const currency=project.currency||'XOF'
@@ -77,6 +78,7 @@ export default function ReportCenter({project,entities,onImport}){
       <section className="card report-section weekly-pulse"><header><CalendarDays size={18}/><div><h3>Mouvement de la semaine</h3><p>Réalisations des sept derniers jours et engagements immédiats.</p></div></header><ReportRows rows={[["Tâches terminées cette semaine",metrics.weeklyDone],['Réunions tenues',metrics.weeklyMeetings],['Décisions consignées',metrics.weeklyDecisions],['Actions clôturées',metrics.weeklyActions],['Actions en retard',metrics.overdueActions],['Actions dues sous 7 jours',metrics.nextActions]]}/></section>
     </div>
     <section className="card export-section"><div className="export-head"><div><h3>Exports compatibles Excel</h3><p>Chaque registre est exporté dans un fichier CSV séparé, facile à filtrer et partager.</p></div><FileSpreadsheet size={22}/></div><div className="export-grid">{exportSets.map(([type,label,file])=><button key={type} onClick={()=>exportCsv(type,label,file)}><span><FileSpreadsheet size={17}/></span><div><b>{label}</b><small>{(entities[type]||[]).length} ligne(s)</small></div><Download size={15}/></button>)}</div></section>
+    <JiraImportPanel onImport={onJiraImport}/>
       <section className="card backup-section"><div className="backup-copy"><span><LockKeyhole size={22}/></span><div><h3>Sauvegarde chiffrée du projet</h3><p>Les données sont protégées par AES-256. Les fichiers joints sont inventoriés mais ne sont pas copiés dans la sauvegarde. Les anciennes sauvegardes Jalonis restent compatibles.</p></div></div><div className="backup-security"><label><KeyRound size={15}/><input type="password" minLength="12" value={backupPassword} onChange={event=>setBackupPassword(event.target.value)} placeholder="Mot de passe · 12 caractères min." autoComplete="new-password"/></label><div className="backup-actions"><button className="btn ghost" disabled={working||backupPassword.length<12} onClick={exportBackup}><Download size={16}/>{working?'Protection…':'Télécharger'}</button><button className="btn primary" disabled={working} onClick={()=>inputRef.current?.click()}><Upload size={16}/>Restaurer une copie</button><input ref={inputRef} type="file" accept="application/json,.json,.kavelyo,.jalonis" hidden onChange={importFile}/></div></div></section>
     {pendingBackup&&<section className="card restore-panel"><div><LockKeyhole size={20}/><span><b>Sauvegarde protégée détectée</b><small>{pendingBackup.name}</small></span></div><label><input type="password" value={restorePassword} onChange={event=>setRestorePassword(event.target.value)} placeholder="Mot de passe de la sauvegarde" autoComplete="current-password"/></label><div><button className="btn ghost" onClick={()=>{setPendingBackup(null);setRestorePassword('')}}>Annuler</button><button className="btn primary" disabled={working||!restorePassword} onClick={restoreEncrypted}><ArchiveRestore size={16}/>{working?'Déchiffrement…':'Restaurer le projet'}</button></div></section>}
     {message&&<div className="report-toast success">{message}</div>}{error&&<div className="report-toast error">{error}</div>}
