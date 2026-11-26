@@ -9,6 +9,7 @@ const exportSets=[
   ['change_requests','Changements','changements'],['issues','Problèmes','problemes'],['decisions','Décisions','decisions'],
 ]
 const systemFields=new Set(['id','project_id','created_at','updated_at','stored_path','url','logo_path','logo_url'])
+const projectArchiveFormats=new Set(['kavelyo-project','jalonis-project'])
 const number=value=>Number(value)||0
 const safe=value=>String(value??'').replaceAll('"','""').replaceAll('\n',' ')
 const slug=value=>String(value||'projet').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase()
@@ -37,18 +38,18 @@ export default function ReportCenter({project,entities,onImport}){
   const buildBackup=()=>{
     const data=Object.fromEntries(Object.entries(entities).filter(([type])=>type!=='attachments'))
     const attachmentManifest=(entities.attachments||[]).map(({file_name,mime_type,size_bytes,entity_type,entity_id,caption})=>({file_name,mime_type,size_bytes,entity_type,entity_id,caption}))
-    return {format:'jalonis-project',version:1,exported_at:new Date().toISOString(),project:Object.fromEntries(Object.entries(project).filter(([key])=>!['logo_path','logo_url'].includes(key))),entities:data,attachment_manifest:attachmentManifest}
+    return {format:'kavelyo-project',version:1,exported_at:new Date().toISOString(),project:Object.fromEntries(Object.entries(project).filter(([key])=>!['logo_path','logo_url'].includes(key))),entities:data,attachment_manifest:attachmentManifest}
   }
   const exportBackup=async()=>{
     try{
       setWorking(true);setError('');setMessage('')
       const envelope=await encryptProjectArchive(buildBackup(),backupPassword)
-      saveBlob(`${slug(project.name)}-sauvegarde-jalonis.jalonis`,JSON.stringify(envelope),'application/json')
+      saveBlob(`${slug(project.name)}-sauvegarde-kavelyo.kavelyo`,JSON.stringify(envelope),'application/json')
       setBackupPassword('');setMessage('Sauvegarde chiffrée téléchargée. Conservez son mot de passe séparément.')
     }catch(reason){setError(reason.message||'Impossible de chiffrer cette sauvegarde.')}finally{setWorking(false)}
   }
   const restoreBackup=async backup=>{
-    if(backup.format!=='jalonis-project'||!backup.project||!backup.entities)throw new Error('Ce fichier n’est pas une archive de projet Jalonis valide.')
+    if(!projectArchiveFormats.has(backup.format)||!backup.project||!backup.entities)throw new Error('Ce fichier n’est pas une archive de projet Kavelyo valide.')
     const result=await onImport(backup);setMessage(`Projet restauré sous le nom « ${result.name} ».`);return result
   }
   const importFile=async event=>{
@@ -71,7 +72,7 @@ export default function ReportCenter({project,entities,onImport}){
       <section className="card report-section"><header><ArchiveRestore size={18}/><div><h3>Capacité organisationnelle</h3><p>Équipe, parties prenantes et communications.</p></div></header><ReportRows rows={[["Membres de l’équipe",(entities.team||[]).length],['Parties prenantes',(entities.stakeholders||[]).length],['Lignes RACI',(entities.raci_assignments||[]).length],['Communications actives',(entities.communication_plans||[]).filter(r=>r.status==='Actif').length],['Fournisseurs actifs',(entities.suppliers||[]).filter(r=>!['Suspendu','Inactif'].includes(r.status)).length]]}/></section>
     </div>
     <section className="card export-section"><div className="export-head"><div><h3>Exports compatibles Excel</h3><p>Chaque registre est exporté dans un fichier CSV séparé, facile à filtrer et partager.</p></div><FileSpreadsheet size={22}/></div><div className="export-grid">{exportSets.map(([type,label,file])=><button key={type} onClick={()=>exportCsv(type,label,file)}><span><FileSpreadsheet size={17}/></span><div><b>{label}</b><small>{(entities[type]||[]).length} ligne(s)</small></div><Download size={15}/></button>)}</div></section>
-    <section className="card backup-section"><div className="backup-copy"><span><LockKeyhole size={22}/></span><div><h3>Sauvegarde chiffrée du projet</h3><p>Les données sont protégées par AES-256. Les fichiers joints sont inventoriés mais ne sont pas copiés dans la sauvegarde.</p></div></div><div className="backup-security"><label><KeyRound size={15}/><input type="password" minLength="12" value={backupPassword} onChange={event=>setBackupPassword(event.target.value)} placeholder="Mot de passe · 12 caractères min." autoComplete="new-password"/></label><div className="backup-actions"><button className="btn ghost" disabled={working||backupPassword.length<12} onClick={exportBackup}><Download size={16}/>{working?'Protection…':'Télécharger'}</button><button className="btn primary" disabled={working} onClick={()=>inputRef.current?.click()}><Upload size={16}/>Restaurer une copie</button><input ref={inputRef} type="file" accept="application/json,.json,.jalonis" hidden onChange={importFile}/></div></div></section>
+      <section className="card backup-section"><div className="backup-copy"><span><LockKeyhole size={22}/></span><div><h3>Sauvegarde chiffrée du projet</h3><p>Les données sont protégées par AES-256. Les fichiers joints sont inventoriés mais ne sont pas copiés dans la sauvegarde. Les anciennes sauvegardes Jalonis restent compatibles.</p></div></div><div className="backup-security"><label><KeyRound size={15}/><input type="password" minLength="12" value={backupPassword} onChange={event=>setBackupPassword(event.target.value)} placeholder="Mot de passe · 12 caractères min." autoComplete="new-password"/></label><div className="backup-actions"><button className="btn ghost" disabled={working||backupPassword.length<12} onClick={exportBackup}><Download size={16}/>{working?'Protection…':'Télécharger'}</button><button className="btn primary" disabled={working} onClick={()=>inputRef.current?.click()}><Upload size={16}/>Restaurer une copie</button><input ref={inputRef} type="file" accept="application/json,.json,.kavelyo,.jalonis" hidden onChange={importFile}/></div></div></section>
     {pendingBackup&&<section className="card restore-panel"><div><LockKeyhole size={20}/><span><b>Sauvegarde protégée détectée</b><small>{pendingBackup.name}</small></span></div><label><input type="password" value={restorePassword} onChange={event=>setRestorePassword(event.target.value)} placeholder="Mot de passe de la sauvegarde" autoComplete="current-password"/></label><div><button className="btn ghost" onClick={()=>{setPendingBackup(null);setRestorePassword('')}}>Annuler</button><button className="btn primary" disabled={working||!restorePassword} onClick={restoreEncrypted}><ArchiveRestore size={16}/>{working?'Déchiffrement…':'Restaurer le projet'}</button></div></section>}
     {message&&<div className="report-toast success">{message}</div>}{error&&<div className="report-toast error">{error}</div>}
   </div>

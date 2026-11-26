@@ -4,4 +4,4 @@ Disallow: /*?preview=
 Disallow: /*?reset=
 Disallow: /*?invited=
 
-Sitemap: https://jalonis.ronnagroup.net/sitemap.xml
+Sitemap: https://kavelyo.ronnagroup.net/sitemap.xml

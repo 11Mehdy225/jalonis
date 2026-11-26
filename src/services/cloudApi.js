@@ -21,12 +21,14 @@ async function currentUser() {
 async function workspaceId() {
   const user = await currentUser()
   if (cachedWorkspaceId&&cachedUserId===user.id) return cachedWorkspaceId
-  const storageKey=`jalonis-workspace:${user.id}`
-  const preferred=localStorage.getItem(storageKey)
+  const storageKey=`kavelyo-workspace:${user.id}`
+  const legacyStorageKey=`jalonis-workspace:${user.id}`
+  const preferred=localStorage.getItem(storageKey)||localStorage.getItem(legacyStorageKey)
+  if(preferred&&!localStorage.getItem(storageKey))localStorage.setItem(storageKey,preferred)
   if(preferred){
     const membership=unwrap(await supabase.from('workspace_members').select('workspace_id').eq('workspace_id',preferred).eq('user_id',user.id).eq('status','Actif').maybeSingle())
     if(membership){cachedWorkspaceId=preferred;cachedUserId=user.id;return preferred}
-    localStorage.removeItem(storageKey)
+    localStorage.removeItem(storageKey);localStorage.removeItem(legacyStorageKey)
   }
   const rows = unwrap(await supabase.from('workspace_members').select('workspace_id,created_at').eq('user_id', user.id).eq('status', 'Actif').order('created_at',{ascending:false}).limit(1))
   if (!rows[0]) throw new Error("Aucun espace de travail actif n’est associé à ce compte")
@@ -52,7 +54,7 @@ async function selectWorkspace(id){
   const user=await currentUser()
   const membership=unwrap(await supabase.from('workspace_members').select('workspace_id').eq('workspace_id',id).eq('user_id',user.id).eq('status','Actif').maybeSingle())
   if(!membership)throw new Error("Vous n’avez pas accès à cet espace de travail.")
-  cachedWorkspaceId=id;cachedUserId=user.id;localStorage.setItem(`jalonis-workspace:${user.id}`,id)
+  cachedWorkspaceId=id;cachedUserId=user.id;localStorage.setItem(`kavelyo-workspace:${user.id}`,id)
   return workspaceState()
 }
 

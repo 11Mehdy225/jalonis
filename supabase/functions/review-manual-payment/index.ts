@@ -13,7 +13,7 @@ Deno.serve(async request=>{
     const {data:{user},error:userError}=await admin.auth.getUser(token)
     if(userError||!user)return json({error:'Session invalide ou expirée.'},401)
     const {data:platformAdmin}=await admin.from('platform_admins').select('user_id').eq('user_id',user.id).eq('active',true).maybeSingle()
-    if(!platformAdmin)return json({error:'Accès réservé à l’administration Jalonis.'},403)
+    if(!platformAdmin)return json({error:'Accès réservé à l’administration Kavelyo.'},403)
     const body=await request.json(),requestId=String(body.request_id||''),decision=String(body.decision||''),note=String(body.note||'').trim().slice(0,500)||null
     if(!requestId||!['approved','rejected'].includes(decision))return json({error:'Demande ou décision invalide.'},400)
     const {data:transactionId,error}=await admin.rpc('review_manual_payment',{request_id:requestId,reviewer_id:user.id,decision,review_note:note})

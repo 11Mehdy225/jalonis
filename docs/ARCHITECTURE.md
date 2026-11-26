@@ -1,4 +1,4 @@
-# Architecture technique de Jalonis
+# Architecture technique de Kavelyo
 
 ## Cibles d’exécution
 
@@ -10,7 +10,7 @@ La migration `supabase/migrations/202611190001_initial_saas.sql` constitue la so
 
 ## Organisation générale
 
-Jalonis sépare l’interface utilisateur, les fonctionnalités métier, les services desktop et la persistance locale. Cette organisation limite les dépendances entre modules et facilite les évolutions.
+Kavelyo sépare l’interface utilisateur, les fonctionnalités métier, les services desktop et la persistance locale. Cette organisation limite les dépendances entre modules et facilite les évolutions.
 
 ```text
 src/
@@ -40,7 +40,7 @@ L’interface React appelle exclusivement l’API exposée par `preload.cjs`. Le
 
 ## Stockage local
 
-Chaque installation conserve ses projets dans `jalonis.sqlite`, au sein du dossier de données utilisateur du système. Les documents fournisseurs sont copiés dans un coffre local distinct, organisé par projet et fournisseur.
+Chaque installation conserve ses projets dans `kavelyo.sqlite`, au sein du dossier de données utilisateur du système. Les documents fournisseurs sont copiés dans un coffre local distinct, organisé par projet et fournisseur.
 
 ## Distribution
 

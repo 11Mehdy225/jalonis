@@ -21,7 +21,7 @@ export default function ActivityView({ project, comments, activities, members=[]
     </section>
     <section className="activity-card card">
       <div className="collaboration-heading"><div className="collaboration-icon"><Activity size={19}/></div><div><span>JOURNAL D’ACTIVITÉ</span><h3>Ce qui a changé</h3><p>Un historique automatique des actions importantes.</p></div></div>
-      <div className="activity-list">{activities.length ? activities.map(item => { const Icon = eventIcon(item.event_type); return <article className="activity-item" key={item.id}><span><Icon size={15}/></span><div><b>{item.title}</b><p>{item.description}</p><small>{item.actor_name || 'Jalonis'} · {fullDate(item.created_at)}</small></div></article> }) : <div className="collaboration-empty"><Activity size={22}/><span>Les prochaines actions apparaîtront ici.</span></div>}</div>
+      <div className="activity-list">{activities.length ? activities.map(item => { const Icon = eventIcon(item.event_type); return <article className="activity-item" key={item.id}><span><Icon size={15}/></span><div><b>{item.title}</b><p>{item.description}</p><small>{item.actor_name || 'Kavelyo'} · {fullDate(item.created_at)}</small></div></article> }) : <div className="collaboration-empty"><Activity size={22}/><span>Les prochaines actions apparaîtront ici.</span></div>}</div>
     </section>
   </div>
 }

@@ -3,10 +3,10 @@ const crypto=require('node:crypto')
 const fs=require('node:fs')
 const os=require('node:os')
 const path=require('node:path')
-const {JalonisDatabase}=require('../electron/database.cjs')
+const {KavelyoDatabase}=require('../electron/database.cjs')
 
-const databasePath=path.join(os.tmpdir(),`jalonis-isolation-${crypto.randomUUID()}.sqlite`)
-const database=new JalonisDatabase(databasePath)
+const databasePath=path.join(os.tmpdir(),`kavelyo-isolation-${crypto.randomUUID()}.sqlite`)
+const database=new KavelyoDatabase(databasePath)
 try{
   const personalId=database.getWorkspace().workspace.id
   const organizationId=database.createWorkspace({name:'Organisation de contrôle',account_type:'Organisation'}).workspace.id

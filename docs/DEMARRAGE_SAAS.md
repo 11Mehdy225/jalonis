@@ -1,4 +1,4 @@
-# Démarrage de Jalonis SaaS
+# Démarrage de Kavelyo SaaS
 
 ## 1. Créer l’infrastructure
 
@@ -55,14 +55,14 @@ Créer un compte de validation, confirmer l’adresse e-mail, puis vérifier :
 
 Vercel et Netlify sont préconfigurés. Dans l’hébergeur choisi, ajouter les deux variables `VITE_SUPABASE_*`, puis déployer la branche `main`.
 
-Ajouter l’URL publique dans Supabase : Authentication → URL Configuration → Site URL et Redirect URLs. Ajouter l’URL du site ainsi que sa variante de récupération, par exemple `https://jalonis.ronnagroup.net/?reset=1`. Le même réglage permet aux liens de confirmation, d’invitation et de mot de passe oublié de revenir dans Jalonis.
+Ajouter l’URL publique dans Supabase : Authentication → URL Configuration → Site URL et Redirect URLs. Ajouter l’URL du site ainsi que sa variante de récupération, par exemple `https://kavelyo.ronnagroup.net/?reset=1`. Le même réglage permet aux liens de confirmation, d’invitation et de mot de passe oublié de revenir dans Kavelyo.
 
 Déployer ensuite les fonctions de création d’espace et d’invitation, puis définir l’URL publique utilisée dans les e-mails :
 
 ```bash
 supabase functions deploy create-workspace
 supabase functions deploy invite-member
-supabase secrets set SITE_URL=https://jalonis.ronnagroup.net
+supabase secrets set SITE_URL=https://kavelyo.ronnagroup.net
 ```
 
 Un compte peut posséder jusqu’à cinq espaces et un seul espace Personnel. La sélection active est mémorisée sur l’appareil, mais chaque changement est revérifié côté serveur. Les projets, membres, fichiers, abonnement et facturation restent rattachés à leur espace respectif.
@@ -71,17 +71,17 @@ Après application de la migration `202611220021_full_project_realtime.sql`, une
 
 La clé `SUPABASE_SERVICE_ROLE_KEY` est fournie automatiquement aux fonctions Supabase hébergées. Elle ne doit jamais être ajoutée aux variables Render ni au code de l’application.
 
-## Identité des e-mails Jalonis
+## Identité des e-mails Kavelyo
 
 Les modèles versionnés dans `supabase/templates/` couvrent la confirmation de compte, l’invitation, la récupération du mot de passe, le lien de connexion et le changement d’adresse. Pour le projet Supabase hébergé, reporter ces modèles dans **Authentication → Emails → Templates**.
 
-Pour que l’expéditeur soit réellement affiché comme **Jalonis**, activer **Authentication → Emails → SMTP Settings** avec une boîte d’envoi dédiée. Configurer le nom d’expéditeur sur `Jalonis` et utiliser une adresse du domaine de l’entreprise. Les identifiants SMTP restent exclusivement dans Supabase et ne doivent jamais être ajoutés à GitHub ou à Render.
+Pour que l’expéditeur soit réellement affiché comme **Kavelyo**, activer **Authentication → Emails → SMTP Settings** avec une boîte d’envoi dédiée. Configurer le nom d’expéditeur sur `Kavelyo` et utiliser une adresse du domaine de l’entreprise. Les identifiants SMTP restent exclusivement dans Supabase et ne doivent jamais être ajoutés à GitHub ou à Render.
 
 ## 5. Activer la facturation
 
 La table `subscriptions`, le catalogue d’offres, l’essai de 14 jours et les limites de projets sont prêts. L’écran **Espace & accès** affiche l’offre, les sièges, les projets consommés, l’échéance et l’historique des paiements.
 
-Jalonis utilise un Checkout Flutterwave hébergé : les données de carte ne traversent jamais l’application. Créer dans Flutterwave les plans mensuels et annuels, puis conserver leurs identifiants. Commencer avec les clés de test.
+Kavelyo utilise un Checkout Flutterwave hébergé : les données de carte ne traversent jamais l’application. Créer dans Flutterwave les plans mensuels et annuels, puis conserver leurs identifiants. Commencer avec les clés de test.
 
 Déployer les fonctions et définir les secrets uniquement dans Supabase :
 
@@ -108,7 +108,7 @@ La valeur **Secret Hash** saisie dans Flutterwave doit être strictement identiq
 
 ### Paiement Jèko et Wave
 
-Jalonis peut utiliser Jèko comme prestataire de paiement en ligne. Jèko ouvre alors le parcours Wave, Orange Money ou un autre Mobile Money configuré, puis confirme le résultat à Jalonis par un webhook signé. Les clés ne doivent jamais être ajoutées à Render ni au code du navigateur.
+Kavelyo peut utiliser Jèko comme prestataire de paiement en ligne. Jèko ouvre alors le parcours Wave, Orange Money ou un autre Mobile Money configuré, puis confirme le résultat à Kavelyo par un webhook signé. Les clés ne doivent jamais être ajoutées à Render ni au code du navigateur.
 
 Secrets à enregistrer dans Supabase :
 
@@ -117,7 +117,7 @@ JEKO_API_KEY
 JEKO_API_KEY_ID
 JEKO_STORE_ID
 JEKO_WEBHOOK_SECRET
-SITE_URL=https://jalonis.ronnagroup.net
+SITE_URL=https://kavelyo.ronnagroup.net
 ```
 
 Déploiement des fonctions :
@@ -133,7 +133,7 @@ Dans le tableau de bord Jèko, enregistrer ce webhook HTTPS :
 https://kevqvphmobkjzzkkbbqw.supabase.co/functions/v1/jeko-webhook
 ```
 
-Créer ensuite les tarifs XOF dans `provider_plan_prices`, puis activer la ligne `jeko` dans `billing_provider_settings`. Cette activation doit rester la dernière étape : tant que les secrets, tarifs et webhook ne sont pas prêts, `active` reste à `false` et Jalonis conserve le paiement manuel.
+Créer ensuite les tarifs XOF dans `provider_plan_prices`, puis activer la ligne `jeko` dans `billing_provider_settings`. Cette activation doit rester la dernière étape : tant que les secrets, tarifs et webhook ne sont pas prêts, `active` reste à `false` et Kavelyo conserve le paiement manuel.
 
 ## 6. Invitations et notifications
 
@@ -146,8 +146,8 @@ Créer un compte Resend, vérifier le domaine d’envoi, puis configurer :
 ```bash
 supabase functions deploy process-email-queue --no-verify-jwt
 supabase secrets set RESEND_API_KEY=re_xxx
-supabase secrets set JALONIS_EMAIL_FROM="Jalonis <notifications@votre-domaine.com>"
-supabase secrets set JALONIS_CRON_SECRET=une_autre_valeur_longue_et_aleatoire
+supabase secrets set KAVELYO_EMAIL_FROM="Kavelyo <notifications@votre-domaine.com>"
+supabase secrets set KAVELYO_CRON_SECRET=une_autre_valeur_longue_et_aleatoire
 ```
 
 Dans **Supabase → Integrations → Cron**, créer un appel HTTP toutes les heures vers :
@@ -156,11 +156,11 @@ Dans **Supabase → Integrations → Cron**, créer un appel HTTP toutes les heu
 https://VOTRE-PROJET.supabase.co/functions/v1/process-email-queue
 ```
 
-Ajouter l’en-tête `x-jalonis-cron-secret` avec la même valeur que `JALONIS_CRON_SECRET`. Une exécution horaire permet de respecter l’heure locale de chaque utilisateur. La fonction traite au maximum 50 messages par passage et reporte automatiquement un échec temporaire.
+Ajouter l’en-tête `x-kavelyo-cron-secret` avec la même valeur que `KAVELYO_CRON_SECRET`. Une exécution horaire permet de respecter l’heure locale de chaque utilisateur. La fonction traite au maximum 50 messages par passage et reporte automatiquement un échec temporaire.
 
 ### Rappels WhatsApp
 
-Jalonis utilise l’API WhatsApp Cloud de Meta et uniquement des modèles approuvés. Aucun message n’est préparé tant que le membre n’a pas renseigné son numéro et activé lui-même WhatsApp dans **Espace de travail → Mes notifications**.
+Kavelyo utilise l’API WhatsApp Cloud de Meta et uniquement des modèles approuvés. Aucun message n’est préparé tant que le membre n’a pas renseigné son numéro et activé lui-même WhatsApp dans **Espace de travail → Mes notifications**.
 
 Créer l’application Meta Business, rattacher le numéro WhatsApp Business, puis déployer et configurer les deux fonctions :
 
@@ -177,8 +177,8 @@ supabase secrets set SITE_URL=https://votre-domaine.com
 
 Créer et faire approuver deux modèles utilitaires dans WhatsApp Manager :
 
-- `jalonis_project_alert` : titre `{{1}}`, puis détail `{{2}}` ;
-- `jalonis_daily_summary` : prénom `{{1}}`, tâches `{{2}}`, réunions `{{3}}`, risques critiques `{{4}}` et adresse Jalonis `{{5}}`.
+- `kavelyo_project_alert` : titre `{{1}}`, puis détail `{{2}}` ;
+- `kavelyo_daily_summary` : prénom `{{1}}`, tâches `{{2}}`, réunions `{{3}}`, risques critiques `{{4}}` et adresse Kavelyo `{{5}}`.
 
 Dans la configuration des webhooks Meta, utiliser :
 
@@ -194,7 +194,7 @@ Créer enfin un second appel HTTP horaire dans **Supabase → Integrations → C
 https://VOTRE-PROJET.supabase.co/functions/v1/process-whatsapp-queue
 ```
 
-Ajouter l’en-tête `x-jalonis-cron-secret` déjà utilisé pour les e-mails. La fonction respecte les préférences, les heures silencieuses et le fuseau horaire, déduplique les rappels et retente les échecs temporaires. Sans ces clés Meta, le canal reste inactif et n’empêche pas le reste de Jalonis de fonctionner.
+Ajouter l’en-tête `x-kavelyo-cron-secret` déjà utilisé pour les e-mails. La fonction respecte les préférences, les heures silencieuses et le fuseau horaire, déduplique les rappels et retente les échecs temporaires. Sans ces clés Meta, le canal reste inactif et n’empêche pas le reste de Kavelyo de fonctionner.
 
 ## 7. Assistant de pilotage
 
@@ -211,6 +211,6 @@ supabase secrets set OPENAI_API_KEY=sk-...
 supabase secrets set OPENAI_ASSISTANT_MODEL=gpt-5-mini
 ```
 
-Le modèle peut être remplacé par un modèle disponible dans le compte utilisé. Lorsqu’un chef de projet demande une analyse, Jalonis envoie uniquement un contexte structuré du projet : charte, dates, tâches ou backlog, risques, réunions, problèmes, décisions et données de coûts. Les commentaires libres, coordonnées des membres et documents joints ne sont pas envoyés. La requête utilise `store: false` et la réponse est enregistrée dans l’espace Jalonis pour conserver une trace des analyses réalisées.
+Le modèle peut être remplacé par un modèle disponible dans le compte utilisé. Lorsqu’un chef de projet demande une analyse, Kavelyo envoie uniquement un contexte structuré du projet : charte, dates, tâches ou backlog, risques, réunions, problèmes, décisions et données de coûts. Les commentaires libres, coordonnées des membres et documents joints ne sont pas envoyés. La requête utilise `store: false` et la réponse est enregistrée dans l’espace Kavelyo pour conserver une trace des analyses réalisées.
 
 L’offre Business autorise actuellement 100 analyses approfondies par espace et par mois. L’édition Entreprise utilise un quota contractuel. Les recommandations restent indicatives et doivent être validées par le chef de projet.

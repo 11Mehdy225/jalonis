@@ -46,7 +46,7 @@ export default function ProjectAssistant({project,entities,onNavigate,onAnalyze,
         {analysis&&<div className="assistant-answer"><small>RÉPONSE DE L’ASSISTANT</small><p>{analysis}</p><em>Vérifiez les recommandations importantes avant toute décision.</em></div>}
       </section>
     </div>
-    <section className="assistant-method card"><CalendarClock size={18}/><div><b>Comment cet indice est calculé</b><p>Jalonis pénalise les activités en retard ou bloquées, les risques critiques, les éléments sans responsable et un budget presque consommé. Chaque recommandation cite la donnée qui l’a déclenchée.</p></div></section>
+    <section className="assistant-method card"><CalendarClock size={18}/><div><b>Comment cet indice est calculé</b><p>Kavelyo pénalise les activités en retard ou bloquées, les risques critiques, les éléments sans responsable et un budget presque consommé. Chaque recommandation cite la donnée qui l’a déclenchée.</p></div></section>
   </div>
 }
 

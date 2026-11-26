@@ -4,13 +4,13 @@ const htmlEscape=(value:unknown)=>String(value??'').replace(/[&<>"']/g,character
 const localParts=(timezone:string)=>Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:timezone||'Africa/Abidjan',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]))
 const withinQuietHours=(time:string,start:string,end:string)=>{if(!start||!end)return false;if(start<end)return time>=start&&time<end;return time>=start||time<end}
 const card=(title:string,body:string)=>`<div style="padding:18px;border:1px solid #e7eaf1;border-radius:12px;background:#fff"><h2 style="margin:0 0 8px;font-size:18px;color:#182037">${htmlEscape(title)}</h2><p style="margin:0;color:#657087;line-height:1.55">${htmlEscape(body)}</p></div>`
-const layout=(content:string)=>`<!doctype html><html><body style="margin:0;background:#f5f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"><div style="max-width:620px;margin:auto;padding:28px 18px"><div style="margin-bottom:18px;color:#4f46e5;font-size:20px;font-weight:800">Jalonis</div>${content}<p style="margin:18px 2px;color:#9299a9;font-size:11px;line-height:1.5">Vous recevez cet e-mail selon vos préférences Jalonis. Vous pouvez les modifier dans Espace & accès.</p></div></body></html>`
+const layout=(content:string)=>`<!doctype html><html><body style="margin:0;background:#f5f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"><div style="max-width:620px;margin:auto;padding:28px 18px"><div style="margin-bottom:18px;color:#4f46e5;font-size:20px;font-weight:800">Kavelyo</div>${content}<p style="margin:18px 2px;color:#9299a9;font-size:11px;line-height:1.5">Vous recevez cet e-mail selon vos préférences Kavelyo. Vous pouvez les modifier dans Espace & accès.</p></div></body></html>`
 
 Deno.serve(async request=>{
   try{
-    const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),resendKey=Deno.env.get('RESEND_API_KEY'),cronSecret=Deno.env.get('JALONIS_CRON_SECRET'),from=Deno.env.get('JALONIS_EMAIL_FROM'),replyTo=Deno.env.get('JALONIS_EMAIL_REPLY_TO')
+    const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),resendKey=Deno.env.get('RESEND_API_KEY'),cronSecret=Deno.env.get('KAVELYO_CRON_SECRET'),from=Deno.env.get('KAVELYO_EMAIL_FROM'),replyTo=Deno.env.get('KAVELYO_EMAIL_REPLY_TO')
     if(!url||!serviceKey||!resendKey||!cronSecret||!from)return Response.json({error:'Configuration e-mail incomplète.'},{status:503})
-    if(request.headers.get('x-jalonis-cron-secret')!==cronSecret)return Response.json({error:'Accès refusé.'},{status:401})
+    if(request.headers.get('x-kavelyo-cron-secret')!==cronSecret)return Response.json({error:'Accès refusé.'},{status:401})
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}})
     await queueDailyDigests(admin)
     const {data:pending,error:queueError}=await admin.from('email_deliveries').select('*').eq('status','pending').lte('scheduled_for',new Date().toISOString()).order('created_at').limit(50)
@@ -49,7 +49,7 @@ async function queueDailyDigests(admin:any){
       admin.from('risks').select('title,probability,impact,project_id').in('project_id',projectIds).neq('status','Fermé'),
     ])
     const critical=(risks||[]).filter((risk:any)=>Number(risk.probability)*Number(risk.impact)>=15)
-    await admin.from('email_deliveries').upsert({recipient_id:profile.id,email_type:'daily_digest',dedupe_key:dedupeKey,subject:`Jalonis · Votre point projet du ${today}`,template_data:{date:today,tasks:tasks||[],meetings:meetings||[],risks:critical}},{onConflict:'dedupe_key',ignoreDuplicates:true})
+    await admin.from('email_deliveries').upsert({recipient_id:profile.id,email_type:'daily_digest',dedupe_key:dedupeKey,subject:`Kavelyo · Votre point projet du ${today}`,template_data:{date:today,tasks:tasks||[],meetings:meetings||[],risks:critical}},{onConflict:'dedupe_key',ignoreDuplicates:true})
   }
 }
 

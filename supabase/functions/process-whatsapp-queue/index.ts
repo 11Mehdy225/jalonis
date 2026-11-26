@@ -7,10 +7,10 @@ const textParameter=(value:unknown)=>({type:'text',text:String(value??'—').sli
 
 Deno.serve(async request=>{
   try{
-    const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),cronSecret=Deno.env.get('JALONIS_CRON_SECRET')
+    const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),cronSecret=Deno.env.get('KAVELYO_CRON_SECRET')
     const token=Deno.env.get('WHATSAPP_ACCESS_TOKEN'),phoneNumberId=Deno.env.get('WHATSAPP_PHONE_NUMBER_ID'),language=Deno.env.get('WHATSAPP_TEMPLATE_LANGUAGE')||'fr',apiVersion=Deno.env.get('WHATSAPP_API_VERSION')||'v27.0'
     if(!url||!serviceKey||!cronSecret||!token||!phoneNumberId)return Response.json({error:'Configuration WhatsApp incomplète.'},{status:503})
-    if(request.headers.get('x-jalonis-cron-secret')!==cronSecret)return Response.json({error:'Accès refusé.'},{status:401})
+    if(request.headers.get('x-kavelyo-cron-secret')!==cronSecret)return Response.json({error:'Accès refusé.'},{status:401})
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}})
     await admin.from('whatsapp_deliveries').update({status:'pending',scheduled_for:new Date().toISOString(),last_error:'Nouvelle tentative après interruption.'}).eq('status','sending').lt('updated_at',new Date(Date.now()-15*60000).toISOString())
     await queueDailyReminders(admin)
@@ -25,8 +25,8 @@ Deno.serve(async request=>{
       const {data:claimed}=await admin.from('whatsapp_deliveries').update({status:'sending',attempts:Number(delivery.attempts||0)+1}).eq('id',delivery.id).eq('status','pending').select('id').maybeSingle()
       if(!claimed){skipped++;continue}
       const values=delivery.message_type==='daily_digest'
-        ? [profile.full_name||'membre',delivery.template_data?.tasks||0,delivery.template_data?.meetings||0,delivery.template_data?.risks||0,Deno.env.get('SITE_URL')||'https://jalonis.ronnagroup.net']
-        : [delivery.template_data?.title||'Mise à jour du projet',delivery.template_data?.body||'Consultez Jalonis pour les détails.']
+        ? [profile.full_name||'membre',delivery.template_data?.tasks||0,delivery.template_data?.meetings||0,delivery.template_data?.risks||0,Deno.env.get('SITE_URL')||'https://kavelyo.ronnagroup.net']
+        : [delivery.template_data?.title||'Mise à jour du projet',delivery.template_data?.body||'Consultez Kavelyo pour les détails.']
       const response=await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({messaging_product:'whatsapp',recipient_type:'individual',to:phoneDigits(profile.phone),type:'template',template:{name:delivery.template_name,language:{code:language},components:[{type:'body',parameters:values.map(textParameter)}]}})})
       const result=await response.json(),messageId=result.messages?.[0]?.id
       if(response.ok&&messageId){sent++;await admin.from('whatsapp_deliveries').update({status:'sent',provider_message_id:messageId,sent_at:new Date().toISOString(),last_error:null}).eq('id',delivery.id)}
@@ -52,6 +52,6 @@ async function queueDailyReminders(admin:any){
       admin.from('risks').select('probability,impact').in('project_id',projectIds).neq('status','Fermé'),
     ])
     const critical=(risks||[]).filter((risk:any)=>Number(risk.probability)*Number(risk.impact)>=15).length
-    await admin.from('whatsapp_deliveries').insert({recipient_id:profile.id,message_type:'daily_digest',dedupe_key:dedupeKey,template_name:'jalonis_daily_summary',template_data:{date,tasks:tasks||0,meetings:meetings||0,risks:critical}})
+    await admin.from('whatsapp_deliveries').insert({recipient_id:profile.id,message_type:'daily_digest',dedupe_key:dedupeKey,template_name:'kavelyo_daily_summary',template_data:{date,tasks:tasks||0,meetings:meetings||0,risks:critical}})
   }
 }

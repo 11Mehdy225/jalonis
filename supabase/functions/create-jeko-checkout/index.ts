@@ -48,9 +48,9 @@ Deno.serve(async request=>{
 
     const seats=Math.max(requestedSeats,Number(plan.min_seats)||1),amount=Math.round(Number(price.unit_amount)*seats*100)/100,amountCents=Math.round(amount*100)
     if(!Number.isSafeInteger(amountCents)||amountCents<100||amountCents>100_000_000_000||amountCents%100!==0)return json({error:'Montant de paiement invalide.'},503)
-    const txRef=`jalonis-${workspaceId.slice(0,8)}-${crypto.randomUUID()}`
+    const txRef=`kavelyo-${workspaceId.slice(0,8)}-${crypto.randomUUID()}`
     const origin=String(Deno.env.get('SITE_URL')||request.headers.get('origin')||'').replace(/\/$/,'')
-    if(!origin.startsWith('https://')&&!origin.startsWith('http://localhost'))return json({error:'Adresse publique Jalonis invalide.'},503)
+    if(!origin.startsWith('https://')&&!origin.startsWith('http://localhost'))return json({error:'Adresse publique Kavelyo invalide.'},503)
     const paymentResponse=await fetch('https://api.jeko.africa/partner_api/payment_requests',{method:'POST',headers:{'X-API-KEY':apiKey,'X-API-KEY-ID':apiKeyId,'Content-Type':'application/json'},signal:AbortSignal.timeout(15_000),body:JSON.stringify({
       storeId,amountCents,currency:price.currency,reference:txRef,
       paymentDetails:{type:'redirect',data:{paymentMethod:method,successUrl:`${origin}/?billing=return&status=successful`,errorUrl:`${origin}/?billing=return&status=failed`}},

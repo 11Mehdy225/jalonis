@@ -1,19 +1,19 @@
-# Vision produit — Jalonis
+# Vision produit — Kavelyo
 
 ## Promesse
 
-Jalonis donne au chef de projet une vue connectée du projet, de la charte à la clôture. Il combine un mode local sans serveur et une plateforme SaaS collaborative pour les équipes et les organisations.
+Kavelyo donne au chef de projet une vue connectée du projet, de la charte à la clôture. Il combine un mode local sans serveur et une plateforme SaaS collaborative pour les équipes et les organisations.
 
 ## Principe différenciant
 
-Chaque objet métier peut être relié aux autres : une réunion produit une décision, une décision déclenche une action, une activité affecte une échéance, un risque ou un achat, puis le fournisseur et le coût influencent le livrable. La « Chaîne d’impact Jalonis » visualise et priorise ces relations.
+Chaque objet métier peut être relié aux autres : une réunion produit une décision, une décision déclenche une action, une activité affecte une échéance, un risque ou un achat, puis le fournisseur et le coût influencent le livrable. La « Chaîne d’impact Kavelyo » visualise et priorise ces relations.
 
-## Chaîne d’impact Jalonis — intégrée
+## Chaîne d’impact Kavelyo — intégrée
 
 - **Mode hybride réel** : les Stories et éléments de backlog réalisent des activités ou jalons WBS, sans mélanger les dépendances prédictives FS/SS/FF/SF avec le flux Scrum.
 - **Copilote de décision** : un moteur local explicable détecte retards en cascade, blocages, risques, dérives budgétaires, écarts hybride, contrats expirés et tensions humaines. L’analyse générative avancée reprend le même contexte structuré côté serveur.
 - **Traçabilité fournisseur** : le besoin initial, la consultation RFI/RFQ/RFP, les offres, l’attribution, le contrat, le coût et l’activité livrée restent reliés.
-- **Pilotage humain** : les signaux reposent sur les affectations, la capacité et le temps déclarés, les blocages et les conflits. Jalonis ne met pas en place de surveillance individuelle.
+- **Pilotage humain** : les signaux reposent sur les affectations, la capacité et le temps déclarés, les blocages et les conflits. Kavelyo ne met pas en place de surveillance individuelle.
 - **Relations métier** : le chef de projet peut ajouter une liaison transversale, sa gravité, son domaine d’impact, son décalage et sa justification.
 
 ## Feuille de route

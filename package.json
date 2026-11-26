@@ -1,10 +1,10 @@
 {
-  "name": "jalonis",
+  "name": "kavelyo",
   "version": "0.18.2",
   "private": true,
   "type": "module",
-  "description": "Jalonis — pilotage de projet SaaS et local pour le web, macOS et Windows",
-  "author": "Jalonis",
+  "description": "Kavelyo — pilotage de projet SaaS et local pour le web, macOS et Windows",
+  "author": "Kavelyo",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
@@ -24,7 +24,7 @@
     "test:project-access": "node scripts/check-project-access.mjs",
     "test:isolation": "node scripts/check-workspace-isolation.cjs",
     "test:collaboration": "node scripts/check-collaboration.mjs",
-    "test:collaboration:live": "JALONIS_ALLOW_LIVE_TEST=1 node scripts/check-live-collaboration.mjs",
+    "test:collaboration:live": "KAVELYO_ALLOW_LIVE_TEST=1 node scripts/check-live-collaboration.mjs",
     "test:billing": "node scripts/check-jeko-billing.mjs",
     "test:subscription": "node scripts/check-subscription-access.mjs",
     "test:commercial": "node scripts/check-commercial-readiness.mjs",
@@ -56,7 +56,7 @@
   },
   "build": {
     "appId": "com.jalonis.desktop",
-    "productName": "Jalonis",
+    "productName": "Kavelyo",
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -72,10 +72,10 @@
         "dmg"
       ],
       "icon": "build/icon.icns",
-      "artifactName": "Jalonis-${version}-macOS-${arch}.${ext}"
+      "artifactName": "Kavelyo-${version}-macOS-${arch}.${ext}"
     },
     "dmg": {
-      "title": "Jalonis ${version}",
+      "title": "Kavelyo ${version}",
       "icon": "build/icon.icns",
       "iconSize": 96,
       "contents": [
@@ -102,14 +102,14 @@
         }
       ],
       "icon": "build/icon.ico",
-      "artifactName": "Jalonis-${version}-Windows-${arch}-Setup.${ext}"
+      "artifactName": "Kavelyo-${version}-Windows-${arch}-Setup.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Jalonis"
+      "shortcutName": "Kavelyo"
     }
   }
 }

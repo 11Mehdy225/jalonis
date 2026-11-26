@@ -1,6 +1,6 @@
 {
-  "name": "Jalonis — Pilotage de projets",
-  "short_name": "Jalonis",
+  "name": "Kavelyo — Pilotage de projets",
+  "short_name": "Kavelyo",
   "description": "Plateforme de pilotage de projets, Scrum, équipes et fournisseurs.",
   "start_url": "/",
   "display": "standalone",
@@ -8,7 +8,7 @@
   "theme_color": "#111827",
   "icons": [
     {
-      "src": "/assets/jalonis-logo.png",
+      "src": "/assets/kavelyo-logo.png",
       "sizes": "1254x1254",
       "type": "image/png",
       "purpose": "any maskable"

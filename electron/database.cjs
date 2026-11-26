@@ -56,7 +56,7 @@ const ENTITY_TABLES = {
   custom_field_values: ['field_id', 'entity_type', 'entity_id', 'value_text'],
 }
 
-class JalonisDatabase {
+class KavelyoDatabase {
   constructor(path) {
     this.db = new DatabaseSync(path)
     this.db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;')
@@ -379,9 +379,9 @@ class JalonisDatabase {
     const workspaceId = crypto.randomUUID(); const userId = crypto.randomUUID(); const membershipId = crypto.randomUUID()
     const trialEnd = new Date(Date.now() + 14 * 86400000).toISOString()
     this.db.prepare(`INSERT INTO workspaces (id,name,slug,mode,account_type,subscription_plan,subscription_status,seat_limit,trial_ends_at,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(workspaceId, 'Mon espace Jalonis', `espace-${workspaceId.slice(0, 8)}`, 'local', 'Personnel', 'Découverte', 'Essai', 1, trialEnd, now, now)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(workspaceId, 'Mon espace Kavelyo', `espace-${workspaceId.slice(0, 8)}`, 'local', 'Personnel', 'Découverte', 'Essai', 1, trialEnd, now, now)
     this.db.prepare(`INSERT INTO users (id,full_name,email,job_title,status,timezone,notify_email,notify_whatsapp,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?)`).run(userId, 'Chef de projet', `admin-${userId.slice(0, 8)}@jalonis.local`, 'Administrateur', 'Actif', 'Africa/Abidjan', 1, 0, now, now)
+      VALUES (?,?,?,?,?,?,?,?,?,?)`).run(userId, 'Chef de projet', `admin-${userId.slice(0, 8)}@kavelyo.local`, 'Administrateur', 'Actif', 'Africa/Abidjan', 1, 0, now, now)
     this.db.prepare(`INSERT INTO workspace_members (id,workspace_id,user_id,role,status,created_at,updated_at)
       VALUES (?,?,?,?,?,?,?)`).run(membershipId, workspaceId, userId, 'Propriétaire', 'Actif', now, now)
     this.db.prepare("INSERT INTO app_settings(key,value) VALUES('active_workspace_id',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(workspaceId)
@@ -575,4 +575,4 @@ class JalonisDatabase {
   }
 }
 
-module.exports = { JalonisDatabase }
+module.exports = { KavelyoDatabase }

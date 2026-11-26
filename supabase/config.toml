@@ -1,4 +1,4 @@
-project_id = "jalonis"
+project_id = "kavelyo"
 
 [api]
 enabled = true
@@ -7,27 +7,27 @@ extra_search_path = ["public", "extensions"]
 
 [auth]
 enabled = true
-site_url = "https://jalonis.ronnagroup.net"
-additional_redirect_urls = ["https://jalonis.ronnagroup.net", "https://jalonis.ronnagroup.net/**", "https://jalonis.onrender.com", "https://jalonis.onrender.com/**", "http://localhost:5173", "http://127.0.0.1:5173", "http://127.0.0.1:4173", "http://127.0.0.1:4174"]
+site_url = "https://kavelyo.ronnagroup.net"
+additional_redirect_urls = ["https://kavelyo.ronnagroup.net", "https://kavelyo.ronnagroup.net/**", "https://jalonis.ronnagroup.net", "https://jalonis.ronnagroup.net/**", "https://jalonis.onrender.com", "https://jalonis.onrender.com/**", "http://localhost:5173", "http://127.0.0.1:5173", "http://127.0.0.1:4173", "http://127.0.0.1:4174"]
 
 [auth.email.template.confirmation]
-subject = "Confirmez votre compte Jalonis"
+subject = "Confirmez votre compte Kavelyo"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.invite]
-subject = "Vous êtes invité(e) sur Jalonis"
+subject = "Vous êtes invité(e) sur Kavelyo"
 content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.recovery]
-subject = "Réinitialisez votre mot de passe Jalonis"
+subject = "Réinitialisez votre mot de passe Kavelyo"
 content_path = "./supabase/templates/recovery.html"
 
 [auth.email.template.magic_link]
-subject = "Votre lien de connexion Jalonis"
+subject = "Votre lien de connexion Kavelyo"
 content_path = "./supabase/templates/magic-link.html"
 
 [auth.email.template.email_change]
-subject = "Confirmez votre nouvelle adresse Jalonis"
+subject = "Confirmez votre nouvelle adresse Kavelyo"
 content_path = "./supabase/templates/email-change.html"
 
 [storage]

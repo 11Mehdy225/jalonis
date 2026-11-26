@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 
-const siteUrl=(process.env.JALONIS_SITE_URL||'https://jalonis.ronnagroup.net').replace(/\/$/,'')
+const siteUrl=(process.env.KAVELYO_SITE_URL||process.env.JALONIS_SITE_URL||'https://kavelyo.ronnagroup.net').replace(/\/$/,'')
 const env=fs.existsSync('.env.local')?fs.readFileSync('.env.local','utf8'):''
 const supabaseUrl=process.env.VITE_SUPABASE_URL||env.match(/^VITE_SUPABASE_URL=(.+)$/m)?.[1]?.trim()
 const publicKey=process.env.VITE_SUPABASE_ANON_KEY||env.match(/^VITE_SUPABASE_ANON_KEY=(.+)$/m)?.[1]?.trim()

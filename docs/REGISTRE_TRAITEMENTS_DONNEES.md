@@ -1,4 +1,4 @@
-# Registre des traitements de données personnelles - Jalonis
+# Registre des traitements de données personnelles - Kavelyo
 
 **Responsable de traitement :** RONNA GROUP SARLU  
 **RCCM :** CI-ABJ-03-2025-B13-12416  
@@ -15,7 +15,7 @@
 - **Personnes :** utilisateurs, administrateurs d'organisation, membres invités et contacts autorisés.
 - **Données :** identité, coordonnées, organisation, rôle, identifiant, statut, connexions, préférences, consentements et preuves d'acceptation.
 - **Fondements :** exécution du service, consentement pour les canaux facultatifs, intérêt légitime de sécurité, obligations légales.
-- **Destinataires internes :** service Jalonis et personnes habilitées de RONNA GROUP.
+- **Destinataires internes :** service Kavelyo et personnes habilitées de RONNA GROUP.
 - **Sous-traitants :** Supabase ; Resend pour les e-mails ; opérateur WhatsApp uniquement après activation et consentement.
 - **Conservation :** durée du compte puis 90 jours ; journaux de sécurité 12 mois au maximum.
 - **Mesures :** authentification, rôles, politiques de sécurité en base, limitation de fréquence, journalisation et TLS.
@@ -26,7 +26,7 @@
 - **Personnes :** chefs de projet, équipes, administrateurs, fournisseurs, prestataires et intervenants invités.
 - **Données :** identité professionnelle, coordonnées, entreprise, affectations, contributions, tâches, commentaires, réunions, documents, budgets, risques, décisions, devis, contrats et évaluations.
 - **Fondements :** exécution du contrat et du service demandé ; intérêts légitimes des organisations clientes dans la conduite de leurs projets.
-- **Destinataires internes :** membres autorisés de l'espace client ; service Jalonis en cas d'assistance ou d'incident.
+- **Destinataires internes :** membres autorisés de l'espace client ; service Kavelyo en cas d'assistance ou d'incident.
 - **Sous-traitants :** Supabase pour la base et les fichiers ; Render pour la mise à disposition de l'application Web.
 - **Conservation :** durée du projet et du compte, puis suppression ou anonymisation sous 90 jours.
 - **Mesures :** isolation par organisation, droits par rôle, contrôles serveur, journal d'audit, sauvegardes chiffrées exportables.

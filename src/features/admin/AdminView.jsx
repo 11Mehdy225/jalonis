@@ -16,7 +16,7 @@ export default function AdminView({plans=[],onLoad,onReadiness,onMonitoring,onMa
   const channel=async(row)=>{setBusy(`channel:${row.channel}`);setError('');try{await onUpdateChannel(row.channel,{enabled:!row.enabled});await load()}catch(reason){setError(reason.message||'Mise à jour impossible.');setBusy('')}}
   const createPromotion=async values=>{setBusy('promotion:create');setError('');try{await onCreatePromotion(values);await load()}catch(reason){setError(reason.message||'Impossible de créer ce code.');setBusy('');throw reason}}
   const togglePromotion=async row=>{setBusy(`promotion:${row.id}`);setError('');try{await onSetPromotionActive({p_code_id:row.id,p_active:!row.active});await load()}catch(reason){setError(reason.message||'Impossible de modifier ce code.');setBusy('')}}
-  if(!data)return <section className="card admin-loading"><RefreshCw className={busy?'spin':''}/><b>Chargement de la console Jalonis…</b>{error&&<p>{error}</p>}</section>
+  if(!data)return <section className="card admin-loading"><RefreshCw className={busy?'spin':''}/><b>Chargement de la console Kavelyo…</b>{error&&<p>{error}</p>}</section>
   const metrics=data.metrics||{}
   return <div className="admin-page">
     {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}

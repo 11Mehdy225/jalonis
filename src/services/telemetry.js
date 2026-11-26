@@ -1,7 +1,7 @@
 import { isCloudConfigured, supabase } from './supabase'
 
-const source=window.jalonis?'desktop':'web'
-const metadata=()=>({browser:navigator.userAgent.slice(0,120),os:navigator.platform||'',version:document.querySelector('meta[name="application-name"]')?.content||'Jalonis'})
+const source=window.kavelyo?'desktop':'web'
+const metadata=()=>({browser:navigator.userAgent.slice(0,120),os:navigator.platform||'',version:document.querySelector('meta[name="application-name"]')?.content||'Kavelyo'})
 const scrub=value=>String(value||'').replace(/(bearer\s+|apikey[=: ]+|token[=: ]+|password[=: ]+)[^\s,;]+/gi,'$1[masqué]').slice(0,800)
 
 export async function trackTelemetry(event_type,{severity='info',route=location.pathname,message='',fingerprint='',duration_ms=null}={}){

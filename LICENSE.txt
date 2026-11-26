@@ -1,9 +1,9 @@
-Jalonis Proprietary License
+Kavelyo Proprietary License
 
 Copyright © 2026 Ronna Group. Tous droits réservés.
 
-Jalonis est un logiciel conçu et édité par Ronna Group.
+Kavelyo est un logiciel conçu et édité par Ronna Group.
 
-Le code source, les ressources graphiques, la documentation et les exécutables de Jalonis ne peuvent être copiés, modifiés, redistribués ou commercialisés sans l’autorisation écrite du titulaire des droits.
+Le code source, les ressources graphiques, la documentation et les exécutables de Kavelyo ne peuvent être copiés, modifiés, redistribués ou commercialisés sans l’autorisation écrite du titulaire des droits.
 
 Une copie de l’application peut être transmise à des fins de test privé. Cette autorisation de test ne transfère aucun droit de propriété intellectuelle de Ronna Group.

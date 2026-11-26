@@ -1,6 +1,7 @@
 services:
   - type: web
     runtime: static
+    # Internal Render service name kept for continuity. The public brand/domain is Kavelyo.
     name: jalonis
     buildCommand: npm ci && npm run build:web
     staticPublishPath: ./dist
@@ -14,7 +15,7 @@ services:
       - key: VITE_SUPPORT_EMAIL
         value: contact@ronnagroup.net
       - key: VITE_SITE_URL
-        value: https://jalonis.ronnagroup.net
+        value: https://kavelyo.ronnagroup.net
     routes:
       - type: rewrite
         source: /*

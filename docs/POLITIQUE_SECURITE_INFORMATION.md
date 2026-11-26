@@ -1,4 +1,4 @@
-# Politique de sécurité de l'information - Jalonis
+# Politique de sécurité de l'information - Kavelyo
 
 **Éditeur :** RONNA GROUP SARLU  
 **Version :** 1.0  
@@ -8,7 +8,7 @@
 
 ## 1. Objet et périmètre
 
-La présente politique définit les mesures appliquées à Jalonis pour protéger les comptes, espaces de travail, projets, fichiers, données de collaboration, informations fournisseurs, références de paiement et journaux techniques. Elle couvre l'application Web, les applications Desktop connectées, l'infrastructure Supabase, les fonctions serveur et les services techniques nécessaires.
+La présente politique définit les mesures appliquées à Kavelyo pour protéger les comptes, espaces de travail, projets, fichiers, données de collaboration, informations fournisseurs, références de paiement et journaux techniques. Elle couvre l'application Web, les applications Desktop connectées, l'infrastructure Supabase, les fonctions serveur et les services techniques nécessaires.
 
 ## 2. Principes
 
@@ -28,9 +28,9 @@ Les accès d'administration de la plateforme sont réservés aux personnes expre
 
 ## 4. Protection des données
 
-Les échanges avec les services cloud utilisent HTTPS/TLS. Les données cloud sont protégées par les mécanismes de sécurité de Supabase et par des politiques de sécurité ligne par ligne. Les fichiers sont rangés dans des espaces contrôlés par l'appartenance à une organisation. Les sauvegardes de projet exportées depuis Jalonis peuvent être chiffrées en AES-256-GCM à partir d'un mot de passe d'au moins douze caractères.
+Les échanges avec les services cloud utilisent HTTPS/TLS. Les données cloud sont protégées par les mécanismes de sécurité de Supabase et par des politiques de sécurité ligne par ligne. Les fichiers sont rangés dans des espaces contrôlés par l'appartenance à une organisation. Les sauvegardes de projet exportées depuis Kavelyo peuvent être chiffrées en AES-256-GCM à partir d'un mot de passe d'au moins douze caractères.
 
-Jalonis ne stocke pas les mots de passe en clair, les codes secrets de portefeuille mobile, les codes OTP ni les numéros complets de carte bancaire. Les paiements sont confirmés au moyen de références et d'événements transmis par le prestataire autorisé.
+Kavelyo ne stocke pas les mots de passe en clair, les codes secrets de portefeuille mobile, les codes OTP ni les numéros complets de carte bancaire. Les paiements sont confirmés au moyen de références et d'événements transmis par le prestataire autorisé.
 
 ## 5. Développement et changements
 
@@ -40,7 +40,7 @@ Les environnements de développement et de production sont séparés autant que 
 
 ## 6. Journalisation et supervision
 
-Jalonis journalise les événements nécessaires à la sécurité, aux opérations sensibles, aux paiements et à l'administration. La supervision de la plateforme regroupe les erreurs, signaux de sécurité et incidents sans enregistrer volontairement le contenu complet des projets. L'accès à ces informations est réservé aux administrateurs de plateforme habilités.
+Kavelyo journalise les événements nécessaires à la sécurité, aux opérations sensibles, aux paiements et à l'administration. La supervision de la plateforme regroupe les erreurs, signaux de sécurité et incidents sans enregistrer volontairement le contenu complet des projets. L'accès à ces informations est réservé aux administrateurs de plateforme habilités.
 
 Les appels sensibles sont soumis à des limites de fréquence côté serveur. Les journaux et données de télémétrie sont conservés conformément à la politique de conservation et supprimés ou agrégés lorsqu'ils ne sont plus nécessaires.
 

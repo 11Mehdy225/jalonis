@@ -25,13 +25,13 @@ from reportlab.platypus import (
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "output" / "pdf"
-LOGO = ROOT / "public" / "assets" / "jalonis-logo.png"
+LOGO = ROOT / "public" / "assets" / "kavelyo-logo.png"
 
 SOURCES = [
-    ("POLITIQUE_SECURITE_INFORMATION.md", "Politique_securite_information_Jalonis.pdf"),
-    ("POLITIQUE_CONSERVATION_DONNEES.md", "Politique_conservation_donnees_Jalonis.pdf"),
-    ("REGISTRE_TRAITEMENTS_DONNEES.md", "Registre_traitements_donnees_Jalonis.pdf"),
-    ("PROCEDURE_INCIDENTS_DONNEES.md", "Procedure_incidents_donnees_Jalonis.pdf"),
+    ("POLITIQUE_SECURITE_INFORMATION.md", "Politique_securite_information_Kavelyo.pdf"),
+    ("POLITIQUE_CONSERVATION_DONNEES.md", "Politique_conservation_donnees_Kavelyo.pdf"),
+    ("REGISTRE_TRAITEMENTS_DONNEES.md", "Registre_traitements_donnees_Kavelyo.pdf"),
+    ("PROCEDURE_INCIDENTS_DONNEES.md", "Procedure_incidents_donnees_Kavelyo.pdf"),
 ]
 
 INK = colors.HexColor("#172033")
@@ -105,7 +105,7 @@ def header_footer(canvas, doc):
     canvas.line(18 * mm, height - 17 * mm, width - 18 * mm, height - 17 * mm)
     canvas.setFont("Helvetica-Bold", 8)
     canvas.setFillColor(PURPLE)
-    canvas.drawString(18 * mm, height - 12 * mm, "JALONIS  |  RONNA GROUP")
+    canvas.drawString(18 * mm, height - 12 * mm, "KAVELYO  |  RONNA GROUP")
     canvas.setFont("Helvetica", 7.5)
     canvas.setFillColor(MUTED)
     canvas.drawRightString(width - 18 * mm, 11 * mm, f"Document de conformité  |  Page {doc.page}")
@@ -182,7 +182,7 @@ def document(path: Path, title: str, with_cover=False):
     doc = BaseDocTemplate(
         str(path), pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm,
         topMargin=21 * mm, bottomMargin=18 * mm, title=title,
-        author="RONNA GROUP", subject="Conformité et protection des données Jalonis",
+        author="RONNA GROUP", subject="Conformité et protection des données Kavelyo",
     )
     if with_cover:
         doc.addPageTemplates([
@@ -201,7 +201,7 @@ def cover_story():
         logo.hAlign = "CENTER"
         elements.extend([logo, Spacer(1, 7 * mm)])
     elements.extend([
-        Paragraph("JALONIS", STYLES["cover_brand"]),
+        Paragraph("KAVELYO", STYLES["cover_brand"]),
         Spacer(1, 5 * mm),
         Paragraph("Dossier de conformité<br/>et de protection des données", STYLES["cover_title"]),
         Spacer(1, 8 * mm),
@@ -235,13 +235,13 @@ def main():
         story = markdown_to_story(source)
         document(target, source.stem.replace("_", " ").title()).build(story)
 
-    combined = OUTPUT / "Dossier_conformite_Jalonis.pdf"
+    combined = OUTPUT / "Dossier_conformite_Kavelyo.pdf"
     story = cover_story()
     for index, (source_name, _) in enumerate(SOURCES):
         story.extend(markdown_to_story(ROOT / "docs" / source_name))
         if index < len(SOURCES) - 1:
             story.append(PageBreak())
-    document(combined, "Dossier de conformité Jalonis", with_cover=True).build(story)
+    document(combined, "Dossier de conformité Kavelyo", with_cover=True).build(story)
     print(f"Generated {len(SOURCES) + 1} PDFs in {OUTPUT}")
 
 

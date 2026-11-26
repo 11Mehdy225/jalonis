@@ -1,4 +1,4 @@
-# Politique de conservation et de suppression des données - Jalonis
+# Politique de conservation et de suppression des données - Kavelyo
 
 **Éditeur :** RONNA GROUP SARLU  
 **Version :** 1.0  
@@ -7,7 +7,7 @@
 
 ## 1. Objet
 
-Cette politique fixe les durées maximales de conservation appliquées aux données traitées par Jalonis. Une donnée est supprimée ou anonymisée lorsqu'elle n'est plus nécessaire, sous réserve d'une obligation légale, d'un contentieux, d'une demande officielle ou d'un besoin de sécurité documenté.
+Cette politique fixe les durées maximales de conservation appliquées aux données traitées par Kavelyo. Une donnée est supprimée ou anonymisée lorsqu'elle n'est plus nécessaire, sous réserve d'une obligation légale, d'un contentieux, d'une demande officielle ou d'un besoin de sécurité documenté.
 
 ## 2. Durées de référence
 

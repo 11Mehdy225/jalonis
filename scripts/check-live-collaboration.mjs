@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { createClient } from '@supabase/supabase-js'
 
-if(process.env.JALONIS_ALLOW_LIVE_TEST!=='1')throw new Error('Ajoutez JALONIS_ALLOW_LIVE_TEST=1 pour autoriser ce test temporaire.')
+if(process.env.KAVELYO_ALLOW_LIVE_TEST!=='1')throw new Error('Ajoutez KAVELYO_ALLOW_LIVE_TEST=1 pour autoriser ce test temporaire.')
 
 const projectRef=process.env.SUPABASE_PROJECT_REF||'kevqvphmobkjzzkkbbqw'
 const env=fs.readFileSync('.env.local','utf8')
@@ -44,8 +44,8 @@ function serviceKeyFromCli(){
 const admin=createClient(supabaseUrl,serviceKeyFromCli(),{auth:{persistSession:false,autoRefreshToken:false}})
 const browserClient=()=>createClient(supabaseUrl,anonKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}})
 const stamp=`${Date.now()}-${crypto.randomBytes(3).toString('hex')}`
-const ownerEmail=`jalonis.owner.${stamp}@example.com`
-const memberEmail=`jalonis.member.${stamp}@example.com`
+const ownerEmail=`kavelyo.owner.${stamp}@example.com`
+const memberEmail=`kavelyo.member.${stamp}@example.com`
 const password=()=>`Jal!${crypto.randomBytes(20).toString('base64url')}9a`
 const ownerPassword=password(),memberPassword=password()
 let ownerId,memberId,ownerWorkspaceId,memberWorkspaceId
@@ -60,7 +60,7 @@ async function cleanupTestUsers(){
     users.push(...result.users)
     if(result.users.length<100)break
   }
-  const targets=users.filter(user=>/^jalonis\.(owner|member)\..+@example\.com$/i.test(user.email||''))
+  const targets=users.filter(user=>/^kavelyo\.(owner|member)\..+@example\.com$/i.test(user.email||''))
   if(!targets.length)return 0
   const ids=targets.map(user=>user.id)
   unwrap(await admin.from('workspaces').delete().in('created_by',ids),'Nettoyage des espaces de test')

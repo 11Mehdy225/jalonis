@@ -1,4 +1,4 @@
-# Jalonis SaaS — comptes et abonnements
+# Kavelyo SaaS — comptes et abonnements
 
 ## Échéance et protection des données
 
@@ -10,7 +10,7 @@
 
 ## Positionnement
 
-Jalonis conservera une seule expérience produit sur trois canaux :
+Kavelyo conservera une seule expérience produit sur trois canaux :
 
 - application web collaborative ;
 - application Desktop macOS et Windows connectée au même compte ;
@@ -96,7 +96,7 @@ Les observateurs en lecture seule et les fournisseurs externes ne consomment pas
 
 ## Architecture de facturation
 
-La base centrale devra contenir les organisations, abonnements, produits, prix, sièges, périodes de facturation, factures et événements de paiement. Un prestataire de paiement gérera les cartes et les renouvellements. Jalonis ne stockera jamais directement les numéros de carte.
+La base centrale devra contenir les organisations, abonnements, produits, prix, sièges, périodes de facturation, factures et événements de paiement. Un prestataire de paiement gérera les cartes et les renouvellements. Kavelyo ne stockera jamais directement les numéros de carte.
 
 Les droits fonctionnels seront calculés côté serveur à partir de l’offre active. L’interface ne pourra pas, à elle seule, accorder un accès payant.
 

@@ -1,4 +1,4 @@
-# Procédure de gestion des incidents et violations de données - Jalonis
+# Procédure de gestion des incidents et violations de données - Kavelyo
 
 **Version :** 1.0 - 24 novembre 2026  
 **Pilote :** Direction Générale de RONNA GROUP  

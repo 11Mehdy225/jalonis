@@ -10,8 +10,8 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "docs" / "Cahier_des_charges_et_guide_utilisation_Jalonis.docx"
-LOGO = ROOT / "public" / "assets" / "jalonis-logo.png"
+OUTPUT = ROOT / "docs" / "Cahier_des_charges_et_guide_utilisation_Kavelyo.docx"
+LOGO = ROOT / "public" / "assets" / "kavelyo-logo.png"
 
 NAVY = "172039"
 INDIGO = "4F46E5"
@@ -188,7 +188,7 @@ ft = footer.add_table(rows=1, cols=3, width=Inches(6.94))
 ft.columns[0].width = Inches(2.4)
 ft.columns[1].width = Inches(2.2)
 ft.columns[2].width = Inches(2.34)
-ft.cell(0, 0).text = "Jalonis 0.2.0"
+ft.cell(0, 0).text = "Kavelyo 0.2.0"
 ft.cell(0, 1).text = "Cahier des charges et guide"
 ft.cell(0, 2).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
 ft.cell(0, 2).paragraphs[0].add_run("Page ")
@@ -205,7 +205,7 @@ cover.paragraph_format.space_before = Pt(34)
 cover.add_run().add_picture(str(LOGO), width=Inches(1.25))
 title = doc.add_paragraph(style="Title")
 title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-title.add_run("Cahier des charges et guide d utilisation de Jalonis")
+title.add_run("Cahier des charges et guide d utilisation de Kavelyo")
 subtitle = doc.add_paragraph()
 subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = subtitle.add_run("Application macOS et Windows de pilotage prédictif Scrum et hybride")
@@ -213,12 +213,12 @@ r.font.size = Pt(15)
 r.font.color.rgb = RGBColor.from_string(MID)
 subtitle.paragraph_format.space_after = Pt(28)
 meta = table(["Document", "Valeur"], [
-    ["Produit", "Jalonis"], ["Version couverte", "0.2.0"],
+    ["Produit", "Kavelyo"], ["Version couverte", "0.2.0"],
     ["Plateforme", "macOS Apple Silicon et Windows x64"], ["Stockage", "SQLite local hors ligne"],
     ["Public", "Chef de projet Product Owner Scrum Master équipe projet et développeurs"],
     ["Statut", "Spécification fonctionnelle et manuel utilisateur"],
 ], [1.55, 5.0], 9.2)
-p("Ce document définit le périmètre fonctionnel, les règles métier, les interfaces, les liaisons entre les objets et les parcours d’utilisation de Jalonis. Il sert à la fois de référence pour poursuivre le développement et de manuel pour exploiter la version actuelle.")
+p("Ce document définit le périmètre fonctionnel, les règles métier, les interfaces, les liaisons entre les objets et les parcours d’utilisation de Kavelyo. Il sert à la fois de référence pour poursuivre le développement et de manuel pour exploiter la version actuelle.")
 
 page_break()
 doc.add_heading("Sommaire", level=1)
@@ -239,8 +239,8 @@ p("Les sections 1 à 5 décrivent ce que le produit doit faire. Les sections 6 �
 page_break()
 doc.add_heading("1 Présentation et objectifs", level=1)
 doc.add_heading("1.1 Contexte", level=2)
-p("Jalonis est une application de bureau conçue pour un chef de projet qui souhaite centraliser le pilotage sans dépendre d’un service en ligne. Elle couvre le projet depuis la charte jusqu’à la clôture et combine les pratiques prédictives, Scrum et hybrides.")
-p("Le produit répond à une difficulté courante : les tâches sont souvent gérées dans un outil, les risques dans un tableur, les décisions dans des comptes rendus et les responsabilités dans des notes séparées. Jalonis rassemble ces informations dans une base locale et les relie.")
+p("Kavelyo est une application de bureau conçue pour un chef de projet qui souhaite centraliser le pilotage sans dépendre d’un service en ligne. Elle couvre le projet depuis la charte jusqu’à la clôture et combine les pratiques prédictives, Scrum et hybrides.")
+p("Le produit répond à une difficulté courante : les tâches sont souvent gérées dans un outil, les risques dans un tableur, les décisions dans des comptes rendus et les responsabilités dans des notes séparées. Kavelyo rassemble ces informations dans une base locale et les relie.")
 doc.add_heading("1.2 Objectifs du produit", level=2)
 for text in [
     "Créer et piloter plusieurs projets dans une seule application.",
@@ -374,12 +374,12 @@ page_break()
 doc.add_heading("6 Guide de démarrage", level=1)
 doc.add_heading("6.1 Installation sur macOS et Windows", level=2)
 for text in [
-    "Ouvrir le fichier Jalonis 0.2.0 arm64.dmg.",
-    "Faire glisser Jalonis vers le dossier Applications.",
-    "Si macOS bloque le premier lancement, effectuer un clic droit sur Jalonis puis choisir Ouvrir.",
+    "Ouvrir le fichier Kavelyo 0.2.0 arm64.dmg.",
+    "Faire glisser Kavelyo vers le dossier Applications.",
+    "Si macOS bloque le premier lancement, effectuer un clic droit sur Kavelyo puis choisir Ouvrir.",
     "Au premier démarrage, vérifier dans Paramètres que le dossier de données est affiché.",
 ]: numbered(text)
-p("Sur Windows 10 ou 11 en 64 bits, ouvrir Jalonis-0.2.0-Windows-x64-Setup.exe, choisir le dossier d installation puis terminer le programme d installation. Si Microsoft Defender SmartScreen affiche un avertissement pour cette version non signée, vérifier que le fichier provient bien du propriétaire du projet avant de choisir Informations complémentaires puis Exécuter quand même.")
+p("Sur Windows 10 ou 11 en 64 bits, ouvrir Kavelyo-0.2.0-Windows-x64-Setup.exe, choisir le dossier d installation puis terminer le programme d installation. Si Microsoft Defender SmartScreen affiche un avertissement pour cette version non signée, vérifier que le fichier provient bien du propriétaire du projet avant de choisir Informations complémentaires puis Exécuter quand même.")
 p("La version macOS cible les Mac Apple Silicon. La version Windows cible les PC x64. Pour une diffusion commerciale, il faudra signer les deux installateurs et notariser la version Apple.")
 doc.add_heading("6.2 Créer le premier projet", level=2)
 for text in [
@@ -483,10 +483,10 @@ for text in [
     "Fixer la pondération technique et financière puis publier la consultation.",
 ]: numbered(text)
 doc.add_heading("10.3 Comparer les offres et attribuer", level=2)
-p("Chaque offre conserve son fournisseur, son prix, son délai, sa validité et ses notes technique, financière et de conformité. Jalonis calcule un score pondéré à partir des poids de la consultation. Le responsable documente la décision puis passe l offre retenue au statut Attribuée.")
+p("Chaque offre conserve son fournisseur, son prix, son délai, sa validité et ses notes technique, financière et de conformité. Kavelyo calcule un score pondéré à partir des poids de la consultation. Le responsable documente la décision puis passe l offre retenue au statut Attribuée.")
 doc.add_heading("10.4 Gérer les contrats et documents", level=2)
 p("Le contrat reprend le fournisseur, la consultation source, la période, le montant, les conditions de paiement, les livrables, le responsable et le préavis d alerte. Le dossier documentaire accepte notamment les attestations fiscales, assurances, accords de confidentialité, offres, contrats, avenants, bons de commande, bons de livraison et factures.")
-p("Lorsqu un fichier est joint, Jalonis en crée une copie dans son dossier local protégé. L original reste inchangé. La date d expiration alimente les alertes du tableau de bord Achats.")
+p("Lorsqu un fichier est joint, Kavelyo en crée une copie dans son dossier local protégé. L original reste inchangé. La date d expiration alimente les alertes du tableau de bord Achats.")
 doc.add_heading("10.5 Évaluer la performance", level=2)
 p("Après une livraison, un jalon ou à la clôture du contrat, noter sur 100 la qualité, le respect des délais, la maîtrise des coûts, la conformité et la communication. La moyenne forme le score global et éclaire les futures consultations.")
 page_break()
@@ -539,7 +539,7 @@ table(["Identifiant", "Règle"], [
     ["RM 12", "Le mode hybride autorise la liaison d un élément Scrum à une activité WBS."],
     ["RM 13", "Le score d une offre applique les pondérations technique et financière de sa consultation."],
     ["RM 14", "Le score global fournisseur est la moyenne des cinq dimensions de performance."],
-    ["RM 15", "Une pièce jointe est copiée dans le dossier local de Jalonis sans modifier l original."],
+    ["RM 15", "Une pièce jointe est copiée dans le dossier local de Kavelyo sans modifier l original."],
     ["RM 16", "Les contrats et documents arrivant à échéance sont signalés selon leur préavis."],
 ], [1.0, 5.55])
 
@@ -572,7 +572,7 @@ table(["Couche", "Technologie", "Responsabilité"], [
     ["Packaging", "electron builder", "Création du DMG macOS arm64 et de l installateur Windows x64."],
 ], [1.35, 1.55, 3.65])
 doc.add_heading("14.1 Emplacement des données", level=2)
-p("Sur macOS, la base est créée dans Application Support sous le répertoire jalonis. Sur Windows, elle est créée dans le dossier de données applicatives de l utilisateur. Son nom est jalonis.sqlite. Les pièces jointes fournisseur sont copiées dans le sous-dossier supplier-documents, organisé par projet et fournisseur.")
+p("Sur macOS, la base est créée dans Application Support sous le répertoire kavelyo. Sur Windows, elle est créée dans le dossier de données applicatives de l utilisateur. Son nom est kavelyo.sqlite. Les pièces jointes fournisseur sont copiées dans le sous-dossier supplier-documents, organisé par projet et fournisseur.")
 page_break()
 doc.add_heading("14.2 Organisation du code", level=2)
 table(["Dossier", "Contenu"], [
@@ -587,14 +587,14 @@ table(["Dossier", "Contenu"], [
 doc.add_heading("15 Installation sauvegarde et maintenance", level=1)
 doc.add_heading("15.1 Sauvegarde manuelle actuelle", level=2)
 for text in [
-    "Fermer Jalonis afin que toutes les écritures soient terminées.",
+    "Fermer Kavelyo afin que toutes les écritures soient terminées.",
     "Ouvrir le dossier indiqué dans Paramètres.",
-    "Copier jalonis.sqlite et le dossier supplier-documents dans un emplacement sûr et daté.",
+    "Copier kavelyo.sqlite et le dossier supplier-documents dans un emplacement sûr et daté.",
     "Conserver plusieurs générations de sauvegarde.",
 ]: numbered(text)
 p("Ne pas copier uniquement les fichiers WAL ou SHM. Une future fonction de sauvegarde intégrée automatisera la cohérence et le chiffrement.")
 doc.add_heading("15.2 Mise à jour", level=2)
-p("Installer la nouvelle version de l’application sans supprimer le dossier de données. Au lancement, Jalonis ajoute automatiquement les nouvelles colonnes ou tables nécessaires. Une sauvegarde préalable reste recommandée avant toute mise à jour importante.")
+p("Installer la nouvelle version de l’application sans supprimer le dossier de données. Au lancement, Kavelyo ajoute automatiquement les nouvelles colonnes ou tables nécessaires. Une sauvegarde préalable reste recommandée avant toute mise à jour importante.")
 doc.add_heading("15.3 Dépannage", level=2)
 table(["Symptôme", "Vérification", "Action"], [
     ["macOS refuse l ouverture", "Application non signée", "Clic droit puis Ouvrir pour la version de test."],
@@ -621,7 +621,7 @@ table(["Scénario", "Résultat attendu"], [
     ["Lier la Story à une activité", "Le code WBS est visible sur la carte et dans le backlog."],
     ["Créer une RFQ liée au WBS", "La consultation affiche l activité et le risque éventuellement associés."],
     ["Saisir plusieurs offres", "La matrice classe les offres selon leur score pondéré."],
-    ["Joindre une attestation", "Le fichier est copié localement et peut être ouvert depuis Jalonis."],
+    ["Joindre une attestation", "Le fichier est copié localement et peut être ouvert depuis Kavelyo."],
     ["Approcher une échéance", "Le contrat ou document apparaît dans les alertes Achats."],
     ["Évaluer un fournisseur", "La moyenne des cinq notes alimente son score de performance."],
     ["Relancer l application", "Les données créées sont retrouvées dans la base locale."],
@@ -666,13 +666,13 @@ table(["Terme", "Définition"], [
 doc.add_heading("Références de conception", level=2)
 p("Scrum Guide officiel, version de novembre 2020, scrumguides.org. Documentation Microsoft Support relative aux dépendances, aux baselines, au chemin critique et à la charge des ressources dans Microsoft Project. Commission européenne, Practical Guide PRAG et portail Tenders, pour le cycle consultation évaluation attribution contractualisation suivi et clôture.")
 doc.add_heading("Fin du document", level=2)
-p("Ce document couvre Jalonis 0.2.0. Il doit être mis à jour à chaque évolution structurante du modèle de données, des interfaces ou des règles métier.")
+p("Ce document couvre Kavelyo 0.2.0. Il doit être mis à jour à chaque évolution structurante du modèle de données, des interfaces ou des règles métier.")
 
 # Core properties and accessibility
-doc.core_properties.title = "Cahier des charges et guide d utilisation de Jalonis"
-doc.core_properties.subject = "Spécification fonctionnelle technique et manuel utilisateur de Jalonis 0.2.0"
-doc.core_properties.author = "Jalonis"
-doc.core_properties.last_modified_by = "Jalonis"
+doc.core_properties.title = "Cahier des charges et guide d utilisation de Kavelyo"
+doc.core_properties.subject = "Spécification fonctionnelle technique et manuel utilisateur de Kavelyo 0.2.0"
+doc.core_properties.author = "Kavelyo"
+doc.core_properties.last_modified_by = "Kavelyo"
 doc.core_properties.comments = ""
 doc.core_properties.created = datetime(2026, 9, 27, tzinfo=timezone.utc)
 doc.core_properties.modified = datetime(2026, 9, 27, tzinfo=timezone.utc)

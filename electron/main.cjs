@@ -2,9 +2,13 @@ const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 const crypto = require('node:crypto')
-const { JalonisDatabase } = require('./database.cjs')
+const { KavelyoDatabase } = require('./database.cjs')
 
 let database
+const defaultUserDataPath = app.getPath('userData')
+const legacyUserDataPaths = ['Jalonis', 'jalonis'].map(name => path.join(app.getPath('appData'), name))
+const legacyUserDataPath = legacyUserDataPaths.find(candidate => fs.existsSync(path.join(candidate, 'jalonis.sqlite')))
+if (legacyUserDataPath && !fs.existsSync(path.join(defaultUserDataPath, 'kavelyo.sqlite'))) app.setPath('userData', legacyUserDataPath)
 const externalProtocol = url => { try { return ['https:','http:','mailto:'].includes(new URL(url).protocol) } catch { return false } }
 
 const imageMime = filePath => ({'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif'}[path.extname(filePath).toLowerCase()] || 'application/octet-stream')
@@ -16,7 +20,7 @@ function createWindow() {
     height: 920,
     minWidth: 1100,
     minHeight: 720,
-    title: 'Jalonis',
+    title: 'Kavelyo',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     backgroundColor: '#f5f7fb',
     webPreferences: {
@@ -33,8 +37,12 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Keep the legacy application identifier so installed desktop builds can upgrade in place.
   if(process.platform==='win32')app.setAppUserModelId('com.jalonis.desktop')
-  database = new JalonisDatabase(path.join(app.getPath('userData'), 'jalonis.sqlite'))
+  const dataFolder = app.getPath('userData')
+  const legacyDatabase = path.join(dataFolder, 'jalonis.sqlite')
+  const databasePath = fs.existsSync(legacyDatabase) ? legacyDatabase : path.join(dataFolder, 'kavelyo.sqlite')
+  database = new KavelyoDatabase(databasePath)
   ipcMain.handle('projects:list', () => database.listProjects().map(project => ({ ...project, logo_url: project.logo_path ? dataUrl(project.logo_path) : null })))
   ipcMain.handle('projects:create', (_, data) => database.createProject(data))
   ipcMain.handle('projects:update', (_, id, data) => database.updateProject(id, data))

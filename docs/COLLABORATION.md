@@ -1,4 +1,4 @@
-# Collaboration Jalonis
+# Collaboration Kavelyo
 
 ## Version 0.17 — collaboration locale et cloud
 

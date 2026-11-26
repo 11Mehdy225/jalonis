@@ -29,14 +29,14 @@ Deno.serve(async request=>{
     const amount=Math.round(unitPrice*seats*100)/100
     const paymentPlan=Deno.env.get(planEnv(planCode,cycle))
     if(!paymentPlan)return json({error:`Le plan de paiement ${plan.name} n’est pas encore relié à Flutterwave.`},503)
-    const txRef=`jalonis-${workspaceId.slice(0,8)}-${crypto.randomUUID()}`
+    const txRef=`kavelyo-${workspaceId.slice(0,8)}-${crypto.randomUUID()}`
     const origin=String(Deno.env.get('SITE_URL')||request.headers.get('origin')||'').replace(/\/$/,'')
     const redirectUrl=`${origin}/?billing=return`
     const {data:profile}=await admin.from('profiles').select('full_name,email,phone').eq('id',user.id).single()
     const paymentResponse=await fetch('https://api.flutterwave.com/v3/payments',{method:'POST',headers:{Authorization:`Bearer ${secretKey}`,'Content-Type':'application/json'},body:JSON.stringify({
       tx_ref:txRef,amount,currency:'EUR',redirect_url:redirectUrl,payment_plan:Number(paymentPlan),payment_options:'card',
       customer:{email:profile?.email||user.email,name:profile?.full_name||workspace.name,phone_number:profile?.phone||undefined},
-      customizations:{title:'Jalonis',description:`Abonnement ${plan.name} · ${seats} siège(s)`},
+      customizations:{title:'Kavelyo',description:`Abonnement ${plan.name} · ${seats} siège(s)`},
       configurations:{session_duration:30,max_retry_attempt:5},meta:{workspace_id:workspaceId,plan_code:planCode,billing_cycle:cycle,seats},
     })})
     const payment=await paymentResponse.json()

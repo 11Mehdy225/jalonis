@@ -1,6 +1,8 @@
 const encoder=new TextEncoder()
 const decoder=new TextDecoder()
 const ITERATIONS=310000
+const ARCHIVE_FORMAT='kavelyo-encrypted-project'
+const LEGACY_ARCHIVE_FORMAT='jalonis-encrypted-project'
 
 const bytesToBase64=bytes=>{
   let value=''
@@ -22,14 +24,14 @@ export async function encryptProjectArchive(archive,password){
   const key=await deriveKey(password,salt)
   const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,encoder.encode(JSON.stringify(archive)))
   return {
-    format:'jalonis-encrypted-project',version:1,algorithm:'AES-256-GCM',
+    format:ARCHIVE_FORMAT,version:1,algorithm:'AES-256-GCM',
     kdf:{name:'PBKDF2',hash:'SHA-256',iterations:ITERATIONS,salt:bytesToBase64(salt)},
     iv:bytesToBase64(iv),ciphertext:bytesToBase64(new Uint8Array(encrypted)),created_at:new Date().toISOString(),
   }
 }
 
 export async function decryptProjectArchive(envelope,password){
-  if(envelope?.format!=='jalonis-encrypted-project'||!envelope.kdf?.salt||!envelope.iv||!envelope.ciphertext)throw new Error('Cette sauvegarde chiffrée Jalonis est invalide.')
+  if(![ARCHIVE_FORMAT,LEGACY_ARCHIVE_FORMAT].includes(envelope?.format)||!envelope.kdf?.salt||!envelope.iv||!envelope.ciphertext)throw new Error('Cette sauvegarde chiffrée Kavelyo est invalide.')
   try{
     const salt=base64ToBytes(envelope.kdf.salt),iv=base64ToBytes(envelope.iv)
     const key=await deriveKey(password,salt,Number(envelope.kdf.iterations)||ITERATIONS)
@@ -40,4 +42,4 @@ export async function decryptProjectArchive(envelope,password){
   }
 }
 
-export const isEncryptedProjectArchive=value=>value?.format==='jalonis-encrypted-project'
+export const isEncryptedProjectArchive=value=>[ARCHIVE_FORMAT,LEGACY_ARCHIVE_FORMAT].includes(value?.format)

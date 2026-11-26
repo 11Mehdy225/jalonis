@@ -13,7 +13,7 @@ Deno.serve(async request=>{
     const {data:{user}}=await admin.auth.getUser(token)
     if(!user)return json({error:'Session invalide.'},401)
     const {data:platformAdmin}=await admin.from('platform_admins').select('user_id').eq('user_id',user.id).eq('active',true).maybeSingle()
-    if(!platformAdmin)return json({error:'Accès réservé à l’administration Jalonis.'},403)
+    if(!platformAdmin)return json({error:'Accès réservé à l’administration Kavelyo.'},403)
     if(request.method==='POST'){
       const body=await request.json()
       if(body.action==='record_backup_check'){

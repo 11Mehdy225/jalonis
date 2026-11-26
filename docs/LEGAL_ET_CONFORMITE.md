@@ -1,6 +1,6 @@
-# Cadre légal et conformité de Jalonis
+# Cadre légal et conformité de Kavelyo
 
-Jalonis est conçu et édité par Ronna Group. Le présent document recense les éléments à valider avant l’ouverture commerciale et ne remplace pas la revue d’un conseil juridique ivoirien.
+Kavelyo est conçu et édité par Ronna Group. Le présent document recense les éléments à valider avant l’ouverture commerciale et ne remplace pas la revue d’un conseil juridique ivoirien.
 
 ## Informations officielles à fournir
 

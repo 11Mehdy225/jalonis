@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
-contextBridge.exposeInMainWorld('jalonis', {
+contextBridge.exposeInMainWorld('kavelyo', {
   projects: {
     list: () => ipcRenderer.invoke('projects:list'),
     create: (data) => ipcRenderer.invoke('projects:create', data),

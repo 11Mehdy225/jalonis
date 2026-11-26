@@ -1,8 +1,8 @@
-# Jalonis
+# Kavelyo
 
 Application macOS et Windows locale de pilotage de projet, pensée pour relier les dimensions techniques, financières et humaines du cycle de vie d’un projet.
 
-Jalonis est conçu et édité par **Ronna Group**. Copyright © 2026 Ronna Group. Tous droits réservés.
+Kavelyo est conçu et édité par **Ronna Group**. Copyright © 2026 Ronna Group. Tous droits réservés.
 
 La version 0.17 prépare la cible SaaS complète : authentification Supabase, récupération de mot de passe, espaces Personnel ou Organisation, collaboration en temps réel, base PostgreSQL isolée par organisation, stockage sécurisé, abonnements et interface commune avec les applications Desktop.
 
@@ -37,7 +37,7 @@ npm install
 npm run dev
 ```
 
-Au premier lancement, Jalonis crée automatiquement une base SQLite locale vide dans le dossier de données de l’application macOS. L’écran d’accueil permet de créer directement votre premier projet réel.
+Au premier lancement, Kavelyo crée automatiquement une base SQLite locale vide dans le dossier de données de l’application macOS. L’écran d’accueil permet de créer directement votre premier projet réel.
 
 ## Générer l’application installable
 
@@ -86,7 +86,7 @@ Le fichier d’installation `.exe` sera créé dans `release/`. Les versions de 
 ## Arborescence
 
 ```text
-Jalonis/
+Kavelyo/
 ├── build/                Icônes et ressources de distribution
 ├── docs/                 Documentation produit et guide utilisateur
 ├── electron/             Processus desktop, sécurité IPC et SQLite

@@ -12,7 +12,7 @@ Deno.serve(async request=>{
     const {data:{user}}=await admin.auth.getUser(token)
     if(!user)return json({error:'Session invalide.'},401)
     const {data:platformAdmin}=await admin.from('platform_admins').select('user_id').eq('user_id',user.id).eq('active',true).maybeSingle()
-    if(!platformAdmin)return json({error:'Accès réservé à l’administration Jalonis.'},403)
+    if(!platformAdmin)return json({error:'Accès réservé à l’administration Kavelyo.'},403)
     const body=await request.json(),requestId=String(body.request_id||''),action=String(body.action||'')
     const {data:privacyRequest,error:readError}=await admin.from('privacy_requests').select('*').eq('id',requestId).single()
     if(readError||!privacyRequest)return json({error:'Demande introuvable.'},404)
@@ -28,7 +28,7 @@ Deno.serve(async request=>{
     const targetId=privacyRequest.user_id
     const {count:owned}=await admin.from('workspaces').select('id',{count:'exact',head:true}).eq('created_by',targetId)
     if(owned)return json({error:'Transférez ou supprimez d’abord les espaces dont cette personne est propriétaire.'},409)
-    const synthetic=`deleted+${targetId}@invalid.jalonis.local`
+    const synthetic=`deleted+${targetId}@invalid.kavelyo.local`
     const {error:authError}=await admin.auth.admin.updateUserById(targetId,{email:synthetic,email_confirm:true,ban_duration:'876000h',user_metadata:{deleted:true,deleted_at:new Date().toISOString()}})
     if(authError)throw authError
     await admin.from('workspace_members').delete().eq('user_id',targetId)

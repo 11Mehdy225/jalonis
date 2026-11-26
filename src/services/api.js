@@ -8,7 +8,7 @@ const previewPlans = [
   { code: 'business', name: 'Business', account_type: 'Organisation', monthly_price_xof: 9000, annual_price_xof: 90000, min_seats: 10, features: { projects: -1, storage_mb: 51200, automation: true, assistant: true, assistant_monthly_runs: 100 } },
 ]
 const makeBrowserWorkspace=({id,name,account_type='Personnel'})=>({ workspace: { id, name, mode: 'local', account_type, subscription_plan: 'Découverte', subscription_status: 'Aperçu', seat_limit: account_type==='Organisation'?3:1, trial_ends_at: null }, members: [{...browserUser,membership_id:`${id}-owner`}], current_user: {...browserUser,membership_id:`${id}-owner`}, subscription: { plan_code: 'discovery', status: 'preview', seats: account_type==='Organisation'?3:1 }, plans: previewPlans, billing_transactions: [], billing_available: false, automatic_billing_available: false, manual_payment_methods: [], manual_plan_prices: [], manual_payment_requests: [], is_platform_admin: false, platform_payment_requests: [], usage: { projects: 0 } })
-let browserWorkspace=makeBrowserWorkspace({id:'browser',name:'Mon espace Jalonis'})
+let browserWorkspace=makeBrowserWorkspace({id:'browser',name:'Mon espace Kavelyo'})
 const previewWorkspaces=[browserWorkspace]
 const previewMemories=new Map([['browser',memory]])
 const previewWorkspaceList=()=>previewWorkspaces.map(state=>({...state.workspace,role:state.current_user.role,project_count:previewMemories.get(state.workspace.id)?.projects.length||0}))
@@ -66,10 +66,12 @@ const previewApi = {
   system: { info: async () => ({ dataPath: 'Mode navigateur', version: '0.17.1' }) },
 }
 
-const isPreviewMode = !window.jalonis && new URLSearchParams(window.location.search).get('preview') === '1'
-export const isDesktopCloud = Boolean(window.jalonis) && localStorage.getItem('jalonis-desktop-mode') === 'cloud'
+const isPreviewMode = !window.kavelyo && new URLSearchParams(window.location.search).get('preview') === '1'
+const desktopMode=localStorage.getItem('kavelyo-desktop-mode')||localStorage.getItem('jalonis-desktop-mode')
+if(desktopMode&&!localStorage.getItem('kavelyo-desktop-mode'))localStorage.setItem('kavelyo-desktop-mode',desktopMode)
+export const isDesktopCloud = Boolean(window.kavelyo) && desktopMode === 'cloud'
 
-export const api = window.jalonis && !isDesktopCloud ? window.jalonis : (isPreviewMode || !isCloudConfigured ? previewApi : cloudApi)
+export const api = window.kavelyo && !isDesktopCloud ? window.kavelyo : (isPreviewMode || !isCloudConfigured ? previewApi : cloudApi)
 import { cloudApi } from './cloudApi'
 import { isCloudConfigured } from './supabase'
 
