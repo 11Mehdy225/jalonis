@@ -7,7 +7,7 @@ const textParameter=(value:unknown)=>({type:'text',text:String(value??'—').sli
 
 Deno.serve(async request=>{
   try{
-    const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),cronSecret=Deno.env.get('KAVELYO_CRON_SECRET')
+    const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),cronSecret=Deno.env.get('KAVELYO_CRON_SECRET')||Deno.env.get('JALONIS_CRON_SECRET')
     const token=Deno.env.get('WHATSAPP_ACCESS_TOKEN'),phoneNumberId=Deno.env.get('WHATSAPP_PHONE_NUMBER_ID'),language=Deno.env.get('WHATSAPP_TEMPLATE_LANGUAGE')||'fr',apiVersion=Deno.env.get('WHATSAPP_API_VERSION')||'v27.0'
     if(!url||!serviceKey||!cronSecret||!token||!phoneNumberId)return Response.json({error:'Configuration WhatsApp incomplète.'},{status:503})
     if(request.headers.get('x-kavelyo-cron-secret')!==cronSecret)return Response.json({error:'Accès refusé.'},{status:401})
@@ -39,13 +39,17 @@ Deno.serve(async request=>{
 async function queueDailyReminders(admin:any){
   const {data:profiles}=await admin.from('profiles').select('id,timezone,quiet_end,notify_whatsapp,whatsapp_opt_in_at,phone,daily_digest').eq('notify_whatsapp',true).eq('daily_digest',true).not('whatsapp_opt_in_at','is',null)
   for(const profile of profiles||[]){
-    const parts=localParts(profile.timezone),digestHour=String(profile.quiet_end||'07:00').slice(0,2)
-    if(parts.hour!==digestHour)continue
+    const parts=localParts(profile.timezone),localTime=`${parts.hour}:${parts.minute}`,digestTime=String(profile.quiet_end||'07:00').slice(0,5)
+    if(localTime<digestTime)continue
     const date=`${parts.year}-${parts.month}-${parts.day}`,dedupeKey=`whatsapp:daily:${profile.id}:${date}`
     const {data:memberships}=await admin.from('workspace_members').select('workspace_id').eq('user_id',profile.id).eq('status','Actif')
     const workspaceIds=(memberships||[]).map((row:any)=>row.workspace_id);if(!workspaceIds.length)continue
-    const {data:projects}=await admin.from('projects').select('id').in('workspace_id',workspaceIds)
-    const projectIds=(projects||[]).map((row:any)=>row.id);if(!projectIds.length)continue
+    const [{data:projects},{data:projectMemberships}]=await Promise.all([
+      admin.from('projects').select('id,created_by,access_mode').in('workspace_id',workspaceIds),
+      admin.from('project_members').select('project_id').eq('user_id',profile.id),
+    ])
+    const explicitIds=new Set((projectMemberships||[]).map((row:any)=>row.project_id))
+    const projectIds=(projects||[]).filter((row:any)=>row.access_mode==='workspace'||row.created_by===profile.id||explicitIds.has(row.id)).map((row:any)=>row.id);if(!projectIds.length)continue
     const [{count:tasks},{count:meetings},{data:risks}]=await Promise.all([
       admin.from('tasks').select('id',{count:'exact',head:true}).in('project_id',projectIds).eq('assignee_id',profile.id).neq('status','Terminé').lte('due_date',date),
       admin.from('meetings').select('id',{count:'exact',head:true}).in('project_id',projectIds).gte('meeting_date',`${date}T00:00:00`).lt('meeting_date',`${date}T23:59:59`),

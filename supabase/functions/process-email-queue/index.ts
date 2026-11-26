@@ -8,7 +8,7 @@ const layout=(content:string)=>`<!doctype html><html><body style="margin:0;backg
 
 Deno.serve(async request=>{
   try{
-    const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),resendKey=Deno.env.get('RESEND_API_KEY'),cronSecret=Deno.env.get('KAVELYO_CRON_SECRET'),from=Deno.env.get('KAVELYO_EMAIL_FROM'),replyTo=Deno.env.get('KAVELYO_EMAIL_REPLY_TO')
+    const url=Deno.env.get('SUPABASE_URL'),serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),resendKey=Deno.env.get('RESEND_API_KEY'),cronSecret=Deno.env.get('KAVELYO_CRON_SECRET')||Deno.env.get('JALONIS_CRON_SECRET'),from=Deno.env.get('KAVELYO_EMAIL_FROM')||Deno.env.get('JALONIS_EMAIL_FROM'),replyTo=Deno.env.get('KAVELYO_EMAIL_REPLY_TO')||Deno.env.get('JALONIS_EMAIL_REPLY_TO')
     if(!url||!serviceKey||!resendKey||!cronSecret||!from)return Response.json({error:'Configuration e-mail incomplète.'},{status:503})
     if(request.headers.get('x-kavelyo-cron-secret')!==cronSecret)return Response.json({error:'Accès refusé.'},{status:401})
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}})
@@ -35,25 +35,30 @@ Deno.serve(async request=>{
 async function queueDailyDigests(admin:any){
   const {data:profiles}=await admin.from('profiles').select('id,full_name,email,timezone,quiet_end,notify_email,daily_digest').eq('notify_email',true).eq('daily_digest',true)
   for(const profile of profiles||[]){
-    const parts=localParts(profile.timezone),digestHour=String(profile.quiet_end||'07:00').slice(0,2)
-    if(parts.hour!==digestHour)continue
+    const parts=localParts(profile.timezone),localTime=`${parts.hour}:${parts.minute}`,digestTime=String(profile.quiet_end||'07:00').slice(0,5)
+    if(localTime<digestTime)continue
     const digestDate=`${parts.year}-${parts.month}-${parts.day}`,dedupeKey=`daily:${profile.id}:${digestDate}`
     const {data:memberships}=await admin.from('workspace_members').select('workspace_id').eq('user_id',profile.id).eq('status','Actif')
     const workspaceIds=(memberships||[]).map((row:any)=>row.workspace_id);if(!workspaceIds.length)continue
-    const {data:projects}=await admin.from('projects').select('id,name').in('workspace_id',workspaceIds)
-    const projectIds=(projects||[]).map((row:any)=>row.id);if(!projectIds.length)continue
+    const [{data:projects},{data:projectMemberships}]=await Promise.all([
+      admin.from('projects').select('id,name,created_by,access_mode').in('workspace_id',workspaceIds),
+      admin.from('project_members').select('project_id').eq('user_id',profile.id),
+    ])
+    const explicitIds=new Set((projectMemberships||[]).map((row:any)=>row.project_id))
+    const projectIds=(projects||[]).filter((row:any)=>row.access_mode==='workspace'||row.created_by===profile.id||explicitIds.has(row.id)).map((row:any)=>row.id);if(!projectIds.length)continue
     const today=digestDate
-    const [{data:tasks},{data:meetings},{data:risks}]=await Promise.all([
+    const [{data:tasks},{data:actions},{data:meetings},{data:risks}]=await Promise.all([
       admin.from('tasks').select('title,due_date,status,priority,project_id').in('project_id',projectIds).eq('assignee_id',profile.id).neq('status','Terminé').lte('due_date',today).order('due_date'),
+      admin.from('action_items').select('title,due_date,status,priority,owner,project_id').in('project_id',projectIds).not('status','in','("Terminée","Annulée")').lte('due_date',today).order('due_date'),
       admin.from('meetings').select('title,meeting_date,project_id').in('project_id',projectIds).gte('meeting_date',`${today}T00:00:00`).lt('meeting_date',`${today}T23:59:59`),
       admin.from('risks').select('title,probability,impact,project_id').in('project_id',projectIds).neq('status','Fermé'),
     ])
     const critical=(risks||[]).filter((risk:any)=>Number(risk.probability)*Number(risk.impact)>=15)
-    await admin.from('email_deliveries').upsert({recipient_id:profile.id,email_type:'daily_digest',dedupe_key:dedupeKey,subject:`Kavelyo · Votre point projet du ${today}`,template_data:{date:today,tasks:tasks||[],meetings:meetings||[],risks:critical}},{onConflict:'dedupe_key',ignoreDuplicates:true})
+    await admin.from('email_deliveries').upsert({recipient_id:profile.id,email_type:'daily_digest',dedupe_key:dedupeKey,subject:`Kavelyo · Votre point projet du ${today}`,template_data:{date:today,tasks:tasks||[],actions:actions||[],meetings:meetings||[],risks:critical}},{onConflict:'dedupe_key',ignoreDuplicates:true})
   }
 }
 
 function renderDigest(data:any,name:string){
   const list=(rows:any[],empty:string,render:(row:any)=>string)=>rows?.length?`<ul style="margin:10px 0 0;padding-left:20px;color:#4f5870">${rows.slice(0,8).map(row=>`<li style="margin:7px 0">${render(row)}</li>`).join('')}</ul>`:`<p style="color:#8b92a3">${empty}</p>`
-  return `<div style="padding:20px;border-radius:14px;background:linear-gradient(135deg,#4f46e5,#29245f);color:white"><div style="font-size:12px;opacity:.75">POINT QUOTIDIEN</div><h1 style="margin:7px 0 4px;font-size:23px">Bonjour ${htmlEscape(name||'')},</h1><p style="margin:0;opacity:.82">Voici les priorités de vos projets pour aujourd’hui.</p></div><div style="margin-top:14px">${card('Tâches à traiter',`${data.tasks?.length||0} tâche(s) arrivée(s) à échéance`)}${list(data.tasks,'Aucune tâche en retard ou prévue aujourd’hui.',row=>`${htmlEscape(row.title)} · ${htmlEscape(row.priority||'Priorité normale')}`)}<div style="height:12px"></div>${card('Réunions du jour',`${data.meetings?.length||0} réunion(s) planifiée(s)`)}${list(data.meetings,'Aucune réunion planifiée aujourd’hui.',row=>htmlEscape(row.title))}<div style="height:12px"></div>${card('Risques critiques',`${data.risks?.length||0} risque(s) nécessitent une attention`)}${list(data.risks,'Aucun risque critique ouvert.',row=>htmlEscape(row.title))}</div>`
+  return `<div style="padding:20px;border-radius:14px;background:linear-gradient(135deg,#4f46e5,#29245f);color:white"><div style="font-size:12px;opacity:.75">POINT QUOTIDIEN</div><h1 style="margin:7px 0 4px;font-size:23px">Bonjour ${htmlEscape(name||'')},</h1><p style="margin:0;opacity:.82">Voici les priorités de vos projets pour aujourd’hui.</p></div><div style="margin-top:14px">${card('Tâches à traiter',`${data.tasks?.length||0} tâche(s) arrivée(s) à échéance`)}${list(data.tasks,'Aucune tâche en retard ou prévue aujourd’hui.',row=>`${htmlEscape(row.title)} · ${htmlEscape(row.priority||'Priorité normale')}`)}<div style="height:12px"></div>${card('Actions à suivre',`${data.actions?.length||0} action(s) arrivée(s) à échéance`)}${list(data.actions,'Aucune action en retard ou prévue aujourd’hui.',row=>`${htmlEscape(row.title)} · ${htmlEscape(row.owner||'Responsable non défini')}`)}<div style="height:12px"></div>${card('Réunions du jour',`${data.meetings?.length||0} réunion(s) planifiée(s)`)}${list(data.meetings,'Aucune réunion planifiée aujourd’hui.',row=>htmlEscape(row.title))}<div style="height:12px"></div>${card('Risques critiques',`${data.risks?.length||0} risque(s) nécessitent une attention`)}${list(data.risks,'Aucun risque critique ouvert.',row=>htmlEscape(row.title))}</div>`
 }

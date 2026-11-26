@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type'}
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json'}})
 const configured=(...names:string[])=>names.every(name=>Boolean(Deno.env.get(name)))
+const configuredEither=(current:string,legacy:string)=>Boolean(Deno.env.get(current)||Deno.env.get(legacy))
 
 Deno.serve(async request=>{
   if(request.method==='OPTIONS')return new Response('ok',{headers:cors})
@@ -23,8 +24,8 @@ Deno.serve(async request=>{
       admin.from('billing_transactions').select('status,created_at').eq('provider','jeko').order('created_at',{ascending:false}).limit(1).maybeSingle(),
     ])
     const jekoSecrets=configured('JEKO_API_KEY','JEKO_API_KEY_ID','JEKO_STORE_ID','JEKO_WEBHOOK_SECRET','SITE_URL')
-    const emailSecrets=configured('RESEND_API_KEY','KAVELYO_EMAIL_FROM','KAVELYO_EMAIL_REPLY_TO','KAVELYO_CRON_SECRET')
-    const whatsappSecrets=configured('WHATSAPP_ACCESS_TOKEN','WHATSAPP_PHONE_NUMBER_ID','KAVELYO_CRON_SECRET')
+    const emailSecrets=configured('RESEND_API_KEY')&&configuredEither('KAVELYO_EMAIL_FROM','JALONIS_EMAIL_FROM')&&configuredEither('KAVELYO_EMAIL_REPLY_TO','JALONIS_EMAIL_REPLY_TO')&&configuredEither('KAVELYO_CRON_SECRET','JALONIS_CRON_SECRET')
+    const whatsappSecrets=configured('WHATSAPP_ACCESS_TOKEN','WHATSAPP_PHONE_NUMBER_ID')&&configuredEither('KAVELYO_CRON_SECRET','JALONIS_CRON_SECRET')
     const checks=[
       {id:'jeko-secrets',group:'Paiement',label:'Secrets Jèko',ready:jekoSecrets,detail:jekoSecrets?'Clé API, identifiant, magasin, signature et adresse publique présents.':'Un ou plusieurs secrets Jèko manquent.'},
       {id:'jeko-provider',group:'Paiement',label:'Jèko activé',ready:Boolean(provider?.active&&provider.currency==='XOF'),detail:provider?.active?`${provider.display_name} · ${provider.currency}`:'Prestataire automatique inactif.'},

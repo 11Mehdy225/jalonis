@@ -29,6 +29,7 @@ import PrivacyCenter from './features/privacy/PrivacyCenter'
 import ProjectAccessManager from './features/workspace/ProjectAccessManager'
 import { trackTelemetry } from './services/telemetry'
 import './styles/workspace.css'
+import './styles/dashboard-command.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { permissionsFor } from './services/permissions'
 import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond, Sparkles, Menu, X, Shield, Workflow, LogOut, LockKeyhole, ListChecks, Grid2X2 } from 'lucide-react'
@@ -370,18 +371,28 @@ function SubscriptionNotice({workspace,onOpen}){
 function Dashboard({active,entities,stats,setView,setAgileTab}){
   const isScrum=active.methodology==='Scrum',workItems=isScrum?entities.backlog_items.filter(item=>item.item_type!=='Epic'):entities.tasks
   const upcoming=[...workItems].filter(item=>item.status!=='Terminé'&&item.due_date).sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||'')).slice(0,4)
+  const today=new Date().toISOString().slice(0,10),openActions=(entities.action_items||[]).filter(item=>!['Terminée','Annulée'].includes(item.status)),lateActions=openActions.filter(item=>item.due_date&&item.due_date<today)
+  const overdue=workItems.filter(item=>item.status!=='Terminé'&&item.due_date&&String(item.due_date).slice(0,10)<today),blocked=workItems.filter(item=>['Bloqué','En attente'].includes(item.status))
+  const actualCost=entities.cost_entries.reduce((sum,row)=>sum+Number(row.actual_amount||0),0),budget=Number(active.budget||0),budgetState=budget&&actualCost>budget?'danger':budget&&actualCost>=budget*.85?'warning':'good'
+  const scheduleState=overdue.length?'warning':'good',teamState=blocked.length?'warning':'good',scopeState=entities.change_requests.some(row=>!['Approuvée','Rejetée','Annulée'].includes(row.status))?'warning':'good'
+  const overallState=stats.critical||budgetState==='danger'?'danger':[scheduleState,budgetState,teamState,scopeState].includes('warning')?'warning':'good'
   const openDelivery=()=>{if(isScrum){setAgileTab('backlog');setView('scrum')}else setView('tasks')}
   return <>
-    <DailyBrief entities={entities} onOpenTasks={openDelivery} onOpenRisks={()=>setView('risks')}/>
+    <DailyBrief entities={entities} onOpenTasks={openDelivery} onOpenActions={()=>setView('actions')} onOpenRisks={()=>setView('risks')}/>
     <div className="kpi-grid">
       <Kpi icon={Target} label="Avancement global" value={`${stats.progress}%`} note={`${stats.done}/${stats.total} ${isScrum?'éléments terminés':'activités terminées'}`} color="indigo" progress={stats.progress}/>
       <Kpi icon={Clock3} label="Échéance cible" value={date(active.end_date)} note={active.status} color="blue"/>
       <Kpi icon={CircleDollarSign} label="Budget de référence" value={money(active.budget,active.currency||'XOF')} note={`${entities.cost_entries.length} ligne(s) de coûts suivie(s)`} color="teal"/>
       <Kpi icon={ShieldAlert} label="Risques critiques" value={stats.critical} note={`${entities.risks.filter(r=>r.status!=='Fermé').length} risques ouverts`} color="orange"/>
     </div>
+    <div className="dashboard-command-grid">
+      <section className="card command-actions"><div className="command-icon"><ListChecks size={20}/></div><div><small>ENGAGEMENTS</small><h3>Actions à piloter</h3><p><b>{lateActions.length}</b> en retard · <b>{openActions.length}</b> ouvertes</p></div><button onClick={()=>setView('actions')}>Ouvrir les actions<ChevronRight size={15}/></button></section>
+      <section className="card command-raid"><div className="command-icon"><Grid2X2 size={20}/></div><div><small>SURVEILLANCE</small><h3>Registre RAID</h3><p><b>{stats.critical}</b> risques critiques · <b>{entities.issues.filter(row=>!['Résolu','Clos'].includes(row.status)).length}</b> problèmes ouverts</p></div><button onClick={()=>setView('raid')}>Ouvrir le RAID<ChevronRight size={15}/></button></section>
+      <section className="card command-report"><div className="command-icon"><FileDown size={20}/></div><div><small>COMMUNICATION</small><h3>Rapport hebdomadaire</h3><p>PDF, PowerPoint et exports Excel à jour.</p></div><button onClick={()=>setView('reports')}>Préparer le rapport<ChevronRight size={15}/></button></section>
+    </div>
     <div className="dashboard-grid">
       <section className="card span-2"><CardHead title={isScrum?'Flux de livraison Scrum':'Trajectoire du projet'} action={isScrum?'Ouvrir le backlog':'Ouvrir le planning'} onClick={openDelivery}/><div className="trajectory"><div className="donut" style={{'--progress':`${stats.progress*3.6}deg`}}><span><b>{stats.progress}%</b><small>réalisé</small></span></div><div className="phase-list">{(isScrum?['Product Backlog','Sprint','Review','Incrément']:['Initialisation','Planification','Exécution','Clôture']).map((p,i)=><div key={p} className={i<2?'complete':i===2?'current':''}><span>{i<2?<CheckCircle2 size={17}/>:i+1}</span><div><b>{p}</b><small>{i<2?'Validée':i===2?'Phase actuelle':'À venir'}</small></div></div>)}</div></div></section>
-      <section className="card"><CardHead title="Santé du projet"/><div className="health-panel"><div className={`health-big ${active.health}`}>{active.health==='good'?'Bonne':active.health==='warning'?'À surveiller':'Critique'}</div>{[['Périmètre','good'],['Délais','warning'],['Budget','good'],['Équipe','good']].map(([l,s])=><div className="health-row" key={l}><span>{l}</span><b className={s}>{s==='good'?'Maîtrisé':'Attention'}</b></div>)}</div></section>
+      <section className="card"><CardHead title="Santé calculée du projet"/><div className="health-panel"><div className={`health-big ${overallState}`}>{overallState==='good'?'Bonne':overallState==='warning'?'À surveiller':'Critique'}</div>{[['Périmètre',scopeState],['Délais',scheduleState],['Budget',budgetState],['Équipe',teamState]].map(([l,s])=><div className="health-row" key={l}><span>{l}</span><b className={s}>{s==='good'?'Maîtrisé':s==='danger'?'Critique':'Attention'}</b></div>)}</div></section>
       <section className="card span-2"><CardHead title={isScrum?'Éléments avec date cible':'Prochaines échéances'} action="Tout afficher" onClick={openDelivery}/>{upcoming.length?<div className="timeline-list">{upcoming.map(t=><div key={t.id}><span className={`priority-dot ${t.priority?.toLowerCase()}`}></span><div><b>{t.title}</b><small>{t.assignee||'Non assigné'}</small></div><strong>{date(t.due_date)}</strong><span className="pill">{t.status}</span></div>)}</div>:<EmptyRow text={isScrum?'Aucune date cible dans le backlog':'Aucune échéance planifiée'}/>}</section>
       <section className="card"><CardHead title="Attention requise" action="Risques" onClick={()=>setView('risks')}/><div className="attention">{entities.risks.filter(r=>r.status!=='Fermé').slice(0,3).map(r=><div key={r.id}><span>{Number(r.probability)*Number(r.impact)}</span><div><b>{r.title}</b><small>{r.owner||'Sans responsable'} · {r.category}</small></div></div>)}{!entities.risks.length&&<EmptyRow text="Aucun risque ouvert"/>}</div></section>
     </div>
