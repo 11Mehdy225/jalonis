@@ -1,0 +1,166 @@
+/* Readability pass: large desktop screens and dark mode. */
+.app-shell.dark {
+  --line: #3a4352;
+  --muted: #aeb7c8;
+  --border: #3a4352;
+  --soft: #242a34;
+  --card: #1d222b;
+  --text: #f2f4f8;
+  background: #151922;
+}
+
+.app-shell.dark main,
+.app-shell.dark .content { background: #151922; }
+
+.app-shell .sidebar nav button { font-size: 14px; line-height: 1.25; }
+.app-shell .project-tabs button { font-size: 12px; }
+.app-shell .project-heading p,
+.app-shell .project-breadcrumb { font-size: 12px; }
+.app-shell .page-title p,
+.app-shell .section-title p { font-size: 12px; line-height: 1.5; }
+.app-shell table { font-size: 12px; }
+.app-shell th { font-size: 11px; }
+.app-shell td { font-size: 12px; line-height: 1.45; }
+.app-shell .pill,
+.app-shell .status { font-size: 10px; }
+
+/* The global application header must not paint nested component headers white. */
+.app-shell .report-section > header,
+.app-shell .influence-matrix header,
+.app-shell .jira-import > header {
+  height: auto;
+  min-height: 0;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  justify-content: flex-start;
+}
+
+/* Scrum and backlog */
+.app-shell .backlog-section-title b { font-size: 14px; }
+.app-shell .backlog-section-title em { min-width: 24px; height: 24px; font-size: 11px; }
+.app-shell .backlog-section-title > span { font-size: 11px; }
+.app-shell .backlog-head,
+.app-shell .backlog-row {
+  grid-template-columns: 32px 96px minmax(300px, 2fr) 64px 88px 64px 74px 74px 84px;
+}
+.app-shell .backlog-row { min-height: 58px; font-size: 12px; }
+.app-shell .backlog-title b { white-space: normal; line-height: 1.35; }
+.app-shell .backlog-title small,
+.app-shell .epic-link { font-size: 11px; }
+.app-shell .board-filters input,
+.app-shell .board-filter-group,
+.app-shell .board-filter-group select,
+.app-shell .board-result-count { font-size: 12px; }
+.app-shell .board-filter-group { height: 40px; padding-inline: 11px; }
+.app-shell .scrum-board { grid-template-columns: repeat(4, minmax(270px, 1fr)); gap: 14px; }
+.app-shell .scrum-column { min-height: 330px; padding: 12px; }
+.app-shell .scrum-column > header { height: auto; min-height: 40px; background: transparent; padding: 4px 3px 11px; }
+.app-shell .scrum-column > header b { font-size: 13px; }
+.app-shell .cards { min-height: 230px; }
+.app-shell .story-card { padding: 14px; border-radius: 10px; }
+.app-shell .story-card > b { font-size: 14px; line-height: 1.4; }
+.app-shell .story-card p,
+.app-shell .story-reference,
+.app-shell .story-priority { font-size: 11px; }
+.app-shell .quick-create { min-height: 42px; font-size: 12px; }
+.app-shell.dark .backlog-title small,
+.app-shell.dark .story-reference,
+.app-shell.dark .story-card p { color: #aeb7c8; }
+
+/* Methodology banner and team workload */
+.app-shell .method-boundary b { font-size: 13px; }
+.app-shell .method-boundary span,
+.app-shell .method-boundary em { font-size: 11px; line-height: 1.5; }
+.app-shell .resource-kpi small,
+.app-shell .resource-kpi em { font-size: 11px; }
+.app-shell .resource-identity h3 { font-size: 15px; }
+.app-shell .resource-identity p,
+.app-shell .resource-identity small { font-size: 11px; line-height: 1.4; }
+.app-shell .load-meter header,
+.app-shell .load-meter b { font-size: 11px; }
+.app-shell .resource-numbers span { font-size: 10px; }
+.app-shell .resource-numbers b { font-size: 13px; }
+
+/* Reports and exports */
+.app-shell .report-hero span { font-size: 11px; }
+.app-shell .report-hero p { font-size: 13px; }
+.app-shell .report-kpi small,
+.app-shell .report-kpi span { font-size: 12px; }
+.app-shell .report-section > header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+.app-shell .report-section h3,
+.app-shell .export-head h3,
+.app-shell .backup-section h3 { font-size: 16px; }
+.app-shell .report-section p,
+.app-shell .export-head p,
+.app-shell .backup-section p { font-size: 12px; line-height: 1.5; }
+.app-shell .report-rows > div { padding-block: 11px; font-size: 13px; }
+.app-shell .export-grid b { font-size: 13px; }
+.app-shell .export-grid small { font-size: 11px; }
+
+/* Jira import */
+.app-shell .jira-import > header {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  justify-content: stretch;
+  gap: 14px;
+}
+.app-shell .jira-import h3 { font-size: 17px; }
+.app-shell .jira-import header p,
+.app-shell .jira-note,
+.app-shell .jira-empty p { font-size: 12px; line-height: 1.55; }
+
+/* Influence / interest matrix */
+.app-shell .influence-layout { padding: 14px 14px 38px 44px; }
+.app-shell .influence-matrix { min-height: 520px; border-radius: 16px; }
+.app-shell .influence-matrix > section { padding: 22px; }
+.app-shell .influence-matrix header {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+.app-shell .influence-matrix header b { color: var(--text); font-size: 16px; }
+.app-shell .influence-matrix header small { color: var(--muted); font-size: 12px; }
+.app-shell .influence-matrix section > div > span { width: 52px; height: 52px; font-size: 12px; box-shadow: 0 6px 18px #11182720; }
+.app-shell .influence-matrix section > div > span small { top: 57px; width: 110px; color: var(--text); font-size: 11px; font-weight: 600; }
+.app-shell .axis-y,
+.app-shell .axis-x { color: var(--muted); font-size: 13px; }
+.app-shell.dark .influence-matrix section.purple { background: #2b2942; }
+.app-shell.dark .influence-matrix section.blue { background: #20364a; }
+.app-shell.dark .influence-matrix section.green { background: #1d3b30; }
+.app-shell.dark .influence-matrix section.gray { background: #252b34; }
+.app-shell.dark .influence-matrix header b { color: #f4f6fa; }
+.app-shell.dark .influence-matrix header small,
+.app-shell.dark .axis-y,
+.app-shell.dark .axis-x { color: #bcc5d5; }
+
+/* Calendar */
+.app-shell .calendar-head small { font-size: 12px; }
+.app-shell .weekday-row span { padding-left: 11px; font-size: 11px; }
+.app-shell .week-days > div > span { width: 28px; height: 28px; font-size: 12px; }
+.app-shell.dark .calendar-head { border-color: #3a4352; }
+.app-shell.dark .calendar-head h3 { color: #f2f4f8; }
+.app-shell.dark .calendar-head button { background: #272d38; border-color: #454e5e; color: #d8deea; }
+.app-shell.dark .weekday-row { background: #202630; border-color: #3a4352; }
+.app-shell.dark .weekday-row span { border-color: #39414e; color: #bcc5d5; }
+.app-shell.dark .month-grid,
+.app-shell.dark .week-days > div { background: #1d232c; }
+.app-shell.dark .week-days > div { border-color: #39414e; }
+.app-shell.dark .week-days > div.outside { background: #191e26; }
+.app-shell.dark .week-days > div > span { color: #d0d7e3; }
+.app-shell.dark .week-days > div.outside > span { color: #7f8a9c; }
+.app-shell.dark .calendar-week { border-color: #39414e; }
+
+@media (max-width: 1250px) {
+  .app-shell .backlog-head,
+  .app-shell .backlog-row { grid-template-columns: 28px 82px minmax(250px, 1fr) 54px 76px 54px 62px 62px 72px; }
+}
+
