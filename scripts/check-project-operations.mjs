@@ -14,6 +14,7 @@ const expectations=[
   ['mode hors ligne','CREATE TABLE IF NOT EXISTS action_items'],
   ['rattrapage du résumé quotidien','localTime<digestTime'],['actions dans le résumé','Actions à suivre'],
   ['compatibilité du planificateur après renommage','x-jalonis-cron-secret'],
+  ['nom Kavelyo dans l’expéditeur','from:brandedSender(from)'],
 ]
 const missing=expectations.filter(([,marker])=>!source.includes(marker))
 if(missing.length){console.error(`Contrôles manquants : ${missing.map(([label])=>label).join(', ')}`);process.exit(1)}
