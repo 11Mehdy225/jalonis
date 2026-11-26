@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Circle, Clock3, History, ImagePlus, Link2, ListChecks, MessageSquareText, Plus, Save, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { AlertTriangle, Bookmark, Bug, CheckCircle2, CheckSquare2, Circle, Clock3, History, ImagePlus, Link2, ListChecks, MessageSquareText, Plus, Save, SlidersHorizontal, Trash2, Zap } from 'lucide-react'
 import EntityDiscussion from '../collaboration/EntityDiscussion'
 import { readOptions } from './CustomFieldsView'
 import '../../styles/work-item-details.css'
@@ -8,6 +8,7 @@ const TASK_STATUSES=['À faire','En cours','Bloqué','Terminé']
 const STORY_STATUSES=['Backlog','À faire','En cours','En revue','Terminé']
 const PRIORITIES=['Basse','Moyenne','Haute','Critique']
 const stamp=value=>value?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value)):'—'
+const summaryType=type=>({Epic:{Icon:Zap,label:'Epic',tone:'epic'},Bug:{Icon:Bug,label:'Bug',tone:'bug'},'User Story':{Icon:Bookmark,label:'Story',tone:'story'},Tâche:{Icon:CheckSquare2,label:'Tâche',tone:'task'}}[type]||{Icon:CheckSquare2,label:type||'Activité',tone:'task'})
 
 export default function WorkItemDetails({item,type,showPredictiveLink=false,tasks=[],dependencies=[],items=[],sprints=[],members=[],attachments=[],comments=[],activities=[],checklist=[],customFields=[],customValues=[],currentUser,onUpdate,onCreateDependency,onDeleteDependency,onAttach,onComment,onAddChecklist,onUpdateChecklist,onDeleteChecklist,onSaveCustomValue}){
   const isTask=type==='tasks'
@@ -32,8 +33,9 @@ export default function WorkItemDetails({item,type,showPredictiveLink=false,task
   const addCheck=async event=>{event.preventDefault();const title=newCheck.trim();if(!title)return;await onAddChecklist({entity_type:type,entity_id:item.id,title,is_done:false,rank:checks.length+1});setNewCheck('')}
   const addDependency=async event=>{event.preventDefault();if(!newDependency.predecessor_task_id)return;const reaches=(from,target,seen=new Set())=>{if(from===target)return true;if(seen.has(from))return false;seen.add(from);return dependencies.filter(link=>link.task_id===from).some(link=>reaches(link.predecessor_task_id,target,seen))};if(reaches(newDependency.predecessor_task_id,item.id)){setError('Cette liaison créerait une boucle dans le planning.');return}setError('');try{await onCreateDependency({...newDependency,task_id:item.id,lag_days:Number(newDependency.lag_days)||0});setNewDependency({predecessor_task_id:'',dependency_type:'FS',lag_days:0})}catch(reason){setError(reason.message||'Impossible d’ajouter cette liaison.')}}
   const saveCustom=async event=>{event.preventDefault();const missing=fields.find(field=>Boolean(Number(field.is_required))&&!String(customForm[field.id]||'').trim());if(missing){setError(`Le champ « ${missing.label} » est obligatoire.`);return}setError('');for(const field of fields)await onSaveCustomValue(field.id,type,item.id,customForm[field.id]??'');setCustomSaved(true);setTimeout(()=>setCustomSaved(false),1600)}
+  const {Icon:SummaryIcon,label:summaryLabel,tone:summaryTone}=summaryType(isTask?'Activité':form.item_type)
   return <div className="work-item-detail">
-    <div className="work-item-summary"><div><span className={`story-type ${String(form.item_type||'tâche').toLowerCase().replace(' ','-')}`}>{isTask?'Activité':form.item_type||'Élément'}</span><h3>{form.title}</h3><p>{isTask?`WBS ${form.wbs_code||'—'}`:`${form.story_points||0} points · ${form.estimate_hours||0} h`}</p></div><div className="work-item-completion"><b>{completion}%</b><span>check-list</span></div></div>
+    <div className="work-item-summary"><div><span className={`work-item-type ${summaryTone}`}><SummaryIcon size={14}/><b>{summaryLabel}</b></span><h3>{form.title}</h3><p>{isTask?`WBS ${form.wbs_code||'—'}`:`${form.story_points||0} points · ${form.estimate_hours||0} h`}</p></div><div className="work-item-completion"><b>{completion}%</b><span>check-list</span></div></div>
     {error&&<div className="work-item-error"><AlertTriangle size={16}/>{error}</div>}
     <form onSubmit={save} className="work-item-form">
       <section><div className="detail-section-head"><div><Link2 size={16}/><span><b>Détails et liaisons</b><small>Informations, responsable, calendrier et dépendances.</small></span></div><button className="btn primary"><Save size={15}/>{saved?'Enregistré':'Enregistrer'}</button></div>
