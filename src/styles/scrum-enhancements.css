@@ -1,9 +1,9 @@
 .backlog-sections { display: flex; flex-direction: column; gap: 12px; }
 .backlog-section-title { min-height: 45px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid #e6e9ef; background: #fbfcfd; }
 .backlog-section-title > div { display: flex; align-items: center; gap: 7px; color: #5650d4; }
-.backlog-section-title b { color: #293147; font-size: 11px; }
-.backlog-section-title em { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 8px; display: grid; place-items: center; background: #eeedff; color: #5750d2; font-size: 8px; font-style: normal; }
-.backlog-section-title > span { color: #858c9d; font-size: 8px; text-transform: uppercase; }
+.backlog-section-title b { color: #293147; font-size:12px; }
+.backlog-section-title em { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 8px; display: grid; place-items: center; background: #eeedff; color: #5750d2; font-size:12px; font-style: normal; }
+.backlog-section-title > span { color: #858c9d; font-size:12px; text-transform: uppercase; }
 .backlog-head, .backlog-row { grid-template-columns: 28px 75px minmax(190px, 1fr) 48px 65px 45px 55px 60px 64px; }
 .backlog-actions { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
 .backlog-actions button { position: relative; padding: 5px 3px; }
@@ -12,9 +12,9 @@
 .backlog-row:hover { background: #fafaff; }
 .drag-handle { color: #b0b5c2; display: grid; place-items: center; }
 .backlog-title { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
-.backlog-title small { color: #736dd9; font-size: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.backlog-drop-empty { padding: 18px; text-align: center; color: #9aa1b0; font-size: 9px; border: 1px dashed #dfe2e9; margin: 9px; border-radius: 8px; }
-.epic-link { display: block; width: max-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #675fd9; background: #f0efff; border-radius: 5px; padding: 3px 5px; margin-bottom: 5px; font-size: 7px; }
+.backlog-title small { color: #736dd9; font-size:12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.backlog-drop-empty { padding: 18px; text-align: center; color: #9aa1b0; font-size:12px; border: 1px dashed #dfe2e9; margin: 9px; border-radius: 8px; }
+.epic-link { display: block; width: max-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #675fd9; background: #f0efff; border-radius: 5px; padding: 3px 5px; margin-bottom: 5px; font-size:12px; }
 .story-link { display: flex; align-items: center; gap: 5px; }
 .story-link span { display: inline-flex; align-items: center; gap: 3px; }
 
@@ -27,37 +27,37 @@
 .scrum-view > .scrum-toolbar .scrum-tabs button.active { background: transparent; box-shadow: none; border-bottom-color: #4f46e5; }
 .board-filters { min-height: 50px; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .board-filters > label { width: min(300px, 30%); height: 36px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border: 1px solid #dde1e9; border-radius: 8px; background: #fff; color: #858da0; }
-.board-filters input { width: 100%; border: 0; outline: 0; background: transparent; color: #293147; font-size: 10px; }
-.board-filter-group { height: 36px; display: flex; align-items: center; gap: 6px; padding: 0 9px; border: 1px solid #dde1e9; border-radius: 8px; background: #fff; color: #687185; font-size: 9px; }
-.board-filter-group select { border: 0; outline: 0; background: transparent; color: inherit; font-size: 9px; }
+.board-filters input { width: 100%; border: 0; outline: 0; background: transparent; color: #293147; font-size:12px; }
+.board-filter-group { height: 36px; display: flex; align-items: center; gap: 6px; padding: 0 9px; border: 1px solid #dde1e9; border-radius: 8px; background: #fff; color: #687185; font-size:12px; }
+.board-filter-group select { border: 0; outline: 0; background: transparent; color: inherit; font-size:12px; }
 .group-button { cursor: pointer; }
-.board-result-count { color: #9299a8; font-size: 9px; margin-left: auto; }
+.board-result-count { color: #9299a8; font-size:12px; margin-left: auto; }
 .scrum-board { grid-template-columns: repeat(4, minmax(205px, 1fr)); overflow-x: auto; padding-bottom: 8px; }
 .scrum-column { background: #f0f1f4; border-color: transparent; min-height: 410px; padding: 10px; }
 .scrum-column > header { height: auto; min-height: 35px; background: transparent; border: 0; padding: 3px 3px 10px; }
-.scrum-column > header b { font-size: 10px; }
+.scrum-column > header b { font-size:12px; }
 .column-more { width: 24px; height: 24px; border: 0; background: transparent; color: #959cab; display: grid; place-items: center; border-radius: 5px; }
 .column-more:hover { background: #e2e4ea; color: #596175; }
 .cards { min-height: 300px; }
 .story-card { padding: 12px; border-color: #e0e3e8; border-radius: 8px; box-shadow: 0 1px 2px #17213c0d; }
 .story-card:hover { border-color: #bfc4d0; box-shadow: 0 3px 10px #17213c12; }
-.story-card > b { font-size: 11px; margin: 9px 0 7px; }
+.story-card > b { font-size:12px; margin: 9px 0 7px; }
 .story-card footer { gap: 5px; }
 .story-top > div { display: flex; gap: 2px; }
 .story-visuals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 7px 0; position: relative; }
 .story-visuals img { width: 100%; height: 58px; object-fit: cover; border-radius: 6px; border: 1px solid #e1e4ea; }
-.story-visuals > span { position: absolute; right: 4px; bottom: 4px; border-radius: 9px; background: #17213ccc; color: #fff; padding: 3px 5px; font-size: 7px; }
+.story-visuals > span { position: absolute; right: 4px; bottom: 4px; border-radius: 9px; background: #17213ccc; color: #fff; padding: 3px 5px; font-size:12px; }
 .backlog-visual { width: 34px; height: 30px; padding: 0 !important; border: 1px dashed #cfd3dc !important; border-radius: 6px; overflow: hidden; display: grid; place-items: center; position: relative; }
-.backlog-visual img { width: 100%; height: 100%; object-fit: cover; }.backlog-visual small { position: absolute; right: 1px; bottom: 1px; background: #111827c9; color: #fff; border-radius: 6px; padding: 1px 3px; font-size: 6px; }
-.story-reference { color: #727a8e; font-size: 8px; font-weight: 700; }
+.backlog-visual img { width: 100%; height: 100%; object-fit: cover; }.backlog-visual small { position: absolute; right: 1px; bottom: 1px; background: #111827c9; color: #fff; border-radius: 6px; padding: 1px 3px; font-size:12px; }
+.story-reference { color: #727a8e; font-size:12px; font-weight: 700; }
 .story-priority { margin-left: auto; }
 .points { margin-left: 0; }
-.quick-create { width: 100%; min-height: 34px; margin-top: 8px; border: 1px dashed #cfd3dc; border-radius: 7px; background: transparent; color: #757d90; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 9px; }
+.quick-create { width: 100%; min-height: 34px; margin-top: 8px; border: 1px dashed #cfd3dc; border-radius: 7px; background: transparent; color: #757d90; display: flex; align-items: center; justify-content: center; gap: 6px; font-size:12px; }
 .quick-create:hover { background: #fff; color: #4f46e5; border-color: #9e99ed; }
 .sprint-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
 .sprint-actions .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 9px; white-space: nowrap; }
 .sprint-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
-.sprint-state { padding: 5px 7px; border-radius: 8px; background: #eef0f4; color: #687185; font-size: 7px; font-weight: 800; text-transform: uppercase; }
+.sprint-state { padding: 5px 7px; border-radius: 8px; background: #eef0f4; color: #687185; font-size:12px; font-weight: 800; text-transform: uppercase; }
 .sprint-state.actif { background: #e4f7f0; color: #218d72; }
 .sprint-state.terminé { background: #e8efff; color: #3d6fb4; }
 .sprint-state.archivé { background: #eceef2; color: #7b8290; }
@@ -65,35 +65,35 @@
 .sprint-close-summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; margin-bottom: 15px; }
 .sprint-close-summary>div { padding: 13px; border-radius: 10px; background: #f7f8fb; display: flex; flex-direction: column; align-items: center; }
 .sprint-close-summary b { color: #3f47bb; font-size: 18px; }
-.sprint-close-summary span { color: #858d9f; font-size: 8px; }
+.sprint-close-summary span { color: #858d9f; font-size:12px; }
 .quality-warning { display: grid; grid-template-columns: 28px 1fr; gap: 10px; margin-bottom: 15px; padding: 13px; border: 1px solid #f0d29b; border-radius: 10px; background: #fff8e9; color: #b8751c; }
-.quality-warning b { color: #8f5b18; font-size: 10px; }
-.quality-warning p { margin: 4px 0 9px; color: #8f744e; font-size: 9px; line-height: 1.45; }
-.quality-warning label { display: flex; flex-direction: row; align-items: center; gap: 7px; color: #77551f; font-size: 9px; font-weight: 700; }
+.quality-warning b { color: #8f5b18; font-size:12px; }
+.quality-warning p { margin: 4px 0 9px; color: #8f744e; font-size:12px; line-height: 1.45; }
+.quality-warning label { display: flex; flex-direction: row; align-items: center; gap: 7px; color: #77551f; font-size:12px; font-weight: 700; }
 .quality-warning input { width: auto; }
 .close-sprint-form .form-actions .btn { display: inline-flex; align-items: center; gap: 6px; }
 .close-sprint-form .form-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
-.scrum-quality-block { display: grid; grid-template-columns: 24px 1fr 24px; align-items: center; gap: 8px; margin-bottom: 10px; padding: 10px 12px; border: 1px solid #f1cf95; border-radius: 9px; background: #fff8e9; color: #9a681f; font-size: 9px; }
+.scrum-quality-block { display: grid; grid-template-columns: 24px 1fr 24px; align-items: center; gap: 8px; margin-bottom: 10px; padding: 10px 12px; border: 1px solid #f1cf95; border-radius: 9px; background: #fff8e9; color: #9a681f; font-size:12px; }
 .scrum-quality-block>button { border: 0; background: transparent; color: #a77b3f; font-size: 16px; }
-.work-item-error { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #efc58b; border-radius: 9px; background: #fff8e9; color: #925f19; font-size: 9px; font-weight: 700; }
+.work-item-error { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #efc58b; border-radius: 9px; background: #fff8e9; color: #925f19; font-size:12px; font-weight: 700; }
 .scrum-events-page { display: grid; gap: 12px; }
 .scrum-events-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 18px; }
-.scrum-events-toolbar small,.scrum-event-detail small { color: #665fd7; font-size: 8px; font-weight: 800; letter-spacing: .08em; }
-.scrum-events-toolbar h3 { margin: 3px 0; font-size: 18px; }.scrum-events-toolbar p { margin: 0; color: #7b8291; font-size: 10px; }
+.scrum-events-toolbar small,.scrum-event-detail small { color: #665fd7; font-size:12px; font-weight: 800; letter-spacing: .08em; }
+.scrum-events-toolbar h3 { margin: 3px 0; font-size: 18px; }.scrum-events-toolbar p { margin: 0; color: #7b8291; font-size:12px; }
 .scrum-event-quick { display: grid; grid-template-columns: repeat(5,minmax(140px,1fr)); gap: 8px; overflow-x: auto; }
 .scrum-event-quick>button { min-height: 108px; padding: 12px; border: 1px solid #e1e4eb; border-radius: 11px; background: #fff; text-align: left; display: grid; grid-template-columns: 28px 1fr; align-content: start; gap: 5px 8px; color: #293147; }
 .scrum-event-quick>button:hover { border-color: #9e99ed; transform: translateY(-1px); box-shadow: 0 6px 18px #34307013; }
 .scrum-event-quick span { grid-row: 1/3; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: #eeedff; color: #5750d2; }.scrum-event-quick svg { width: 15px; }
-.scrum-event-quick b { font-size: 10px; }.scrum-event-quick small { grid-column: 2; color: #858c9b; font-size: 8px; line-height: 1.4; }
-.scrum-event-search { width: min(360px,100%); height: 37px; display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #dde1e9; border-radius: 9px; background: #fff; color: #858da0; }.scrum-event-search input { width: 100%; border: 0; outline: 0; background: transparent; font-size: 10px; }
+.scrum-event-quick b { font-size:12px; }.scrum-event-quick small { grid-column: 2; color: #858c9b; font-size:12px; line-height: 1.4; }
+.scrum-event-search { width: min(360px,100%); height: 37px; display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #dde1e9; border-radius: 9px; background: #fff; color: #858da0; }.scrum-event-search input { width: 100%; border: 0; outline: 0; background: transparent; font-size:12px; }
 .scrum-event-list { display: grid; gap: 8px; }.scrum-event-list>article { overflow: hidden; }.scrum-event-summary { width: 100%; padding: 13px 15px; border: 0; background: transparent; display: grid; grid-template-columns: 34px 1fr auto 20px; align-items: center; gap: 10px; text-align: left; }
-.scrum-event-summary>div { display: grid; gap: 2px; }.scrum-event-summary small { color: #625bd3; font-size: 8px; font-weight: 800; text-transform: uppercase; }.scrum-event-summary b { color: #273047; font-size: 11px; }.scrum-event-summary p { margin: 0; color: #858c9c; font-size: 8px; }.scrum-event-summary em { color: #71798a; font-size: 8px; font-style: normal; }.scrum-event-summary>svg { color: #8a91a0; transition: transform .2s; }.scrum-event-summary>svg.open { transform: rotate(180deg); }
+.scrum-event-summary>div { display: grid; gap: 2px; }.scrum-event-summary small { color: #625bd3; font-size:12px; font-weight: 800; text-transform: uppercase; }.scrum-event-summary b { color: #273047; font-size:12px; }.scrum-event-summary p { margin: 0; color: #858c9c; font-size:12px; }.scrum-event-summary em { color: #71798a; font-size:12px; font-style: normal; }.scrum-event-summary>svg { color: #8a91a0; transition: transform .2s; }.scrum-event-summary>svg.open { transform: rotate(180deg); }
 .event-state { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 9px; background: #f0efff; color: #5b55d1; }.event-state svg { width: 16px; }.event-state.réalisé { background: #e7f7f0; color: #268b6f; }.event-state.non-réalisé,.event-state.annulé { background: #fff0ed; color: #ce5d51; }
-.scrum-event-detail { border-top: 1px solid #e8eaf0; padding: 14px 16px; background: #fbfcfd; }.event-detail-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }.event-detail-grid section { padding: 11px; border-radius: 9px; background: #fff; border: 1px solid #e7e9ee; }.event-detail-grid p,.event-detail-grid li { color: #525b6f; font-size: 9px; line-height: 1.5; white-space: pre-wrap; }.event-detail-grid ul { margin: 6px 0 0; padding-left: 16px; }
-.daily-report-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 8px; margin-top: 10px; }.daily-report-grid>article { padding: 11px; border: 1px solid #e1e4ea; border-radius: 9px; background: #fff; display: grid; gap: 7px; }.daily-report-grid b { font-size: 10px; }.daily-report-grid span { display: grid; gap: 2px; color: #515a6d; font-size: 8px; }.daily-report-grid span small { color: #888f9d; }.daily-report-grid .blocked { color: #bf5146; }.daily-report-grid em { font-size: 8px; color: #5e58cb; font-style: normal; }
+.scrum-event-detail { border-top: 1px solid #e8eaf0; padding: 14px 16px; background: #fbfcfd; }.event-detail-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }.event-detail-grid section { padding: 11px; border-radius: 9px; background: #fff; border: 1px solid #e7e9ee; }.event-detail-grid p,.event-detail-grid li { color: #525b6f; font-size:12px; line-height: 1.5; white-space: pre-wrap; }.event-detail-grid ul { margin: 6px 0 0; padding-left: 16px; }
+.daily-report-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 8px; margin-top: 10px; }.daily-report-grid>article { padding: 11px; border: 1px solid #e1e4ea; border-radius: 9px; background: #fff; display: grid; gap: 7px; }.daily-report-grid b { font-size:12px; }.daily-report-grid span { display: grid; gap: 2px; color: #515a6d; font-size:12px; }.daily-report-grid span small { color: #888f9d; }.daily-report-grid .blocked { color: #bf5146; }.daily-report-grid em { font-size:12px; color: #5e58cb; font-style: normal; }
 .event-detail-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 12px; }.scrum-events-empty { padding: 32px; display: grid; place-items: center; gap: 7px; color: #858c9a; text-align: center; }.scrum-events-empty b { color: #30384c; }
-.participant-picker { border: 1px solid #dfe2e9; border-radius: 10px; padding: 10px; display: flex; flex-wrap: wrap; gap: 7px; }.participant-picker legend { padding: 0 5px; color: #555e71; font-size: 9px; font-weight: 700; }.participant-picker label { flex-direction: row; align-items: center; gap: 5px; padding: 6px 8px; border-radius: 7px; background: #f4f5f8; font-size: 8px; }.participant-picker input { width: auto; }
-.daily-entry-form { display: grid; gap: 9px; }.daily-entry-form>section { padding: 11px; border: 1px solid #e0e3ea; border-radius: 10px; background: #f8f9fb; display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }.daily-entry-form>section>b { grid-column: 1/-1; font-size: 10px; }.daily-entry-form textarea { min-height: 65px; }
+.participant-picker { border: 1px solid #dfe2e9; border-radius: 10px; padding: 10px; display: flex; flex-wrap: wrap; gap: 7px; }.participant-picker legend { padding: 0 5px; color: #555e71; font-size:12px; font-weight: 700; }.participant-picker label { flex-direction: row; align-items: center; gap: 5px; padding: 6px 8px; border-radius: 7px; background: #f4f5f8; font-size:12px; }.participant-picker input { width: auto; }
+.daily-entry-form { display: grid; gap: 9px; }.daily-entry-form>section { padding: 11px; border: 1px solid #e0e3ea; border-radius: 10px; background: #f8f9fb; display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }.daily-entry-form>section>b { grid-column: 1/-1; font-size:12px; }.daily-entry-form textarea { min-height: 65px; }
 .scrum-event-form .form-actions button { display: inline-flex; align-items: center; gap: 6px; }
 
 .app-shell.dark .product-goal { background: #29283c; border-color: #3e3a66; color: #9b96ff; }

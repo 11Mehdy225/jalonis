@@ -1,4 +1,16 @@
 /* Readability pass: large desktop screens and dark mode. */
+.app-shell {
+  --text: #20283a;
+  --muted: #667085;
+  --border: #d8dde7;
+  --card: #ffffff;
+  --soft: #f4f6f9;
+  --primary: var(--project-color, #4f46e5);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .app-shell.dark {
   --line: #3a4352;
   --muted: #aeb7c8;
@@ -11,6 +23,131 @@
 
 .app-shell.dark main,
 .app-shell.dark .content { background: #151922; }
+
+/* Shared surfaces */
+.app-shell .card,
+.app-shell .kpi,
+.app-shell .table-card {
+  border-color: var(--border);
+  border-radius: 12px;
+}
+.app-shell.dark .card,
+.app-shell.dark .kpi,
+.app-shell.dark .table-card,
+.app-shell.dark .modal { background: var(--card); }
+.app-shell main .card > header {
+  height: auto;
+  background: transparent;
+  border-color: var(--border);
+}
+.app-shell .card h3,
+.app-shell .card-head h3,
+.app-shell .section-title h3,
+.app-shell .register-head h3 { font-size: 16px; line-height: 1.3; }
+.app-shell .card h4 { font-size: 14px; line-height: 1.35; }
+.app-shell .card p { font-size: 13px; line-height: 1.55; }
+.app-shell .card small { line-height: 1.4; }
+
+/* Controls and forms */
+.app-shell .btn { min-height: 40px; height: auto; padding: 9px 15px; font-size: 13px; }
+.app-shell input,
+.app-shell select,
+.app-shell textarea { font-size: 13px; }
+.app-shell input::placeholder,
+.app-shell textarea::placeholder { color: #8b95a7; opacity: 1; }
+.app-shell.dark input::placeholder,
+.app-shell.dark textarea::placeholder { color: #8f99aa; }
+.app-shell .form-grid label,
+.app-shell .human-form label,
+.app-shell .governance-form label { font-size: 12px; line-height: 1.4; }
+.app-shell .form-grid input,
+.app-shell .form-grid select,
+.app-shell .form-grid textarea,
+.app-shell .human-form input,
+.app-shell .human-form select,
+.app-shell .human-form textarea,
+.app-shell .governance-form input,
+.app-shell .governance-form select,
+.app-shell .governance-form textarea {
+  min-height: 42px;
+  border-color: var(--border);
+  background: var(--soft);
+  color: var(--text);
+}
+.app-shell .form-grid textarea,
+.app-shell .human-form textarea,
+.app-shell .governance-form textarea { min-height: 96px; }
+
+/* Modals, drawers and floating windows */
+.app-shell .modal {
+  width: min(720px, 94vw);
+  border: 1px solid var(--border);
+  padding: 28px;
+}
+.app-shell .modal-head {
+  padding-bottom: 17px;
+  border-bottom: 1px solid var(--border);
+}
+.app-shell .modal-head h2,
+.app-shell .drawer-head h2,
+.app-shell .human-drawer h2 { font-size: 22px; }
+.app-shell .governance-drawer,
+.app-shell .human-drawer { border-left: 1px solid var(--border); }
+.app-shell .drawer-head span,
+.app-shell .human-drawer header span { font-size: 11px; }
+
+/* Navigation, tabs and filters */
+.app-shell :is(.project-tabs,.scrum-tabs,.supplier-tabs,.stakeholder-tabs,.governance-tabs,.view-toggle) button {
+  min-height: 42px;
+  font-size: 13px;
+}
+.app-shell :is(.board-filter-group,.human-status,.gov-status-select,.timesheet-card select) { font-size: 12px; }
+.app-shell .search input { font-size: 13px; }
+.app-shell .eyebrow,
+.app-shell .workspace-label { font-size: 11px; }
+
+/* Tables and dense lists */
+.app-shell thead { color: #596275; }
+.app-shell.dark thead { color: #b7c0d0; }
+.app-shell th { padding: 13px 14px; font-size: 11px; letter-spacing: .04em; }
+.app-shell td { padding: 14px; font-size: 12px; }
+.app-shell :is(.health-row,.timeline-list > div,.expiry-row,.governance-feed article,.decision-strip article) {
+  min-height: 46px;
+}
+.app-shell .row-delete { width: 34px; height: 34px; display: inline-grid; place-items: center; }
+
+/* KPIs, dashboards and empty states */
+.app-shell .kpi-top,
+.app-shell .dashboard-command-grid small { font-size: 12px; }
+.app-shell .kpi > small { font-size: 11px; }
+.app-shell .kpi > strong { font-size: 22px; }
+.app-shell :is(.empty-row,.human-empty,.supplier-empty,.resource-empty,.scrum-events-empty,.empty-inline) {
+  min-height: 140px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.app-shell .pill,
+.app-shell .status,
+.app-shell :is(.supplier-badge,.severity,.sentiment,.event-state) { font-size: 11px; }
+
+/* Reusable people, meetings and supplier content */
+.app-shell .person h3,
+.app-shell .meeting h3,
+.app-shell .supplier-card-top h4,
+.app-shell .procurement-title h4,
+.app-shell .document-grid h4,
+.app-shell .evaluation-grid h4 { font-size: 14px; }
+.app-shell .person > p,
+.app-shell .meeting p,
+.app-shell .supplier-card-top p,
+.app-shell .procurement-list p,
+.app-shell .document-grid p,
+.app-shell .evaluation-grid p { font-size: 12px; line-height: 1.5; }
+.app-shell .person > span,
+.app-shell .person small,
+.app-shell .meeting small,
+.app-shell .supplier-card-grid dt,
+.app-shell .supplier-card-grid dd { font-size: 11px; }
 
 .app-shell .sidebar nav button { font-size: 14px; line-height: 1.25; }
 .app-shell .project-tabs button { font-size: 12px; }
