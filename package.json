@@ -1,6 +1,6 @@
 {
   "name": "kavelyo",
-  "version": "0.19.1",
+  "version": "0.20.0",
   "private": true,
   "type": "module",
   "description": "Kavelyo — pilotage de projet SaaS et local pour le web, macOS et Windows",

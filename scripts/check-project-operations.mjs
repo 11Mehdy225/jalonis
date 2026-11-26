@@ -5,6 +5,7 @@ const files=await Promise.all([
   read('src/App.jsx'),read('src/data/projectTemplates.js'),read('src/features/actions/ActionTracker.jsx'),
   read('src/features/raid/RaidCenter.jsx'),read('src/services/weeklyPowerPoint.js'),
   read('supabase/migrations/202611260002_action_tracker.sql'),read('electron/database.cjs'),read('package.json'),
+  read('supabase/migrations/202611260003_meeting_outcome_links.sql'),read('src/features/reports/ReportCenter.jsx'),
   read('supabase/functions/process-email-queue/index.ts'),read('supabase/functions/process-whatsapp-queue/index.ts'),
 ])
 const source=files.join('\n')
@@ -15,6 +16,7 @@ const expectations=[
   ['rattrapage du résumé quotidien','localTime<digestTime'],['actions dans le résumé','Actions à suivre'],
   ['compatibilité du planificateur après renommage','x-jalonis-cron-secret'],
   ['nom Kavelyo dans l’expéditeur','from:brandedSender(from)'],
+  ['liaison réunion-décision-action','linked_decision_id'],['bilan des sept derniers jours','Mouvement de la semaine'],
 ]
 const missing=expectations.filter(([,marker])=>!source.includes(marker))
 if(missing.length){console.error(`Contrôles manquants : ${missing.map(([label])=>label).join(', ')}`);process.exit(1)}

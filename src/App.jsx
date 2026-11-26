@@ -36,6 +36,8 @@ import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, L
 
 const money = (n,currency='XOF') => new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0)
 const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)) : '—'
+const outcomeLines=value=>String(value||'').split(/\r?\n/).map(row=>row.trim()).filter(Boolean)
+const parseMeetingAction=value=>{const [title,owner,dueDate]=value.split('|').map(part=>part.trim());return {title,owner:owner||'',due_date:/^\d{4}-\d{2}-\d{2}$/.test(dueDate||'')?dueDate:null}}
 
 const NAV = [
   ['dashboard','Vue d’ensemble',LayoutDashboard],['charter','Charte du projet',FileText],['tasks','Planning prédictif',CalendarRange],['scrum','Scrum & Sprints',Columns3],
@@ -140,6 +142,14 @@ export default function App() {
     if(type==='comments'?!permissions.comment:!permissions.editProject)return deny(type==='comments'?'Votre rôle ne permet pas de publier un message.':'Votre rôle dispose uniquement d’un accès en lecture.')
     const payload=type==='comments'?{...data,author_id:data.author_id||workspace?.current_user?.id}:data
     const item=await api.entities.create(type,{...payload,project_id:activeId})
+    let meetingOutcomeCount=0
+    if(type==='meetings'){
+      const decisionRows=[]
+      for(const title of outcomeLines(payload.decisions))decisionRows.push(await api.entities.create('decisions',{project_id:activeId,title,decision_date:String(payload.meeting_date||new Date().toISOString()).slice(0,10),context:`Décision issue de la réunion « ${item.title} »`,decision:title,status:'Décidée',linked_meeting_id:item.id,linked_task_id:payload.linked_task_id||null}))
+      const actionRows=outcomeLines(payload.actions).map(parseMeetingAction)
+      for(const [index,action] of actionRows.entries())await api.entities.create('action_items',{project_id:activeId,...action,source_type:'Réunion',source_label:item.title,priority:'Moyenne',status:'À faire',progress:0,linked_task_id:payload.linked_task_id||null,linked_meeting_id:item.id,linked_decision_id:decisionRows.length===1?decisionRows[0].id:decisionRows[index]?.id||null})
+      meetingOutcomeCount=decisionRows.length+actionRows.length
+    }
     if(!['activities','notifications','attachments','checklist_items','sprint_snapshots','custom_field_values'].includes(type)){
       const isComment=type==='comments', label=ENTITY_LABELS[type]||'Élément', name=item.title||item.name||item.body?.slice(0,55)||label
       await recordEvent({eventType:isComment?'comment.created':`${type}.created`,entityType:isComment?(item.entity_type||'project'):type,entityId:isComment?(item.entity_id||item.id):item.id,title:isComment?'Nouveau message dans le projet':`${label} créé`,description:isComment?`${item.author_name||'Un membre'} : ${item.body}`:name,notify:!isComment&&['tasks','risks','backlog_items'].includes(type)})
@@ -152,7 +162,7 @@ export default function App() {
         }
       }
     }
-    setModal(null); await loadEntities(activeId); await loadProjects(false); return item
+    setModal(null); await loadEntities(activeId); await loadProjects(false); if(type==='meetings'&&meetingOutcomeCount)setNotice(`${meetingOutcomeCount} résultat(s) de réunion relié(s) aux registres Décisions et Actions.`); return item
   }
   async function removeEntity(type,id){
     if(!permissions.deleteProjectContent)return deny('Seuls les responsables du projet peuvent supprimer cet élément.')
@@ -286,7 +296,7 @@ export default function App() {
           {view==='impact'&&<ImpactCenter project={active} entities={entities} onCreate={addEntity} onDelete={removeEntity} onNavigate={target=>{if(target==='scrum')setAgileTab('backlog');setView(target)}}/>}
           {view==='assistant'&&<ProjectAssistant project={active} entities={entities} advancedAvailable={advancedAssistant} onAnalyze={analyzeProject} onNavigate={target=>{if(target==='scrum')setAgileTab('backlog');setView(target)}}/>}
           {view==='actions'&&<ActionTracker
-            actions={entities.action_items} tasks={entities.tasks} risks={entities.risks}
+            actions={entities.action_items} tasks={entities.tasks} risks={entities.risks} meetings={entities.meetings} decisions={entities.decisions}
             onCreate={data=>addEntity('action_items',data)} onUpdate={(id,data)=>updateEntity('action_items',id,data)} onDelete={id=>removeEntity('action_items',id)}/>
           }
           {view==='raid'&&<RaidCenter
@@ -313,7 +323,7 @@ export default function App() {
           {view==='custom-fields'&&<CustomFieldsView fields={entities.custom_fields} canEdit={permissions.manageProject} onCreate={data=>addEntity('custom_fields',data)} onDelete={id=>removeEntity('custom_fields',id)}/>}
           {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>}
           {view==='team'&&<ResourceManagement members={entities.team} tasks={entities.tasks} entries={entities.time_entries} query={query} onCreateEntry={data=>addEntity('time_entries',data)} onUpdateEntry={(id,data)=>updateEntity('time_entries',id,data)} onDeleteEntry={id=>removeEntity('time_entries',id)} onDeleteMember={id=>removeEntity('team',id)}/>}
-          {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('meetings',id)}/>}
+          {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} decisions={entities.decisions} actions={entities.action_items} query={query} onDelete={id=>removeEntity('meetings',id)}/>}
           {view==='activity'&&<ActivityView project={active} comments={entities.comments} activities={entities.activities} members={workspace?.members||[]} currentUser={currentUser} onComment={data=>addEntity('comments',data)}/>}
         </>}
       </section>
@@ -478,7 +488,7 @@ function CalendarWeek({days,rows,activeMonth,today}){
 }
 function Risks({rows,tasks,query,onDelete}){return <Table rows={rows} query={query} onDelete={onDelete} empty="Aucun risque enregistré." columns={[{key:'title',label:'Risque',render:v=><b>{v}</b>},{key:'linked_task_id',label:'Activité liée',render:v=>v?(tasks.find(t=>t.id===v)?.title||'Activité supprimée'):'—'},{key:'category',label:'Catégorie'},{key:'probability',label:'Probabilité'},{key:'impact',label:'Impact'},{key:'score',label:'Score',render:(_,r)=><strong className={`risk-score ${Number(r.probability)*Number(r.impact)>=15?'high':''}`}>{Number(r.probability)*Number(r.impact)}</strong>},{key:'owner',label:'Propriétaire'},{key:'status',label:'Statut',render:status}]}/>}
 function Team({rows,query,onDelete}){return <div className="people-grid">{rows.filter(r=>match(r,query)).map((p,i)=><div className="person card" key={p.id}><button className="row-delete" onClick={()=>onDelete(p.id)}><Trash2 size={15}/></button><div className={`person-avatar c${i%4}`}>{p.name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><h3>{p.name}</h3><p>{p.role||'Membre de l’équipe'}</p><span>{p.email||'—'}</span><div><small>Disponibilité</small><b>{p.availability||0}%</b></div><div><small>Compétences</small><b>{p.skills||'—'}</b></div></div>)}</div>}
-function Meetings({rows,tasks,query,onDelete}){return <div className="meeting-list">{rows.filter(r=>match(r,query)).map(m=><article className="card meeting" key={m.id}><div className="meeting-date"><b>{m.meeting_date?new Date(m.meeting_date).getDate():'—'}</b><span>{m.meeting_date?new Intl.DateTimeFormat('fr-FR',{month:'short'}).format(new Date(m.meeting_date)):'Date'}</span></div><div><h3>{m.title}</h3><p>{m.agenda||'Aucun ordre du jour'}</p><small><Users size={14}/>{m.participants||'Participants non précisés'}</small>{m.linked_task_id&&<div className="linked-task">Activité liée · <b>{tasks.find(t=>t.id===m.linked_task_id)?.title||'Activité supprimée'}</b></div>}{m.decisions&&<div className="decision"><b>Décisions</b>{m.decisions}</div>}</div><button className="row-delete" onClick={()=>onDelete(m.id)}><Trash2 size={16}/></button></article>)}{!rows.length&&<div className="card"><EmptyRow text="Planifiez votre première réunion."/></div>}</div>}
+function Meetings({rows,tasks,decisions=[],actions=[],query,onDelete}){return <div className="meeting-list">{rows.filter(r=>match(r,query)).map(m=>{const linkedDecisions=decisions.filter(row=>row.linked_meeting_id===m.id),linkedActions=actions.filter(row=>row.linked_meeting_id===m.id);return <article className="card meeting" key={m.id}><div className="meeting-date"><b>{m.meeting_date?new Date(m.meeting_date).getDate():'—'}</b><span>{m.meeting_date?new Intl.DateTimeFormat('fr-FR',{month:'short'}).format(new Date(m.meeting_date)):'Date'}</span></div><div><h3>{m.title}</h3><p>{m.agenda||'Aucun ordre du jour'}</p><small><Users size={14}/>{m.participants||'Participants non précisés'}</small>{m.linked_task_id&&<div className="linked-task">Activité liée · <b>{tasks.find(t=>t.id===m.linked_task_id)?.title||'Activité supprimée'}</b></div>}{(linkedDecisions.length>0||linkedActions.length>0)&&<div className="meeting-outcomes"><span><Gavel size={13}/><b>{linkedDecisions.length}</b> décision(s) consignée(s)</span><span><ListChecks size={13}/><b>{linkedActions.length}</b> action(s) suivie(s)</span></div>}{m.decisions&&!linkedDecisions.length&&<div className="decision"><b>Décisions</b>{m.decisions}</div>}</div><button className="row-delete" onClick={()=>onDelete(m.id)}><Trash2 size={16}/></button></article>})}{!rows.length&&<div className="card"><EmptyRow text="Planifiez votre première réunion."/></div>}</div>}
 function SettingsView({currentUser,onUpdateProfile}){
   const [info,setInfo]=useState(null),[form,setForm]=useState({}),[saved,setSaved]=useState(false)
   useEffect(()=>{api.system.info().then(setInfo)},[])

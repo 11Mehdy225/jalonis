@@ -309,7 +309,7 @@ class KavelyoDatabase {
         id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         title TEXT NOT NULL, description TEXT, source_type TEXT DEFAULT 'Manuel', source_label TEXT,
         owner TEXT, due_date TEXT, priority TEXT DEFAULT 'Moyenne', status TEXT DEFAULT 'À faire',
-        progress INTEGER DEFAULT 0, linked_task_id TEXT, linked_risk_id TEXT,
+        progress INTEGER DEFAULT 0, linked_task_id TEXT, linked_risk_id TEXT, linked_meeting_id TEXT, linked_decision_id TEXT,
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       );
     `)
@@ -328,6 +328,8 @@ class KavelyoDatabase {
     }
     ensureColumn('risks', 'linked_task_id', 'TEXT')
     ensureColumn('meetings', 'linked_task_id', 'TEXT')
+    ensureColumn('action_items', 'linked_meeting_id', 'TEXT')
+    ensureColumn('action_items', 'linked_decision_id', 'TEXT')
     ensureColumn('team', 'weekly_capacity', 'REAL DEFAULT 40')
     ensureColumn('team', 'hourly_cost', 'REAL DEFAULT 0')
     ensureColumn('team', 'billing_rate', 'REAL DEFAULT 0')

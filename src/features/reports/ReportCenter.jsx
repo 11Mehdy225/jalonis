@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { ArchiveRestore, BarChart3, Download, Presentation, FileSpreadsheet, KeyRound, LockKeyhole, Printer, ShieldCheck, Upload } from 'lucide-react'
+import { ArchiveRestore, BarChart3, CalendarDays, Download, Presentation, FileSpreadsheet, KeyRound, LockKeyhole, Printer, ShieldCheck, Upload } from 'lucide-react'
 import { decryptProjectArchive, encryptProjectArchive, isEncryptedProjectArchive } from '../../services/backupCrypto'
 import { exportWeeklyPowerPoint } from '../../services/weeklyPowerPoint'
 import '../../styles/reports.css'
@@ -8,7 +8,7 @@ import '../../styles/report-actions.css'
 const exportSets=[
   ['tasks','Planning','planning'],['backlog_items','Backlog Scrum','backlog'],['risks','Risques','risques'],['cost_entries','Coûts','couts'],
   ['team','Équipe','equipe'],['stakeholders','Parties prenantes','parties-prenantes'],['suppliers','Fournisseurs','fournisseurs'],
-  ['change_requests','Changements','changements'],['issues','Problèmes','problemes'],['decisions','Décisions','decisions'],
+  ['change_requests','Changements','changements'],['issues','Problèmes','problemes'],['decisions','Décisions','decisions'],['action_items','Actions','actions'],['meetings','Réunions','reunions'],
 ]
 const systemFields=new Set(['id','project_id','created_at','updated_at','stored_path','url','logo_path','logo_url'])
 const projectArchiveFormats=new Set(['kavelyo-project','jalonis-project'])
@@ -23,12 +23,13 @@ export default function ReportCenter({project,entities,onImport}){
   const currency=project.currency||'XOF'
   const money=value=>new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:0}).format(number(value))
   const metrics=useMemo(()=>{
-    const tasks=entities.tasks||[],costs=entities.cost_entries||[],risks=entities.risks||[]
+    const tasks=entities.tasks||[],costs=entities.cost_entries||[],risks=entities.risks||[],actions=entities.action_items||[]
+    const today=new Date().toISOString().slice(0,10),weekAgo=new Date(Date.now()-7*86400000).toISOString(),nextWeek=new Date(Date.now()+7*86400000).toISOString().slice(0,10)
     const progress=tasks.length?Math.round(tasks.reduce((sum,row)=>sum+number(row.progress),0)/tasks.length):0
     const actual=costs.reduce((sum,row)=>sum+number(row.actual_amount),0)
     const committed=costs.reduce((sum,row)=>sum+number(row.committed_amount),0)
     const critical=risks.filter(row=>number(row.probability)*number(row.impact)>=15&&row.status!=='Fermé').length
-    return {progress,actual,committed,critical,done:tasks.filter(row=>row.status==='Terminé').length,total:tasks.length,openIssues:(entities.issues||[]).filter(row=>!['Résolu','Clos'].includes(row.status)).length,openChanges:(entities.change_requests||[]).filter(row=>!['Approuvée','Rejetée','Annulée'].includes(row.status)).length}
+    return {progress,actual,committed,critical,done:tasks.filter(row=>row.status==='Terminé').length,total:tasks.length,openIssues:(entities.issues||[]).filter(row=>!['Résolu','Clos'].includes(row.status)).length,openChanges:(entities.change_requests||[]).filter(row=>!['Approuvée','Rejetée','Annulée'].includes(row.status)).length,weeklyDone:tasks.filter(row=>row.status==='Terminé'&&row.updated_at>=weekAgo).length,weeklyMeetings:(entities.meetings||[]).filter(row=>row.meeting_date>=weekAgo&&row.meeting_date<=new Date().toISOString()).length,weeklyDecisions:(entities.decisions||[]).filter(row=>(row.decision_date||row.created_at)>=weekAgo.slice(0,10)).length,weeklyActions:actions.filter(row=>row.status==='Terminée'&&row.updated_at>=weekAgo).length,overdueActions:actions.filter(row=>!['Terminée','Annulée'].includes(row.status)&&row.due_date&&row.due_date<today).length,nextActions:actions.filter(row=>!['Terminée','Annulée'].includes(row.status)&&row.due_date>=today&&row.due_date<=nextWeek).length}
   },[entities])
   const exportCsv=(type,label,file)=>{
     const rows=entities[type]||[]
@@ -73,6 +74,7 @@ export default function ReportCenter({project,entities,onImport}){
       ]}/></section>
       <section className="card report-section"><header><FileSpreadsheet size={18}/><div><h3>Situation financière</h3><p>Référence, engagements et décaissements.</p></div></header><ReportRows rows={[[`Budget (${currency})`,money(project.budget)],['Coûts engagés',money(metrics.committed)],['Coûts réels',money(metrics.actual)],['Solde disponible',money(number(project.budget)-metrics.actual)],['Contrats fournisseurs',money((entities.supplier_contracts||[]).reduce((s,r)=>s+number(r.amount),0))]]}/></section>
       <section className="card report-section"><header><ArchiveRestore size={18}/><div><h3>Capacité organisationnelle</h3><p>Équipe, parties prenantes et communications.</p></div></header><ReportRows rows={[["Membres de l’équipe",(entities.team||[]).length],['Parties prenantes',(entities.stakeholders||[]).length],['Lignes RACI',(entities.raci_assignments||[]).length],['Communications actives',(entities.communication_plans||[]).filter(r=>r.status==='Actif').length],['Fournisseurs actifs',(entities.suppliers||[]).filter(r=>!['Suspendu','Inactif'].includes(r.status)).length]]}/></section>
+      <section className="card report-section weekly-pulse"><header><CalendarDays size={18}/><div><h3>Mouvement de la semaine</h3><p>Réalisations des sept derniers jours et engagements immédiats.</p></div></header><ReportRows rows={[["Tâches terminées cette semaine",metrics.weeklyDone],['Réunions tenues',metrics.weeklyMeetings],['Décisions consignées',metrics.weeklyDecisions],['Actions clôturées',metrics.weeklyActions],['Actions en retard',metrics.overdueActions],['Actions dues sous 7 jours',metrics.nextActions]]}/></section>
     </div>
     <section className="card export-section"><div className="export-head"><div><h3>Exports compatibles Excel</h3><p>Chaque registre est exporté dans un fichier CSV séparé, facile à filtrer et partager.</p></div><FileSpreadsheet size={22}/></div><div className="export-grid">{exportSets.map(([type,label,file])=><button key={type} onClick={()=>exportCsv(type,label,file)}><span><FileSpreadsheet size={17}/></span><div><b>{label}</b><small>{(entities[type]||[]).length} ligne(s)</small></div><Download size={15}/></button>)}</div></section>
       <section className="card backup-section"><div className="backup-copy"><span><LockKeyhole size={22}/></span><div><h3>Sauvegarde chiffrée du projet</h3><p>Les données sont protégées par AES-256. Les fichiers joints sont inventoriés mais ne sont pas copiés dans la sauvegarde. Les anciennes sauvegardes Jalonis restent compatibles.</p></div></div><div className="backup-security"><label><KeyRound size={15}/><input type="password" minLength="12" value={backupPassword} onChange={event=>setBackupPassword(event.target.value)} placeholder="Mot de passe · 12 caractères min." autoComplete="new-password"/></label><div className="backup-actions"><button className="btn ghost" disabled={working||backupPassword.length<12} onClick={exportBackup}><Download size={16}/>{working?'Protection…':'Télécharger'}</button><button className="btn primary" disabled={working} onClick={()=>inputRef.current?.click()}><Upload size={16}/>Restaurer une copie</button><input ref={inputRef} type="file" accept="application/json,.json,.kavelyo,.jalonis" hidden onChange={importFile}/></div></div></section>

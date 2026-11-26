@@ -8,7 +8,7 @@ const configs = {
   team: { title: 'Nouveau membre', fields: [
     ['name','Nom complet','text'],['role','Rôle','text'],['email','E-mail','email'],['availability','Disponibilité (%)','number'],['weekly_capacity','Capacité hebdomadaire (heures)','number'],['hourly_cost','Coût horaire interne','number'],['billing_rate','Taux facturable','number'],['skills','Compétences','text'] ] },
   meetings: { title: 'Nouvelle réunion', fields: [
-    ['title','Objet','text'],['meeting_date','Date et heure','datetime-local'],['linked_task_id','Activité concernée','task-select'],['participants','Participants','text'],['agenda','Ordre du jour','textarea'],['decisions','Décisions','textarea'],['actions','Actions','textarea'] ] },
+    ['title','Objet','text'],['meeting_date','Date et heure','datetime-local'],['linked_task_id','Activité concernée','task-select'],['participants','Participants','text'],['agenda','Ordre du jour','textarea'],['decisions','Décisions · une par ligne','textarea'],['actions','Actions · Action | Responsable | AAAA-MM-JJ','textarea'] ] },
 }
 
 export default function EntityForm({ type, onSubmit, onCancel, tasks=[], members=[] }) {
