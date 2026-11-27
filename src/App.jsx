@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api, isDesktopCloud } from './services/api'
 import Modal from './shared/Modal'
 import ProjectForm from './features/projects/ProjectForm'
@@ -61,6 +61,7 @@ export default function App() {
   const [mobileNav,setMobileNav]=useState(false)
   const [projectAccess,setProjectAccess]=useState(null),[inviteProject,setInviteProject]=useState(null)
   const [online,setOnline]=useState(()=>navigator.onLine)
+  const searchRef=useRef(null)
   const active=projects.find(p=>p.id===activeId)
 
   async function loadProjects(selectFirst=true){ const rows=await api.projects.list(); setProjects(rows); if(selectFirst&&!activeId&&rows[0]) setActiveId(rows[0].id) }
@@ -75,6 +76,7 @@ export default function App() {
   useEffect(()=>{if(!activeId||!api.realtime?.subscribeProject)return;const timers=new Map();const unsubscribe=api.realtime.subscribeProject(activeId,({table})=>{clearTimeout(timers.get(table));timers.set(table,setTimeout(()=>reloadProjectTable(table,activeId).catch(reason=>setError(reason.message||'Synchronisation interrompue.')),120))});return()=>{timers.forEach(clearTimeout);unsubscribe?.()}},[activeId])
   useEffect(()=>{if(!active)return;if(active.methodology==='Scrum'&&view==='tasks'){setView('scrum');setAgileTab('backlog')}if(active.methodology==='Prédictif'&&view==='scrum')setView('tasks')},[active?.methodology,view])
   useEffect(()=>{if(workspace?.current_user)trackTelemetry('page_view',{route:`/${view}`})},[view,workspace?.current_user?.id])
+  useEffect(()=>{const openSearch=event=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();searchRef.current?.focus()}};window.addEventListener('keydown',openSearch);return()=>window.removeEventListener('keydown',openSearch)},[])
 
   const stats=useMemo(()=>{
     const scrumItems=entities.backlog_items.filter(item=>item.item_type!=='Epic'),isScrum=active?.methodology==='Scrum',total=isScrum?scrumItems.length:entities.tasks.length
@@ -285,6 +287,7 @@ export default function App() {
   const advancedAssistant=Boolean(currentPlan?.features?.assistant)
 
   return <div className={`app-shell${dark?' dark':''}${mobileNav?' mobile-nav-open':''}`}>
+    <a className="skip-link" href="#main-content">Aller au contenu principal</a>
     {mobileNav&&<button className="mobile-nav-backdrop" aria-label="Fermer le menu" onClick={()=>setMobileNav(false)}/>}
     <aside className={`sidebar${mobileNav?' open':''}`}>
       <div className="brand"><img src="./assets/kavelyo-logo.png"/><div><strong>Kavelyo</strong><span>Pilotage de projets</span></div><button className="mobile-nav-close" aria-label="Fermer le menu" onClick={()=>setMobileNav(false)}><X size={21}/></button></div>
@@ -296,12 +299,12 @@ export default function App() {
       {(isDesktopCloud||(!window.kavelyo&&new URLSearchParams(window.location.search).get('preview')!=='1'))&&<button className="sidebar-signout" onClick={signOut}><LogOut size={16}/><span>Déconnexion</span></button>}
     </aside>
     <main>
-      <header className="app-header"><button className="icon-btn mobile-menu-btn" aria-label="Ouvrir le menu" onClick={()=>setMobileNav(true)}><Menu size={21}/></button><span className="mobile-header-brand"><img src="./assets/kavelyo-logo.png" alt=""/>Kavelyo</span><div className="search"><Search size={17}/><input placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd>⌘ K</kbd></div><button className="icon-btn" title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button>{permissions.createProject&&<button className="btn primary header-create" onClick={()=>setModal('project')}><Plus size={17}/><span>Créer</span></button>}{notificationOpen&&<NotificationCenter notifications={visibleNotifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
-      <section className={`content${active&&!['workspace','settings','admin'].includes(view)?' project-content':''}`} style={active?{'--project-color':active.theme_color||'#4f46e5'}:undefined}>
-        {!online&&<div className="offline-banner"><Database size={16}/><span><b>Connexion interrompue</b> Les changements cloud reprendront après le retour du réseau.</span></div>}
+      <header className="app-header"><button className="icon-btn mobile-menu-btn" aria-label="Ouvrir le menu" onClick={()=>setMobileNav(true)}><Menu size={21}/></button><span className="mobile-header-brand"><img src="./assets/kavelyo-logo.png" alt=""/>Kavelyo</span><div className="search"><Search size={17}/><input ref={searchRef} type="search" aria-label="Rechercher dans le projet" placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd aria-hidden="true">⌘ K</kbd></div><button className="icon-btn" aria-label={dark?'Activer le mode clair':'Activer le mode sombre'} title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" aria-label={unreadNotifications?`Notifications, ${unreadNotifications} non lue${unreadNotifications>1?'s':''}`:'Notifications'} aria-haspopup="true" aria-expanded={notificationOpen} title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button>{permissions.createProject&&<button className="btn primary header-create" onClick={()=>setModal('project')}><Plus size={17}/><span>Créer</span></button>}{notificationOpen&&<NotificationCenter notifications={visibleNotifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
+      <section id="main-content" tabIndex="-1" className={`content${active&&!['workspace','settings','admin'].includes(view)?' project-content':''}`} style={active?{'--project-color':active.theme_color||'#4f46e5'}:undefined}>
+        {!online&&<div className="offline-banner" role="status"><Database size={16}/><span><b>Connexion interrompue</b> Les changements cloud reprendront après le retour du réseau.</span></div>}
         <SubscriptionNotice workspace={workspace} onOpen={()=>setView('workspace')}/>
-        {error&&<div className="app-error">{error}<button onClick={()=>setError('')}>×</button></div>}
-        {notice&&<div className="app-notice">{notice}<button onClick={()=>setNotice('')}>×</button></div>}
+        {error&&<div className="app-error" role="alert"><span>{error}</span><button type="button" aria-label="Fermer le message d’erreur" onClick={()=>setError('')}>×</button></div>}
+        {notice&&<div className="app-notice" role="status" aria-live="polite"><span>{notice}</span><button type="button" aria-label="Fermer le message" onClick={()=>setNotice('')}>×</button></div>}
         {view==='admin'&&workspace?.is_platform_admin ? <><div className="page-title"><div><span className="eyebrow">EXPLOITATION KAVELYO</span><h1>Administration SaaS</h1><p>Supervisez les comptes, abonnements, paiements et notifications.</p></div></div><AdminView plans={workspace.plans||[]} onLoad={api.admin.dashboard} onReadiness={api.admin.readiness} onMonitoring={api.admin.monitoring} onManageIncident={api.admin.manageIncident} onPrivacyRequests={api.admin.privacyRequests} onManagePrivacyRequest={api.admin.managePrivacyRequest} onManage={api.admin.manageSubscription} onCreatePromotion={api.admin.createPromotionCode} onSetPromotionActive={api.admin.setPromotionCodeActive} onUpdateChannel={api.admin.updateChannel}/></>
         : view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>{setInviteProject(null);setModal('invite-member')}} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout} onRedeemPromotion={redeemPromotionCode} onManualPayment={submitManualPayment} onReviewPayment={reviewManualPayment}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Votre profil et la configuration de cette installation.</p></div></div><SettingsView currentUser={currentUser} onUpdateProfile={updateProfile}/></>

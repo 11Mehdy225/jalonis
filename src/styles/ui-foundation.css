@@ -1,0 +1,127 @@
+:root {
+  --ui-surface: #fff;
+  --ui-surface-soft: #f8f9fc;
+  --ui-text: #182037;
+  --ui-muted: #69738a;
+  --ui-border: #dfe4ed;
+  --ui-focus: var(--project-color, #4f46e5);
+  --ui-success: #14785f;
+  --ui-success-bg: #e8f7f1;
+  --ui-danger: #b83f36;
+  --ui-danger-bg: #fff0ed;
+  --ui-warning: #9b6118;
+  --ui-warning-bg: #fff7e8;
+  --ui-shadow: 0 1px 2px #17213c0a, 0 8px 24px #17213c0a;
+}
+
+.app-shell.dark {
+  --ui-surface: #202228;
+  --ui-surface-soft: #272a31;
+  --ui-text: #f3f4f8;
+  --ui-muted: #aeb5c3;
+  --ui-border: #3b3f49;
+  --ui-success: #91dfc7;
+  --ui-success-bg: #173b32;
+  --ui-danger: #ffaaa1;
+  --ui-danger-bg: #4b2928;
+  --ui-warning: #f2c77f;
+  --ui-warning-bg: #49391f;
+  --ui-shadow: 0 10px 30px #0003;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 1000;
+  top: 10px;
+  left: 10px;
+  padding: 11px 15px;
+  border-radius: 9px;
+  background: #fff;
+  color: #25205e;
+  font-weight: 750;
+  box-shadow: 0 8px 28px #0003;
+  transform: translateY(-150%);
+}
+.skip-link:focus { transform: translateY(0); }
+#main-content:focus { outline: 0; }
+
+.app-shell button:disabled,
+.app-shell input:disabled,
+.app-shell select:disabled,
+.app-shell textarea:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+.app-shell button:active:not(:disabled) { transform: translateY(0); }
+.app-shell :is(input,select,textarea)::placeholder { color: #7f899d; opacity: 1; }
+.app-shell.dark :is(input,select,textarea)::placeholder { color: #9ba3b2; }
+.app-shell :is(input,select,textarea)[aria-invalid="true"] {
+  border-color: var(--ui-danger)!important;
+  box-shadow: 0 0 0 3px color-mix(in srgb,var(--ui-danger) 16%,transparent)!important;
+}
+
+.app-error,
+.app-notice {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 18px;
+  padding: 13px 14px 13px 16px;
+  border: 1px solid;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+  box-shadow: var(--ui-shadow);
+}
+.app-error { color: var(--ui-danger); background: var(--ui-danger-bg); border-color: color-mix(in srgb,var(--ui-danger) 28%,transparent); }
+.app-notice { color: var(--ui-success); background: var(--ui-success-bg); border-color: color-mix(in srgb,var(--ui-success) 26%,transparent); }
+.app-error button,
+.app-notice button {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  margin: -6px -6px -6px 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: currentColor;
+  font-size: 20px;
+  line-height: 1;
+}
+.app-error button:hover,
+.app-notice button:hover { background: color-mix(in srgb,currentColor 10%,transparent); }
+
+.modal-backdrop { overscroll-behavior: contain; }
+.modal { border: 1px solid var(--ui-border); background: var(--ui-surface); color: var(--ui-text); }
+.modal-head {
+  position: sticky;
+  z-index: 5;
+  top: -25px;
+  margin: -25px -25px 22px;
+  padding: 25px 25px 16px;
+  border-bottom: 1px solid var(--ui-border);
+  background: color-mix(in srgb,var(--ui-surface) 94%,transparent);
+  backdrop-filter: blur(14px);
+}
+.modal-close { flex: 0 0 42px; width: 42px; height: 42px; }
+
+.app-shell :is(.card,.kpi,.table-card) { border-color: var(--ui-border); box-shadow: var(--ui-shadow); }
+.app-shell :is(table,.backlog-table) th { color: var(--ui-muted); }
+.app-shell :is(table,.backlog-table) tbody tr { transition: background-color .16s ease; }
+@media (hover:hover) {
+  .app-shell table tbody tr:hover { background: color-mix(in srgb,var(--ui-focus) 4%,var(--ui-surface)); }
+}
+
+@media (pointer:coarse) {
+  .app-shell :is(button,.btn,.icon-btn,select,input[type="checkbox"],input[type="radio"]) { min-height: 44px; }
+}
+
+@media (max-width: 720px) {
+  .app-error,.app-notice { margin-bottom: 14px; font-size: 14px; }
+  .modal-head { top: -20px; margin: -20px -16px 18px; padding: 18px 16px 14px; }
+  .modal-close { width: 44px; height: 44px; }
+}
