@@ -28,6 +28,7 @@ import './styles/meeting-outcomes.css'
 import './styles/readability.css'
 import './styles/market-nav.css'
 import './styles/ui-foundation.css'
+import './styles/task-list-responsive.css'
 
 initializeTelemetry()
 createRoot(document.getElementById('root')).render(<React.StrictMode><ErrorBoundary><AuthGate><App /></AuthGate></ErrorBoundary></React.StrictMode>)

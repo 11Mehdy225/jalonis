@@ -1,0 +1,103 @@
+.app-shell .task-rich-list .table-person select {
+  width: min(170px,100%);
+  min-height: 34px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.app-shell .task-rich-list .table-person select:hover,
+.app-shell .task-rich-list .table-person select:focus {
+  border-color: var(--ui-border);
+  background: var(--ui-surface-soft);
+}
+.app-shell .inline-priority,
+.app-shell .inline-date {
+  min-height: 34px;
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+  background: var(--ui-surface-soft);
+  color: var(--ui-text);
+  padding: 0 8px;
+}
+.app-shell .inline-priority { font-weight: 700; }
+.app-shell .inline-priority.basse { color: #64748b; }
+.app-shell .inline-priority.moyenne { color: #9a640d; background: #fff8e8; border-color: #e5c782; }
+.app-shell .inline-priority.haute { color: #b45309; background: #fff1e8; border-color: #efb07c; }
+.app-shell .inline-priority.critique { color: #b42318; background: #fff0ed; border-color: #eeaaa4; }
+.app-shell.dark .inline-priority.moyenne { color: #f6d486; background: #443718; border-color: #7e692f; }
+.app-shell.dark .inline-priority.haute { color: #ffc391; background: #482c1b; border-color: #84502f; }
+.app-shell.dark .inline-priority.critique { color: #ffb2aa; background: #4b2623; border-color: #8d4842; }
+.app-shell .resolution-state { color: var(--ui-muted); white-space: nowrap; }
+.app-shell .resolution-state.resolved { color: var(--ui-success); font-weight: 700; }
+.app-shell .inline-date { width: 142px; }
+
+@media (max-width: 720px) {
+  .app-shell .task-list-card { border: 0; background: transparent; box-shadow: none; overflow: visible; }
+  .app-shell .task-list-scroll { max-height: none; overflow: visible; }
+  .app-shell .task-rich-list { display: block; min-width: 0; background: transparent; }
+  .app-shell .task-rich-list thead { display: none; }
+  .app-shell .task-rich-list tbody { display: grid; gap: 12px; }
+  .app-shell .task-rich-list tbody tr,
+  .app-shell.dark .task-rich-list tbody tr,
+  .app-shell.dark .task-rich-list tbody tr:nth-child(even) {
+    display: grid;
+    grid-template-columns: 30px minmax(0,1fr) 44px;
+    grid-template-areas:
+      "select title action"
+      "status status priority"
+      "assignee assignee assignee"
+      "reporter reporter reporter"
+      "due due progress"
+      "resolution creation creation"
+      "updated updated updated";
+    gap: 11px 10px;
+    width: 100%;
+    padding: 15px;
+    border: 1px solid var(--ui-border);
+    border-radius: 14px;
+    background: var(--ui-surface);
+    box-shadow: var(--ui-shadow);
+  }
+  .app-shell .task-rich-list td {
+    display: flex;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border: 0;
+    color: var(--ui-text);
+  }
+  .app-shell .task-rich-list td[data-label] { flex-direction: column; align-items: flex-start; gap: 5px; }
+  .app-shell .task-rich-list td[data-label]::before {
+    content: attr(data-label);
+    color: var(--ui-muted);
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .app-shell .task-select-cell { grid-area: select; align-items: center; }
+  .app-shell .task-name-cell { grid-area: title; align-items: center; }
+  .app-shell .task-actions-cell { grid-area: action; justify-content: flex-end; }
+  .app-shell .task-rich-list td:nth-child(3) { grid-area: assignee; }
+  .app-shell .task-rich-list td:nth-child(4) { grid-area: reporter; }
+  .app-shell .task-rich-list td:nth-child(5) { grid-area: priority; align-self: end; }
+  .app-shell .task-rich-list td:nth-child(6) { grid-area: status; }
+  .app-shell .task-rich-list td:nth-child(7) { grid-area: resolution; }
+  .app-shell .task-rich-list td:nth-child(8) { grid-area: creation; }
+  .app-shell .task-rich-list td:nth-child(9) { grid-area: updated; }
+  .app-shell .task-rich-list td:nth-child(10) { grid-area: due; }
+  .app-shell .task-rich-list td:nth-child(11) { grid-area: progress; align-items: flex-end; }
+  .app-shell .task-title-cell { align-items: flex-start; flex-wrap: wrap; font-size: 15px; line-height: 1.35; }
+  .app-shell .task-title-cell > span { flex: 0 0 auto; }
+  .app-shell .task-rich-list .table-person { width: 100%; max-width: none; }
+  .app-shell .task-rich-list .table-person select { flex: 1; width: 100%; min-height: 40px; }
+  .app-shell .inline-status { min-height: 42px; min-width: 132px; }
+  .app-shell .inline-priority { min-height: 42px; max-width: 125px; }
+  .app-shell .inline-date { width: 155px; min-height: 42px; }
+  .app-shell .task-rich-list .progress-cell { min-width: 92px; }
+  .app-shell .task-rich-list .progress-cell i { width: 58px; }
+  .app-shell .task-list-bulk { position: sticky; top: 64px; z-index: 8; flex-wrap: wrap; border: 1px solid var(--ui-border); border-radius: 12px; margin-bottom: 12px; }
+  .app-shell .task-list-bulk select { order: 3; width: 100%; margin: 0; }
+}
