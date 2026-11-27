@@ -95,7 +95,7 @@ function WelcomeScreen({ onConnect, onPreview, onPublicPage }) {
       <section className="welcome-hero">
         <div className="welcome-kicker"><span/><Sparkles size={14}/> Du plan à l’impact</div>
         <h1>Le logiciel de gestion de projet<br/><em>qui relie chaque étape.</em></h1>
-        <p>Planifiez, collaborez et pilotez vos projets prédictifs, Agile et Scrum. Kavelyo réunit équipes, tâches, sprints, budgets, risques, fournisseurs et décisions dans un espace sécurisé.</p>
+        <p>Planifiez, collaborez et pilotez vos projets prédictifs, Agile et Scrum. Conçu en Côte d’Ivoire par Ronna Group, Kavelyo réunit équipes, tâches, sprints, budgets, risques, fournisseurs et décisions dans un espace sécurisé.</p>
       </section>
 
       <section className="chain-stage" aria-label="Réaction en chaîne du cycle de projet">
@@ -115,7 +115,7 @@ function WelcomeScreen({ onConnect, onPreview, onPublicPage }) {
     </div>
 
     <section className="welcome-seo" id="fonctionnalites">
-      <div className="welcome-seo-heading"><span>UNE PLATEFORME, TOUT LE PROJET</span><h2>Pilotez les projets simples comme les plus exigeants</h2><p>Kavelyo associe la souplesse d’un outil collaboratif à la rigueur des méthodes professionnelles de gestion de projet.</p></div>
+      <div className="welcome-seo-heading"><span>LOGICIEL DE GESTION DE PROJET À ABIDJAN</span><h2>Pilotez les projets simples comme les plus exigeants</h2><p>Kavelyo est une solution de gestion de projet conçue en Côte d’Ivoire pour les équipes d’Abidjan, du pays et de toute l’Afrique francophone. Elle associe la souplesse d’un outil collaboratif à la rigueur des méthodes professionnelles.</p></div>
       <div className="welcome-feature-grid">
         <article><b>Planification et exécution</b><p>Structurez les jalons, tâches, dépendances, calendriers, charges et livrables. Suivez l’avancement dans des vues adaptées au travail quotidien.</p></article>
         <article><b>Agile, Scrum et Kanban</b><p>Gérez le backlog produit, les sprints, les user stories, le Daily Scrum, le refinement, la Sprint Review et la rétrospective.</p></article>

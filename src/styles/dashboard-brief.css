@@ -1,3 +1,3 @@
 .daily-brief-signals{grid-template-columns:repeat(6,minmax(0,1fr))}
 @media(max-width:1200px){.daily-brief-signals{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:760px){.daily-brief-signals{display:flex}.daily-brief-signals button,.daily-brief-signals>div{min-width:132px}}
+@media(max-width:760px){.daily-brief-signals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.daily-brief-signals button,.daily-brief-signals>div{min-width:0}}

@@ -465,5 +465,137 @@
   .app-shell .modal:has(.work-item-detail) .modal-head { min-height: 74px; padding: 13px 16px; }
   .app-shell .modal:has(.work-item-detail) .modal-head h2 { font-size: 19px; }
   .app-shell .modal:has(.work-item-detail) .work-item-detail { padding: 0 14px 24px; }
+
+  /* Mobile is a dedicated layout, not a cropped desktop canvas. */
+  .app-shell,
+  .app-shell > main,
+  .app-shell .content,
+  .app-shell .project-content,
+  .app-shell .project-context,
+  .app-shell .scrum-view { width: 100%; min-width: 0; max-width: 100%; }
+
+  .app-shell .project-context-main {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 12px;
+    align-items: end;
+  }
+  .app-shell .project-heading h1 { max-width: calc(100vw - 155px); }
+  .app-shell .project-actions { gap: 6px; }
+  .app-shell .project-actions > .btn {
+    width: 42px;
+    min-width: 42px;
+    padding: 0;
+    font-size: 0;
+    border-radius: 10px;
+  }
+  .app-shell .project-actions > .btn svg { width: 18px; height: 18px; }
+  .app-shell .project-tabs {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 7px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+  }
+  .app-shell .project-tabs button { flex: 0 0 auto; scroll-snap-align: start; }
+  .app-shell .project-tabs .project-tab-more { margin-left: 0; }
+
+  .app-shell .daily-brief { margin: 0 0 14px; padding: 18px 16px; gap: 16px; }
+  .app-shell .daily-brief-intro { align-items: flex-start; }
+  .app-shell .daily-brief-intro h3 { font-size: 18px; line-height: 1.25; }
+  .app-shell .daily-brief-signals {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    width: 100%;
+    overflow: visible;
+  }
+  .app-shell .daily-brief-signals button,
+  .app-shell .daily-brief-signals > div { min-width: 0; width: 100%; padding: 11px; }
+  .app-shell .daily-brief-signals button:last-child:nth-child(odd),
+  .app-shell .daily-brief-signals > div:last-child:nth-child(odd) { grid-column: 1/-1; }
+  .app-shell .dashboard-command-grid { margin-inline: 0; }
+  .app-shell .dashboard-grid { display: flex; flex-direction: column; gap: 12px; }
+  .app-shell .dashboard-grid > .card { width: 100%; min-height: 0; height: auto; align-self: flex-start; }
+  .app-shell .dashboard-grid .trajectory { overflow-x: auto; padding-bottom: 10px; }
+  .app-shell .dashboard-grid .phase-list { flex: 0 0 410px; min-width: 410px; }
+  .app-shell .health-panel,
+  .app-shell .timeline-list,
+  .app-shell .attention { min-height: 0; }
+  .app-shell .health-row { min-height: 44px; align-items: center; }
+  .app-shell .empty-row { min-height: 92px; padding: 28px 14px; display: grid; place-items: center; }
+
+  .app-shell .scrum-toolbar { width: 100%; overflow-x: auto; }
+  .app-shell .scrum-toolbar > div { min-width: max-content; }
+  .app-shell .sprint-head { display: grid; grid-template-columns: 1fr!important; padding: 16px; }
+  .app-shell .sprint-dates { align-items: flex-start; }
+  .app-shell .sprint-progress { min-width: 0; width: 100%; }
+  .app-shell .sprint-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+  .app-shell .board-filters {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    width: 100%;
+    gap: 8px;
+    overflow: visible;
+  }
+  .app-shell .board-filters > label { grid-column: 1/-1; width: 100%; min-width: 0; }
+  .app-shell .board-filter-group { min-width: 0; width: 100%; }
+  .app-shell .board-filter-group select { width: 100%; min-width: 0; }
+  .app-shell .board-filters .group-button { display: none; }
+  .app-shell .board-result-count { justify-self: end; align-self: center; white-space: nowrap; }
+  .app-shell .scrum-board {
+    display: flex;
+    width: 100%;
+    gap: 12px;
+    padding: 0 0 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-inline: contain;
+  }
+  .app-shell .scrum-column {
+    flex: 0 0 calc(100vw - 44px);
+    width: calc(100vw - 44px);
+    min-width: 0;
+    min-height: 430px;
+    scroll-snap-align: start;
+  }
+  .app-shell .scrum-column .cards { min-height: 260px; }
+
+  .app-shell .backlog-table { overflow: hidden; }
+  .app-shell .backlog-table .backlog-head { display: none; }
+  .app-shell .backlog-table .backlog-row {
+    min-width: 0;
+    width: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 28px minmax(0,1fr) auto;
+    grid-template-areas:
+      "select type status"
+      "title title title"
+      "assignee priority points"
+      "actions actions actions";
+    gap: 10px 8px;
+    padding: 14px;
+    align-items: center;
+  }
+  .app-shell .backlog-row > * { padding: 0; }
+  .app-shell .backlog-row .row-selector { grid-area: select; }
+  .app-shell .backlog-row .drag-handle { display: none; }
+  .app-shell .backlog-row .type-button { grid-area: type; }
+  .app-shell .backlog-row .backlog-title { grid-area: title; min-width: 0; }
+  .app-shell .backlog-row .backlog-title b { font-size: 14px; }
+  .app-shell .backlog-row .backlog-status { grid-area: status; width: auto; max-width: 132px; margin: 0; }
+  .app-shell .backlog-row > span:nth-of-type(3) { grid-area: priority; justify-self: start; }
+  .app-shell .backlog-row > strong { grid-area: points; justify-self: end; }
+  .app-shell .backlog-row .assignee-cell { grid-area: assignee; }
+  .app-shell .backlog-row .backlog-actions {
+    grid-area: actions;
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+  }
+  .app-shell .backlog-bulk-bar { position: static; flex-wrap: wrap; }
+  .app-shell .backlog-bulk-bar label { order: 3; width: 100%; margin: 0; justify-content: space-between; }
 }
 
