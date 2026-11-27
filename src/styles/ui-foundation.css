@@ -71,6 +71,36 @@
 .view-loading small { color: var(--ui-muted); }
 @keyframes view-loading-spin { to { transform: rotate(360deg); } }
 
+.sync-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-soft);
+  color: var(--ui-muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sync-indicator.saved { border-color: color-mix(in srgb,var(--ui-success) 28%,var(--ui-border)); color: var(--ui-success); background: var(--ui-success-bg); }
+.sync-indicator.error { border-color: color-mix(in srgb,var(--ui-danger) 28%,var(--ui-border)); color: var(--ui-danger); background: var(--ui-danger-bg); }
+
+.app-boot-loading { display: grid; gap: 16px; }
+.boot-heading { display: flex; align-items: center; gap: 13px; min-height: 72px; padding: 16px; border: 1px solid var(--ui-border); border-radius: 14px; background: var(--ui-surface); }
+.boot-heading > span { width: 34px; height: 34px; border: 3px solid color-mix(in srgb,var(--ui-focus) 18%,var(--ui-border)); border-top-color: var(--ui-focus); border-radius: 50%; animation: view-loading-spin .75s linear infinite; }
+.boot-heading div { display: flex; flex-direction: column; gap: 4px; }
+.boot-heading small { color: var(--ui-muted); }
+.boot-kpis,.boot-panels { display: grid; gap: 14px; }
+.boot-kpis { grid-template-columns: repeat(4,1fr); }
+.boot-panels { grid-template-columns: 2fr 2fr 1.45fr; }
+.boot-kpis i,.boot-panels i { display: block; border: 1px solid var(--ui-border); border-radius: 14px; background: linear-gradient(100deg,var(--ui-surface) 20%,var(--ui-surface-soft) 45%,var(--ui-surface) 70%); background-size: 220% 100%; animation: boot-shimmer 1.25s ease-in-out infinite; }
+.boot-kpis i { height: 104px; }
+.boot-panels i { height: 280px; }
+@keyframes boot-shimmer { to { background-position: -220% 0; } }
+
 .app-shell button:disabled,
 .app-shell input:disabled,
 .app-shell select:disabled,
@@ -88,7 +118,8 @@
 
 .app-error,
 .app-notice {
-  position: relative;
+  position: sticky;
+  top: 12px;
   z-index: 4;
   display: flex;
   align-items: flex-start;
@@ -134,6 +165,16 @@
   backdrop-filter: blur(14px);
 }
 .modal-close { flex: 0 0 42px; width: 42px; height: 42px; }
+.modal > form > .form-actions,
+.modal .work-item-form > .form-actions {
+  position: sticky;
+  z-index: 4;
+  bottom: -25px;
+  margin: 22px -25px -25px;
+  padding: 15px 25px calc(15px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb,var(--ui-surface) 95%,transparent);
+  backdrop-filter: blur(14px);
+}
 
 .app-shell :is(.card,.kpi,.table-card) { border-color: var(--ui-border); box-shadow: var(--ui-shadow); }
 .app-shell :is(table,.backlog-table) th { color: var(--ui-muted); }
@@ -147,7 +188,35 @@
 }
 
 @media (max-width: 720px) {
+  .sync-indicator { width: 34px; min-width: 34px; padding: 0; justify-content: center; }
+  .sync-indicator > span { display: none; }
+  .boot-kpis { grid-template-columns: 1fr 1fr; }
+  .boot-panels { grid-template-columns: 1fr; }
+  .boot-panels i { height: 180px; }
+  .responsive-table { border: 0!important; background: transparent!important; box-shadow: none!important; overflow: visible!important; }
+  .responsive-table table,.responsive-table tbody { display: grid; width: 100%; gap: 12px; }
+  .responsive-table thead { display: none; }
+  .responsive-table tr { position: relative; display: grid; gap: 10px; padding: 15px; border: 1px solid var(--ui-border); border-radius: 14px; background: var(--ui-surface); box-shadow: var(--ui-shadow); }
+  .responsive-table td { display: grid; grid-template-columns: minmax(105px,.45fr) minmax(0,1fr); gap: 12px; align-items: center; padding: 0; border: 0; color: var(--ui-text); }
+  .responsive-table td::before { content: attr(data-label); color: var(--ui-muted); font-size: 10px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
+  .responsive-table td:first-child { display: block; padding-right: 40px; font-size: 15px; line-height: 1.4; }
+  .responsive-table td:first-child::before { display: block; margin-bottom: 5px; }
+  .responsive-table .responsive-row-action { position: absolute; top: 10px; right: 10px; display: block; }
+  .responsive-table .responsive-row-action::before { display: none; }
   .app-error,.app-notice { margin-bottom: 14px; font-size: 14px; }
   .modal-head { top: -20px; margin: -20px -16px 18px; padding: 18px 16px 14px; }
   .modal-close { width: 44px; height: 44px; }
+  .modal > form > .form-actions,
+  .modal .work-item-form > .form-actions { bottom: calc(-20px - env(safe-area-inset-bottom)); margin: 18px -16px calc(-20px - env(safe-area-inset-bottom)); padding: 13px 16px calc(13px + env(safe-area-inset-bottom)); }
 }
+.state-select{min-height:34px;border:1px solid var(--border)!important;border-radius:9px!important;padding:6px 30px 6px 10px!important;font-weight:700!important;transition:background-color .16s ease,border-color .16s ease,color .16s ease}
+.state-select:is(.state-neutral,.state-a-faire,.state-backlog,.state-brouillon,.state-planifie,.state-planification,.state-initialisation,.state-ouvert,.state-proposee,.state-decidee){background:#f1f3f7!important;border-color:#cfd5df!important;color:#505a6c!important}
+.state-select:is(.state-en-cours,.state-execution,.state-soumis,.state-soumise,.state-en-analyse,.state-mediation,.state-a-appliquer){background:#e8f2ff!important;border-color:#8bb8f7!important;color:#1f5fae!important}
+.state-select:is(.state-en-revue,.state-surveillance,.state-plan-d-action,.state-escalade,.state-a-renouveler){background:#fff4db!important;border-color:#e9bd59!important;color:#82570a!important}
+.state-select:is(.state-termine,.state-terminee,.state-resolu,.state-clos,.state-valide,.state-approuvee,.state-appliquee,.state-realise,.state-cloture,.state-actif){background:#e8f7ee!important;border-color:#83c79e!important;color:#176b3b!important}
+.state-select:is(.state-bloque,.state-bloquee,.state-rejete,.state-rejetee,.state-annule,.state-annulee,.state-non-realise,.state-resilie){background:#ffeded!important;border-color:#ee9999!important;color:#a72a2a!important}
+.dark .state-select:is(.state-neutral,.state-a-faire,.state-backlog,.state-brouillon,.state-planifie,.state-planification,.state-initialisation,.state-ouvert,.state-proposee,.state-decidee){background:#2b3039!important;border-color:#4b5565!important;color:#d5dae3!important}
+.dark .state-select:is(.state-en-cours,.state-execution,.state-soumis,.state-soumise,.state-en-analyse,.state-mediation,.state-a-appliquer){background:#183a61!important;border-color:#3477bf!important;color:#c4dfff!important}
+.dark .state-select:is(.state-en-revue,.state-surveillance,.state-plan-d-action,.state-escalade,.state-a-renouveler){background:#483516!important;border-color:#9a711f!important;color:#ffe09b!important}
+.dark .state-select:is(.state-termine,.state-terminee,.state-resolu,.state-clos,.state-valide,.state-approuvee,.state-appliquee,.state-realise,.state-cloture,.state-actif){background:#193c2a!important;border-color:#3c8d60!important;color:#bcf0d0!important}
+.dark .state-select:is(.state-bloque,.state-bloquee,.state-rejete,.state-rejetee,.state-annule,.state-annulee,.state-non-realise,.state-resilie){background:#4b2024!important;border-color:#a94a52!important;color:#ffc7ca!important}

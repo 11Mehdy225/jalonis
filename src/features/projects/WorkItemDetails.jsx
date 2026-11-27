@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, Bookmark, Bug, CheckCircle2, CheckSquare2, Circle, Clock3, History, ImagePlus, Link2, ListChecks, MessageSquareText, Plus, Save, SlidersHorizontal, Trash2, Zap } from 'lucide-react'
 import EntityDiscussion from '../collaboration/EntityDiscussion'
 import { readOptions } from './CustomFieldsView'
+import { stateSelectClass } from '../../shared/stateTone'
 import '../../styles/work-item-details.css'
 
 const TASK_STATUSES=['À faire','En cours','Bloqué','Terminé']
@@ -41,7 +42,7 @@ export default function WorkItemDetails({item,type,showPredictiveLink=false,task
       <section><div className="detail-section-head"><div><Link2 size={16}/><span><b>Détails et liaisons</b><small>Informations, responsable, calendrier et dépendances.</small></span></div><button className="btn primary"><Save size={15}/>{saved?'Enregistré':'Enregistrer'}</button></div>
         <div className="form-grid"><label className="span-2">Titre<input required name="title" value={form.title||''} onChange={change}/></label>
           {!isTask&&<label>Type<select name="item_type" value={form.item_type||'User Story'} onChange={change}>{['Epic','User Story','Bug','Tâche'].map(value=><option key={value}>{value}</option>)}</select></label>}
-          <label>Statut<select name="status" value={form.status||''} onChange={change}>{(isTask?TASK_STATUSES:STORY_STATUSES).map(value=><option key={value}>{value}</option>)}</select></label>
+          <label>Statut<select className={stateSelectClass(form.status)} name="status" value={form.status||''} onChange={change}>{(isTask?TASK_STATUSES:STORY_STATUSES).map(value=><option key={value}>{value}</option>)}</select></label>
           <label>Priorité<select name="priority" value={form.priority||'Moyenne'} onChange={change}>{PRIORITIES.map(value=><option key={value}>{value}</option>)}</select></label>
           <label>Responsable<select name="assignee_id" value={form.assignee_id||''} onChange={change}><option value="">Non assigné</option>{people.map(person=><option key={person.id} value={person.id}>{person.name} · {person.role}</option>)}</select></label>
           <label>Début prévu<input type="date" name="start_date" value={form.start_date||''} onChange={change}/></label><label>Échéance<input type="date" name="due_date" value={form.due_date||''} onChange={change}/></label>

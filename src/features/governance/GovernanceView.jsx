@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AlertOctagon, CheckCircle2, ClipboardCheck, FileDiff, Gavel, Plus, Trash2 } from 'lucide-react'
+import { stateSelectClass } from '../../shared/stateTone'
 import '../../styles/governance.css'
 
 const tabs=[['overview','Synthèse'],['change_requests','Changements'],['issues','Problèmes'],['decisions','Décisions']]
@@ -61,5 +62,5 @@ function GovHead({title,action,onClick}){return <header className="gov-head"><h3
 function Feed({icon:Icon,title,meta,status}){return <article><span><Icon size={15}/></span><div><b>{title}</b><small>{meta}</small></div><em>{status}</em></article>}
 function Empty({text}){return <div className="gov-empty"><CheckCircle2 size={20}/><span>{text}</span></div>}
 function Register({title,subtitle,button,onCreate,rows,columns,onDelete}){return <section className="card governance-register"><div className="register-head"><div><h3>{title}</h3><p>{subtitle}</p></div><button className="btn primary" onClick={onCreate}><Plus size={16}/>{button}</button></div><div className="register-table"><table><thead><tr>{columns.map(([,label])=><th key={label}>{label}</th>)}<th></th></tr></thead><tbody>{rows.map(row=><tr key={row.id}>{columns.map(([key,label,render])=><td key={label}>{render?render(row[key],row):row[key]||'—'}</td>)}<td><button className="row-delete" title="Supprimer" onClick={()=>onDelete(row.id)}><Trash2 size={15}/></button></td></tr>)}</tbody></table></div>{!rows.length&&<Empty text="Aucun élément dans ce registre."/>}</section>}
-function StatusSelect({value,options,onChange}){return <select className="gov-status-select" value={value||options[0]} onChange={event=>onChange(event.target.value)}>{options.map(option=><option key={option}>{option}</option>)}</select>}
+function StatusSelect({value,options,onChange}){return <select className={stateSelectClass(value,'gov-status-select')} value={value||options[0]} onChange={event=>onChange(event.target.value)}>{options.map(option=><option key={option}>{option}</option>)}</select>}
 function formatDate(value){return value?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)):'—'}

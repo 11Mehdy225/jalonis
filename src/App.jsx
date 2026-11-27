@@ -62,6 +62,7 @@ export default function App() {
   const [mobileNav,setMobileNav]=useState(false)
   const [projectAccess,setProjectAccess]=useState(null),[inviteProject,setInviteProject]=useState(null)
   const [online,setOnline]=useState(()=>navigator.onLine)
+  const [booting,setBooting]=useState(true),[syncState,setSyncState]=useState('idle')
   const searchRef=useRef(null)
   const deferredQuery=useDeferredValue(query)
   const active=projects.find(p=>p.id===activeId)
@@ -70,7 +71,7 @@ export default function App() {
   async function loadEntities(id){ if(!id)return; const values=await Promise.all(ENTITY_TYPES.map(t=>api.entities.list(t,id))); setEntities(Object.fromEntries(ENTITY_TYPES.map((t,i)=>[t,values[i]]))) }
   async function reloadProjectTable(table,id){if(table==='projects'){await loadProjects(false);return}if(!ENTITY_TYPES.includes(table))return;const rows=await api.entities.list(table,id);setEntities(current=>({...current,[table]:rows}))}
   async function loadWorkspace(){const state=await api.workspace.get();setWorkspace(state);setWorkspaceOptions(api.workspace.list?await api.workspace.list():[state.workspace])}
-  useEffect(()=>{Promise.all([loadProjects(),loadWorkspace()]).catch(reason=>setError(reason.message||"Impossible de charger l’espace de travail."))},[])
+  useEffect(()=>{Promise.all([loadProjects(),loadWorkspace()]).catch(reason=>setError(reason.message||"Impossible de charger l’espace de travail.")).finally(()=>setBooting(false))},[])
   useEffect(()=>{const connected=()=>setOnline(true),disconnected=()=>setOnline(false);window.addEventListener('online',connected);window.addEventListener('offline',disconnected);return()=>{window.removeEventListener('online',connected);window.removeEventListener('offline',disconnected)}},[])
   useEffect(()=>{const params=new URLSearchParams(window.location.search);if(params.get('billing')==='return'){const status=params.get('status');setNotice(status==='successful'?'Paiement reçu. La vérification sécurisée de votre abonnement est en cours.':status==='cancelled'?'Paiement annulé. Aucun changement n’a été appliqué.':'Le paiement n’a pas été finalisé.');params.delete('billing');params.delete('status');params.delete('tx_ref');params.delete('transaction_id');window.history.replaceState({},'',`${window.location.pathname}${params.size?`?${params}`:''}`)}},[])
   useEffect(()=>{loadEntities(activeId)},[activeId])
@@ -162,7 +163,11 @@ export default function App() {
   async function addEntity(type,data){
     if(type==='comments'?!permissions.comment:!permissions.editProject)return deny(type==='comments'?'Votre rôle ne permet pas de publier un message.':'Votre rôle dispose uniquement d’un accès en lecture.')
     const payload=type==='comments'?{...data,author_id:data.author_id||workspace?.current_user?.id}:data
-    const item=await api.entities.create(type,{...payload,project_id:activeId})
+    setSyncState('saving')
+    let item
+    try{item=await api.entities.create(type,{...payload,project_id:activeId})}catch(reason){setSyncState('error');setError(reason.message||'Impossible de créer cet élément.');throw reason}
+    setEntities(current=>({...current,[type]:[...(current[type]||[]),item]}))
+    setSyncState('saved');window.setTimeout(()=>setSyncState(current=>current==='saved'?'idle':current),1600)
     let meetingOutcomeCount=0
     if(type==='meetings'){
       const decisionRows=[]
@@ -183,20 +188,29 @@ export default function App() {
         }
       }
     }
-    setModal(null); await loadEntities(activeId); await loadProjects(false); if(type==='meetings'&&meetingOutcomeCount)setNotice(`${meetingOutcomeCount} résultat(s) de réunion relié(s) aux registres Décisions et Actions.`); return item
+    const refreshTables=[type,'activities','notifications',...(type==='meetings'?['decisions','action_items']:[])]
+    setModal(null);await Promise.all([...new Set(refreshTables)].map(table=>reloadProjectTable(table,activeId)));await loadProjects(false);if(type==='meetings'&&meetingOutcomeCount)setNotice(`${meetingOutcomeCount} résultat(s) de réunion relié(s) aux registres Décisions et Actions.`);return item
   }
   async function removeEntity(type,id){
     if(!permissions.deleteProjectContent)return deny('Seuls les responsables du projet peuvent supprimer cet élément.')
     const previous=entities[type]?.find(item=>item.id===id)
-    await api.entities.remove(type,id)
+    const displayName=previous?.title||previous?.name||ENTITY_LABELS[type]||'cet élément'
+    if(!window.confirm(`Supprimer définitivement « ${displayName} » ?`))return false
+    setSyncState('saving')
+    try{await api.entities.remove(type,id)}catch(reason){setSyncState('error');setError(reason.message||'Impossible de supprimer cet élément.');throw reason}
+    setEntities(current=>({...current,[type]:(current[type]||[]).filter(item=>item.id!==id)}))
+    setSyncState('saved');window.setTimeout(()=>setSyncState(current=>current==='saved'?'idle':current),1600)
     if(previous&&!['activities','notifications','comments','attachments','checklist_items','sprint_snapshots','custom_field_values'].includes(type))await recordEvent({eventType:`${type}.deleted`,entityType:type,entityId:id,title:`${ENTITY_LABELS[type]||'Élément'} supprimé`,description:previous.title||previous.name||'',notify:false})
-    await loadEntities(activeId); await loadProjects(false)
+    await Promise.all([reloadProjectTable(type,activeId),reloadProjectTable('activities',activeId)]);await loadProjects(false);setNotice(`${ENTITY_LABELS[type]||'Élément'} supprimé.`);return true
   }
   async function updateEntity(type,id,data){
     if(!permissions.editProject)return deny('Votre rôle dispose uniquement d’un accès en lecture.')
     const previous=entities[type]?.find(item=>item.id===id)
-    const item=await api.entities.update(type,id,data)
+    setSyncState('saving')
+    let item
+    try{item=await api.entities.update(type,id,data)}catch(reason){setSyncState('error');setError(reason.message||'Impossible d’enregistrer cette modification.');throw reason}
     setEntities(current=>({...current,[type]:(current[type]||[]).map(row=>row.id===id?item:row)}))
+    setSyncState('saved');window.setTimeout(()=>setSyncState(current=>current==='saved'?'idle':current),1600)
     const name=item?.title||item?.name||ENTITY_LABELS[type]||'Élément'
     let recorded=false
     if(previous&&data.status!==undefined&&previous.status!==item.status){await recordEvent({eventType:'status.changed',entityType:type,entityId:id,title:`${name} · ${item.status}`,description:`Statut modifié de « ${previous.status||'Non défini'} » vers « ${item.status} ».`});recorded=true}
@@ -304,14 +318,14 @@ export default function App() {
       {(isDesktopCloud||(!window.kavelyo&&new URLSearchParams(window.location.search).get('preview')!=='1'))&&<button className="sidebar-signout" onClick={signOut}><LogOut size={16}/><span>Déconnexion</span></button>}
     </aside>
     <main>
-      <header className="app-header"><button className="icon-btn mobile-menu-btn" aria-label="Ouvrir le menu" onClick={()=>setMobileNav(true)}><Menu size={21}/></button><span className="mobile-header-brand"><img src="./assets/kavelyo-logo.png" alt=""/>Kavelyo</span><div className="search"><Search size={17}/><input ref={searchRef} type="search" aria-label="Rechercher dans le projet" placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd aria-hidden="true">⌘ K</kbd></div><button className="icon-btn" aria-label={dark?'Activer le mode clair':'Activer le mode sombre'} title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" aria-label={unreadNotifications?`Notifications, ${unreadNotifications} non lue${unreadNotifications>1?'s':''}`:'Notifications'} aria-haspopup="true" aria-expanded={notificationOpen} title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button>{permissions.createProject&&<button className="btn primary header-create" onClick={()=>setModal('project')}><Plus size={17}/><span>Créer</span></button>}{notificationOpen&&<NotificationCenter notifications={visibleNotifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
+      <header className="app-header"><button className="icon-btn mobile-menu-btn" aria-label="Ouvrir le menu" onClick={()=>setMobileNav(true)}><Menu size={21}/></button><span className="mobile-header-brand"><img src="./assets/kavelyo-logo.png" alt=""/>Kavelyo</span><div className="search"><Search size={17}/><input ref={searchRef} type="search" aria-label="Rechercher dans le projet" placeholder="Rechercher dans le projet…" value={query} onChange={e=>setQuery(e.target.value)}/><kbd aria-hidden="true">⌘ K</kbd></div>{syncState!=='idle'&&<span className={`sync-indicator ${syncState}`} role="status" aria-live="polite">{syncState==='saving'?<Clock3 size={14}/>:syncState==='saved'?<CheckCircle2 size={14}/>:<ShieldAlert size={14}/>}<span>{syncState==='saving'?'Enregistrement…':syncState==='saved'?'Enregistré':'Échec de synchronisation'}</span></span>}<button className="icon-btn" aria-label={dark?'Activer le mode clair':'Activer le mode sombre'} title={dark?'Mode clair':'Mode sombre'} onClick={toggleTheme}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-btn notification-trigger" aria-label={unreadNotifications?`Notifications, ${unreadNotifications} non lue${unreadNotifications>1?'s':''}`:'Notifications'} aria-haspopup="true" aria-expanded={notificationOpen} title="Notifications" onClick={()=>setNotificationOpen(value=>!value)}><Bell size={18}/>{unreadNotifications>0&&<span className="notification-badge">{unreadNotifications>9?'9+':unreadNotifications}</span>}</button>{permissions.createProject&&<button className="btn primary header-create" onClick={()=>setModal('project')}><Plus size={17}/><span>Créer</span></button>}{notificationOpen&&<NotificationCenter notifications={visibleNotifications} onRead={readNotification} onReadAll={readAllNotifications} onClose={()=>setNotificationOpen(false)}/>}</header>
       <section id="main-content" tabIndex="-1" className={`content${active&&!['workspace','settings','admin'].includes(view)?' project-content':''}`} style={active?{'--project-color':active.theme_color||'#4f46e5'}:undefined}>
         {!online&&<div className="offline-banner" role="status"><Database size={16}/><span><b>Connexion interrompue</b> Les changements cloud reprendront après le retour du réseau.</span></div>}
         <SubscriptionNotice workspace={workspace} onOpen={()=>setView('workspace')}/>
         {error&&<div className="app-error" role="alert"><span>{error}</span><button type="button" aria-label="Fermer le message d’erreur" onClick={()=>setError('')}>×</button></div>}
         {notice&&<div className="app-notice" role="status" aria-live="polite"><span>{notice}</span><button type="button" aria-label="Fermer le message" onClick={()=>setNotice('')}>×</button></div>}
         <Suspense fallback={<ViewLoading/>}>
-        {view==='admin'&&workspace?.is_platform_admin ? <><div className="page-title"><div><span className="eyebrow">EXPLOITATION KAVELYO</span><h1>Administration SaaS</h1><p>Supervisez les comptes, abonnements, paiements et notifications.</p></div></div><AdminView plans={workspace.plans||[]} onLoad={api.admin.dashboard} onReadiness={api.admin.readiness} onMonitoring={api.admin.monitoring} onManageIncident={api.admin.manageIncident} onPrivacyRequests={api.admin.privacyRequests} onManagePrivacyRequest={api.admin.managePrivacyRequest} onManage={api.admin.manageSubscription} onCreatePromotion={api.admin.createPromotionCode} onSetPromotionActive={api.admin.setPromotionCodeActive} onUpdateChannel={api.admin.updateChannel}/></>
+        {booting ? <AppBootLoading/> : view==='admin'&&workspace?.is_platform_admin ? <><div className="page-title"><div><span className="eyebrow">EXPLOITATION KAVELYO</span><h1>Administration SaaS</h1><p>Supervisez les comptes, abonnements, paiements et notifications.</p></div></div><AdminView plans={workspace.plans||[]} onLoad={api.admin.dashboard} onReadiness={api.admin.readiness} onMonitoring={api.admin.monitoring} onManageIncident={api.admin.manageIncident} onPrivacyRequests={api.admin.privacyRequests} onManagePrivacyRequest={api.admin.managePrivacyRequest} onManage={api.admin.manageSubscription} onCreatePromotion={api.admin.createPromotionCode} onSetPromotionActive={api.admin.setPromotionCodeActive} onUpdateChannel={api.admin.updateChannel}/></>
         : view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>{setInviteProject(null);setModal('invite-member')}} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout} onRedeemPromotion={redeemPromotionCode} onManualPayment={submitManualPayment} onReviewPayment={reviewManualPayment}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Votre profil et la configuration de cette installation.</p></div></div><SettingsView currentUser={currentUser} onUpdateProfile={updateProfile}/></>
         : !active ? <Empty canCreate={permissions.createProject} canInvite={permissions.inviteMembers} onCreate={()=>setModal('project')} onInvite={()=>setModal('invite-member')} onProfile={()=>setView('settings')}/> : <>
@@ -440,6 +454,7 @@ function Kpi({icon:Icon,label,value,note,color,progress}){return <div className=
 function CardHead({title,action,onClick}){return <div className="card-head"><h3>{title}</h3>{action&&<button onClick={onClick}>{action}<ChevronRight size={15}/></button>}</div>}
 function EmptyRow({text}){return <div className="empty-row">{text}</div>}
 function ViewLoading(){return <div className="view-loading" role="status" aria-live="polite"><span/><div><b>Ouverture de l’espace</b><small>Chargement du module nécessaire…</small></div></div>}
+function AppBootLoading(){return <div className="app-boot-loading" role="status" aria-live="polite"><div className="boot-heading"><span/><div><b>Préparation de votre espace</b><small>Synchronisation des projets et indicateurs…</small></div></div><div className="boot-kpis"><i/><i/><i/><i/></div><div className="boot-panels"><i/><i/><i/></div></div>}
 
 function Charter({project,onSave}){
   const [form,setForm]=useState(project),[saved,setSaved]=useState(false)
@@ -450,7 +465,7 @@ function Charter({project,onSave}){
 }
 
 const match=(row,q)=>!q||Object.values(row).some(v=>String(v||'').toLowerCase().includes(q.toLowerCase()))
-function Table({columns,rows,query,onDelete,onRowClick,empty}){return <div className="card table-card"><table><thead><tr>{columns.map(c=><th key={c.key}>{c.label}</th>)}<th></th></tr></thead><tbody>{rows.filter(r=>match(r,query)).map(row=><tr key={row.id} className={onRowClick?'clickable-row':''} onClick={()=>onRowClick?.(row)}>{columns.map(c=><td key={c.key}>{c.render?c.render(row[c.key],row):row[c.key]||'—'}</td>)}<td><button className="row-delete" title="Supprimer" onClick={event=>{event.stopPropagation();onDelete(row.id)}}><Trash2 size={16}/></button></td></tr>)}</tbody></table>{!rows.length&&<EmptyRow text={empty}/>}</div>}
+function Table({columns,rows,query,onDelete,onRowClick,empty}){return <div className="card table-card responsive-table"><table><thead><tr>{columns.map(c=><th key={c.key}>{c.label}</th>)}<th></th></tr></thead><tbody>{rows.filter(r=>match(r,query)).map(row=><tr key={row.id} className={onRowClick?'clickable-row':''} onClick={()=>onRowClick?.(row)}>{columns.map(c=><td data-label={c.label} key={c.key}>{c.render?c.render(row[c.key],row):row[c.key]||'—'}</td>)}<td className="responsive-row-action"><button className="row-delete" aria-label={`Supprimer ${row.title||row.name||'cet élément'}`} title="Supprimer" onClick={event=>{event.stopPropagation();onDelete(row.id)}}><Trash2 size={16}/></button></td></tr>)}</tbody></table>{!rows.length&&<EmptyRow text={empty}/>}</div>}
 const status=v=><span className={`status ${String(v).toLowerCase().replaceAll(' ','-')}`}>{v||'—'}</span>
 const taskInitials=value=>String(value||'').split(/\s+/).filter(Boolean).map(part=>part[0]).slice(0,2).join('').toUpperCase()||'—'
 const taskReporter=row=>String(row.notes||'').match(/Rapporteur Jira\s*:\s*([^\n\r]+)/i)?.[1]?.trim()||'—'
