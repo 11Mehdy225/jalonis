@@ -26,6 +26,7 @@ import './styles/sidebar-account.css'
 import './styles/dashboard-brief.css'
 import './styles/meeting-outcomes.css'
 import './styles/readability.css'
+import './styles/market-nav.css'
 
 initializeTelemetry()
 createRoot(document.getElementById('root')).render(<React.StrictMode><ErrorBoundary><AuthGate><App /></AuthGate></ErrorBoundary></React.StrictMode>)
