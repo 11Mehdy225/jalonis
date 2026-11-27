@@ -1,29 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { api, isDesktopCloud } from './services/api'
 import Modal from './shared/Modal'
 import ProjectForm from './features/projects/ProjectForm'
 import EntityForm, { configs } from './features/projects/EntityForm'
-import GanttView from './features/planning/GanttView'
-import PlanningSettings from './features/planning/PlanningSettings'
-import ScrumView from './features/agile/ScrumView'
-import SupplierManagement from './features/procurement/SupplierManagement'
 import WorkspaceView, { CreateWorkspaceForm, InviteMemberForm, WorkspaceSwitcher } from './features/workspace/WorkspaceView'
-import ActivityView from './features/collaboration/ActivityView'
 import NotificationCenter from './features/collaboration/NotificationCenter'
 import DailyBrief from './features/collaboration/DailyBrief'
 import EntityDiscussion from './features/collaboration/EntityDiscussion'
 import WorkItemDetails from './features/projects/WorkItemDetails'
-import ResourceManagement from './features/resources/ResourceManagement'
-import FinancialView from './features/finance/FinancialView'
-import GovernanceView from './features/governance/GovernanceView'
-import StakeholderManagement from './features/stakeholders/StakeholderManagement'
-import ReportCenter from './features/reports/ReportCenter'
 import CustomFieldsView from './features/projects/CustomFieldsView'
-import ProjectAssistant from './features/assistant/ProjectAssistant'
-import AdminView from './features/admin/AdminView'
-import ImpactCenter from './features/impact/ImpactCenter'
-import ActionTracker from './features/actions/ActionTracker'
-import RaidCenter from './features/raid/RaidCenter'
 import { seedProjectTemplate } from './data/projectTemplates'
 import { jiraTargets } from './services/jiraImport'
 import PrivacyCenter from './features/privacy/PrivacyCenter'
@@ -34,6 +19,22 @@ import './styles/dashboard-command.css'
 import { cloudAuth, isCloudConfigured } from './services/supabase'
 import { permissionsFor } from './services/permissions'
 import { LayoutDashboard, FolderKanban, FileText, CalendarRange, CalendarDays, List, Columns3, Users, ShieldAlert, MessageSquareText, Settings, Plus, Search, Bell, ChevronRight, ChevronLeft, CircleDollarSign, Clock3, Target, HardDrive, MoreHorizontal, Trash2, ArrowUpRight, Database, CheckCircle2, Truck, Building2, Share2, Moon, Sun, ChartNoAxesGantt, ClipboardList, ImagePlus, Palette, Gavel, FileDown, Diamond, Sparkles, Menu, X, Shield, Workflow, LogOut, LockKeyhole, ListChecks, Grid2X2 } from 'lucide-react'
+
+const GanttView=lazy(()=>import('./features/planning/GanttView'))
+const PlanningSettings=lazy(()=>import('./features/planning/PlanningSettings'))
+const ScrumView=lazy(()=>import('./features/agile/ScrumView'))
+const SupplierManagement=lazy(()=>import('./features/procurement/SupplierManagement'))
+const ActivityView=lazy(()=>import('./features/collaboration/ActivityView'))
+const ResourceManagement=lazy(()=>import('./features/resources/ResourceManagement'))
+const FinancialView=lazy(()=>import('./features/finance/FinancialView'))
+const GovernanceView=lazy(()=>import('./features/governance/GovernanceView'))
+const StakeholderManagement=lazy(()=>import('./features/stakeholders/StakeholderManagement'))
+const ReportCenter=lazy(()=>import('./features/reports/ReportCenter'))
+const ProjectAssistant=lazy(()=>import('./features/assistant/ProjectAssistant'))
+const AdminView=lazy(()=>import('./features/admin/AdminView'))
+const ImpactCenter=lazy(()=>import('./features/impact/ImpactCenter'))
+const ActionTracker=lazy(()=>import('./features/actions/ActionTracker'))
+const RaidCenter=lazy(()=>import('./features/raid/RaidCenter'))
 
 const money = (n,currency='XOF') => new Intl.NumberFormat('fr-FR',{style:'currency',currency,maximumFractionDigits:0}).format(Number(n)||0)
 const date = value => value ? new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value)) : '—'
@@ -62,6 +63,7 @@ export default function App() {
   const [projectAccess,setProjectAccess]=useState(null),[inviteProject,setInviteProject]=useState(null)
   const [online,setOnline]=useState(()=>navigator.onLine)
   const searchRef=useRef(null)
+  const deferredQuery=useDeferredValue(query)
   const active=projects.find(p=>p.id===activeId)
 
   async function loadProjects(selectFirst=true){ const rows=await api.projects.list(); setProjects(rows); if(selectFirst&&!activeId&&rows[0]) setActiveId(rows[0].id) }
@@ -194,6 +196,7 @@ export default function App() {
     if(!permissions.editProject)return deny('Votre rôle dispose uniquement d’un accès en lecture.')
     const previous=entities[type]?.find(item=>item.id===id)
     const item=await api.entities.update(type,id,data)
+    setEntities(current=>({...current,[type]:(current[type]||[]).map(row=>row.id===id?item:row)}))
     const name=item?.title||item?.name||ENTITY_LABELS[type]||'Élément'
     let recorded=false
     if(previous&&data.status!==undefined&&previous.status!==item.status){await recordEvent({eventType:'status.changed',entityType:type,entityId:id,title:`${name} · ${item.status}`,description:`Statut modifié de « ${previous.status||'Non défini'} » vers « ${item.status} ».`});recorded=true}
@@ -206,7 +209,9 @@ export default function App() {
       const sprintIds=[...new Set([previous?.sprint_id,item?.sprint_id].filter(Boolean))]
       for(const sprintId of sprintIds)await createSprintSnapshot(sprintId,nextItems,false)
     }
-    await loadEntities(activeId); await loadProjects(false)
+    const refreshTables=[type,'activities','notifications',...(type==='backlog_items'?['sprint_snapshots']:[])]
+    await Promise.all([...new Set(refreshTables)].map(table=>reloadProjectTable(table,activeId)))
+    await loadProjects(false)
     return item
   }
   async function createSprintSnapshot(sprintId,items=entities.backlog_items,reload=true){
@@ -278,10 +283,10 @@ export default function App() {
   async function saveProjectAccess(data){try{setError('');const next=await api.projects.setAccess(activeId,data);setProjectAccess(next);setProjects(rows=>rows.map(project=>project.id===activeId?{...project,access_mode:next.access_mode}:project));setNotice('Accès au projet mis à jour.');setModal(null)}catch(reason){setError(reason.message||'Impossible de modifier les accès.');throw reason}}
   function toggleTheme(){setDark(value=>{const next=!value;localStorage.setItem('kavelyo-theme',next?'dark':'light');return next})}
   function openProjectView(nextView,nextAgileTab){if(nextAgileTab)setAgileTab(nextAgileTab);setView(nextView);setMobileNav(false)}
-  async function readNotification(id){await api.entities.update('notifications',id,{is_read:true});await loadEntities(activeId)}
-  async function readAllNotifications(){await Promise.all(visibleNotifications.filter(item=>!Number(item.is_read)).map(item=>api.entities.update('notifications',item.id,{is_read:true})));await loadEntities(activeId)}
-  const visibleNotifications=entities.notifications.filter(item=>!item.recipient_id||item.recipient_id===currentUser?.id)
-  const unreadNotifications=visibleNotifications.filter(item=>!Number(item.is_read)).length
+  async function readNotification(id){const item=await api.entities.update('notifications',id,{is_read:true});setEntities(current=>({...current,notifications:current.notifications.map(row=>row.id===id?item:row)}))}
+  async function readAllNotifications(){const unread=visibleNotifications.filter(item=>!Number(item.is_read));await Promise.all(unread.map(item=>api.entities.update('notifications',item.id,{is_read:true})));const ids=new Set(unread.map(item=>item.id));setEntities(current=>({...current,notifications:current.notifications.map(item=>ids.has(item.id)?{...item,is_read:true}:item)}))}
+  const visibleNotifications=useMemo(()=>entities.notifications.filter(item=>!item.recipient_id||item.recipient_id===currentUser?.id),[entities.notifications,currentUser?.id])
+  const unreadNotifications=useMemo(()=>visibleNotifications.filter(item=>!Number(item.is_read)).length,[visibleNotifications])
   const visibleNav=active?NAV.filter(([id])=>moduleAllowed(active.methodology,id)):NAV
   const currentPlan=workspace?.plans?.find(plan=>plan.code===(workspace?.subscription?.plan_code||'discovery'))
   const advancedAssistant=Boolean(currentPlan?.features?.assistant)
@@ -305,6 +310,7 @@ export default function App() {
         <SubscriptionNotice workspace={workspace} onOpen={()=>setView('workspace')}/>
         {error&&<div className="app-error" role="alert"><span>{error}</span><button type="button" aria-label="Fermer le message d’erreur" onClick={()=>setError('')}>×</button></div>}
         {notice&&<div className="app-notice" role="status" aria-live="polite"><span>{notice}</span><button type="button" aria-label="Fermer le message" onClick={()=>setNotice('')}>×</button></div>}
+        <Suspense fallback={<ViewLoading/>}>
         {view==='admin'&&workspace?.is_platform_admin ? <><div className="page-title"><div><span className="eyebrow">EXPLOITATION KAVELYO</span><h1>Administration SaaS</h1><p>Supervisez les comptes, abonnements, paiements et notifications.</p></div></div><AdminView plans={workspace.plans||[]} onLoad={api.admin.dashboard} onReadiness={api.admin.readiness} onMonitoring={api.admin.monitoring} onManageIncident={api.admin.manageIncident} onPrivacyRequests={api.admin.privacyRequests} onManagePrivacyRequest={api.admin.managePrivacyRequest} onManage={api.admin.manageSubscription} onCreatePromotion={api.admin.createPromotionCode} onSetPromotionActive={api.admin.setPromotionCodeActive} onUpdateChannel={api.admin.updateChannel}/></>
         : view==='workspace' ? <><div className="page-title"><div><span className="eyebrow">ORGANISATION</span><h1>Espace de travail</h1><p>Gérez les membres, les rôles et les canaux de notification.</p></div></div><WorkspaceView data={workspace} canManage={permissions.manageWorkspace} canInvite={permissions.inviteMembers} onRename={renameWorkspace} onInvite={()=>{setInviteProject(null);setModal('invite-member')}} onRemove={removeMember} onUpdateRole={updateMemberRole} onUpdatePreferences={updateNotificationPreferences} onCheckout={startCheckout} onRedeemPromotion={redeemPromotionCode} onManualPayment={submitManualPayment} onReviewPayment={reviewManualPayment}/></>
         : view==='settings' ? <><div className="page-title"><div><span className="eyebrow">APPLICATION</span><h1>Paramètres</h1><p>Votre profil et la configuration de cette installation.</p></div></div><SettingsView currentUser={currentUser} onUpdateProfile={updateProfile}/></>
@@ -324,7 +330,7 @@ export default function App() {
             dependencies={entities.task_dependencies} tasks={entities.tasks}/>
           }
           {view==='charter'&&<Charter project={active} onSave={updateCharter}/>}
-          {view==='tasks'&&<Tasks methodology={active.methodology} rows={entities.tasks} dependencies={entities.task_dependencies} calendars={entities.work_calendars} items={entities.backlog_items} sprints={entities.sprints} team={entities.team} members={workspace?.members||[]} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} customFields={entities.custom_fields} customValues={entities.custom_field_values} currentUser={currentUser} query={query} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onSaveCustomValue={saveCustomValue} onCreateDependency={data=>addEntity('task_dependencies',data)} onDeleteDependency={id=>removeEntity('task_dependencies',id)} onSaveCalendar={async data=>{const current=entities.work_calendars[0];return current?updateEntity('work_calendars',current.id,data):addEntity('work_calendars',data)}} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
+          {view==='tasks'&&<Tasks methodology={active.methodology} rows={entities.tasks} dependencies={entities.task_dependencies} calendars={entities.work_calendars} items={entities.backlog_items} sprints={entities.sprints} team={entities.team} members={workspace?.members||[]} attachments={entities.attachments} comments={entities.comments} activities={entities.activities} checklist={entities.checklist_items} customFields={entities.custom_fields} customValues={entities.custom_field_values} currentUser={currentUser} query={deferredQuery} onAttach={id=>attachMedia('tasks',id)} onComment={data=>addEntity('comments',data)} onAddChecklist={data=>addEntity('checklist_items',data)} onUpdateChecklist={(id,data)=>updateEntity('checklist_items',id,data)} onDeleteChecklist={id=>removeEntity('checklist_items',id)} onSaveCustomValue={saveCustomValue} onCreateDependency={data=>addEntity('task_dependencies',data)} onDeleteDependency={id=>removeEntity('task_dependencies',id)} onSaveCalendar={async data=>{const current=entities.work_calendars[0];return current?updateEntity('work_calendars',current.id,data):addEntity('work_calendars',data)}} onDelete={id=>removeEntity('tasks',id)} onUpdate={(id,data)=>updateEntity('tasks',id,data)}/>}
           {view==='scrum'&&<ScrumView
             project={active} sprints={entities.sprints} events={entities.scrum_events} eventEntries={entities.scrum_event_entries}
             items={entities.backlog_items} tasks={entities.tasks} attachments={entities.attachments} comments={entities.comments}
@@ -341,11 +347,12 @@ export default function App() {
           {view==='stakeholders'&&<StakeholderManagement stakeholders={entities.stakeholders} raci={entities.raci_assignments} conflicts={entities.conflicts} communications={entities.communication_plans} tasks={entities.tasks} team={entities.team} onCreate={addEntity} onUpdate={updateEntity} onDelete={removeEntity}/>}
           {view==='reports'&&<ReportCenter project={active} entities={entities} onImport={importProjectArchive} onJiraImport={importJiraProject}/>}
           {view==='custom-fields'&&<CustomFieldsView fields={entities.custom_fields} canEdit={permissions.manageProject} onCreate={data=>addEntity('custom_fields',data)} onDelete={id=>removeEntity('custom_fields',id)}/>}
-          {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={query} onDelete={id=>removeEntity('risks',id)}/>}
-          {view==='team'&&<ResourceManagement members={entities.team} tasks={entities.tasks} entries={entities.time_entries} query={query} onCreateEntry={data=>addEntity('time_entries',data)} onUpdateEntry={(id,data)=>updateEntity('time_entries',id,data)} onDeleteEntry={id=>removeEntity('time_entries',id)} onDeleteMember={id=>removeEntity('team',id)}/>}
-          {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} decisions={entities.decisions} actions={entities.action_items} query={query} onDelete={id=>removeEntity('meetings',id)}/>}
+          {view==='risks'&&<Risks rows={entities.risks} tasks={entities.tasks} query={deferredQuery} onDelete={id=>removeEntity('risks',id)}/>}
+          {view==='team'&&<ResourceManagement members={entities.team} tasks={entities.tasks} entries={entities.time_entries} query={deferredQuery} onCreateEntry={data=>addEntity('time_entries',data)} onUpdateEntry={(id,data)=>updateEntity('time_entries',id,data)} onDeleteEntry={id=>removeEntity('time_entries',id)} onDeleteMember={id=>removeEntity('team',id)}/>}
+          {view==='meetings'&&<Meetings rows={entities.meetings} tasks={entities.tasks} decisions={entities.decisions} actions={entities.action_items} query={deferredQuery} onDelete={id=>removeEntity('meetings',id)}/>}
           {view==='activity'&&<ActivityView project={active} comments={entities.comments} activities={entities.activities} members={workspace?.members||[]} currentUser={currentUser} onComment={data=>addEntity('comments',data)}/>}
         </>}
+        </Suspense>
       </section>
     </main>
     {modal==='project'&&<Modal title="Créer un projet" onClose={()=>setModal(null)}><ProjectForm onSubmit={createProject} onCancel={()=>setModal(null)}/></Modal>}
@@ -432,6 +439,7 @@ function Dashboard({active,entities,stats,setView,setAgileTab}){
 function Kpi({icon:Icon,label,value,note,color,progress}){return <div className="kpi"><div className={`kpi-icon ${color}`}><Icon size={20}/></div><div className="kpi-top"><span>{label}</span><ArrowUpRight size={16}/></div><strong>{value}</strong><small>{note}</small>{progress!==undefined&&<div className="mini-progress"><i style={{width:`${progress}%`}}/></div>}</div>}
 function CardHead({title,action,onClick}){return <div className="card-head"><h3>{title}</h3>{action&&<button onClick={onClick}>{action}<ChevronRight size={15}/></button>}</div>}
 function EmptyRow({text}){return <div className="empty-row">{text}</div>}
+function ViewLoading(){return <div className="view-loading" role="status" aria-live="polite"><span/><div><b>Ouverture de l’espace</b><small>Chargement du module nécessaire…</small></div></div>}
 
 function Charter({project,onSave}){
   const [form,setForm]=useState(project),[saved,setSaved]=useState(false)

@@ -45,6 +45,32 @@
 .skip-link:focus { transform: translateY(0); }
 #main-content:focus { outline: 0; }
 
+.view-loading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 116px;
+  padding: 20px;
+  border: 1px solid var(--ui-border);
+  border-radius: 14px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-shadow);
+}
+.view-loading > span {
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  border: 3px solid color-mix(in srgb,var(--ui-focus) 18%,var(--ui-border));
+  border-top-color: var(--ui-focus);
+  border-radius: 50%;
+  animation: view-loading-spin .7s linear infinite;
+}
+.view-loading div { display: flex; flex-direction: column; gap: 3px; }
+.view-loading b { font-size: 14px; }
+.view-loading small { color: var(--ui-muted); }
+@keyframes view-loading-spin { to { transform: rotate(360deg); } }
+
 .app-shell button:disabled,
 .app-shell input:disabled,
 .app-shell select:disabled,
